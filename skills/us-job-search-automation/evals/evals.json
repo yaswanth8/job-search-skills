@@ -1,0 +1,62 @@
+{
+ "skill_name": "us-job-search-automation",
+ "about": "End-to-end prompts for agent runs of the skill (skill-creator format). Run them with a signed-in browser; grade with the assertions. The deterministic back-test lives in vet_cases.json and ats_years_cases.json (run_evals.py).",
+ "evals": [
+  {
+   "id": 1,
+   "prompt": "/us-job-search-automation using my profile /job-search-profile",
+   "expected_output": "Asks once whether to apply or only search (a bare slash command authorizes nothing), then searches LinkedIn, Indeed and Dice for the 72-hour window, vets with vet.py, applies only after the answer, writes rows to the tracker database and reports.",
+   "files": [],
+   "assertions": [
+    "Asks a single AskUserQuestion covering apply-vs-search before any submission",
+    "Loads all Chrome tools in one ToolSearch call",
+    "Runs the bundled scripts from the skill folder",
+    "Reads the tracker's jobs collection and skips links already present",
+    "Runs vet.py in card mode before opening job pages",
+    "Every submitted application has 'Application sent' or an equivalent confirmation in the transcript",
+    "Overwrites prefilled years with the profile's verified_years values",
+    "Writes new rows with ArtifactData batch rather than republishing the tracker page",
+    "Records a runs/<date> document listing portals not searched",
+    "Final report names the applications, the Review items and what was not searched"
+   ]
+  },
+  {
+   "id": 2,
+   "prompt": "apply to java jobs posted today, remote or chicago, and also do the company site ones I queued on the tracker",
+   "expected_output": "Uses a 24-hour window, applies to High/Medium Easy Apply jobs, then handles Queued company-site jobs: asks for domain access once, applies only on guest-form ATSs, and leaves account-walled ones in Review.",
+   "files": [],
+   "assertions": [
+    "Uses f_TPR=r86400 (24 hours) on LinkedIn and fromage=1 on Indeed",
+    "Queries jobs where status == Queued before searching",
+    "Runs ats.py on each Queued apply URL",
+    "Asks for domain access for all company-site hosts in one message",
+    "Runs form_scan.js before filling any company-site form",
+    "Does not create an account or type a password on any site",
+    "Sets appliedBy to 'claude' on company-site jobs it submitted",
+    "Leaves Workday, iCIMS or Taleo jobs in Review with 'account required'"
+   ]
+  },
+  {
+   "id": 3,
+   "prompt": "can you just search and tell me what's out there this week, don't apply to anything",
+   "expected_output": "Search and vet only: a 7-day window (or the profile window with a note), tracker rows written as New or Review, no submissions.",
+   "files": [],
+   "assertions": [
+    "No application is submitted",
+    "New qualifying rows are written with status New, not Applied",
+    "Report lists the High and Medium jobs with links"
+   ]
+  },
+  {
+   "id": 4,
+   "prompt": "The job in Needs you that wants entertainment-industry experience: Apply anyway, I'm fine with answering 0.",
+   "expected_output": "Applies to the Review row, answers the entertainment question with 0 and every other question from the profile, and updates the row to Applied.",
+   "files": [],
+   "assertions": [
+    "Answers the entertainment-industry question with 0",
+    "Updates that job's tracker row to Applied with if_version from a fresh read",
+    "Does not change any other row"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,109 @@
+{
+ "ats": [
+  {
+   "url": "https://boards.greenhouse.io/acme/jobs/4012345",
+   "ats": "Greenhouse",
+   "claude_can_apply": true
+  },
+  {
+   "url": "https://job-boards.greenhouse.io/acme/jobs/4012345",
+   "ats": "Greenhouse",
+   "claude_can_apply": true
+  },
+  {
+   "url": "https://jobs.lever.co/acme/1a2b3c",
+   "ats": "Lever",
+   "claude_can_apply": true
+  },
+  {
+   "url": "https://jobs.ashbyhq.com/acme/9f8e",
+   "ats": "Ashby",
+   "claude_can_apply": true
+  },
+  {
+   "url": "https://apply.workable.com/acme/j/ABC123/",
+   "ats": "Workable",
+   "claude_can_apply": true
+  },
+  {
+   "url": "https://mastercard.wd1.myworkdayjobs.com/CorporateCareers/job/O-Fallon-Missouri/Software-Engineer_R-123",
+   "ats": "Workday",
+   "claude_can_apply": false
+  },
+  {
+   "url": "https://careers-amfam.icims.com/jobs/12345/job",
+   "ats": "iCIMS",
+   "claude_can_apply": false
+  },
+  {
+   "url": "https://tcs.taleo.net/careersection/2/jobdetail.ftl?job=123",
+   "ats": "Taleo",
+   "claude_can_apply": false
+  },
+  {
+   "url": "https://eeho.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/jobsearch/job/123",
+   "ats": "Oracle Cloud HCM",
+   "claude_can_apply": false
+  },
+  {
+   "url": "https://www.linkedin.com/jobs/view/4487344483/",
+   "ats": "LinkedIn",
+   "claude_can_apply": true
+  },
+  {
+   "url": "https://www.uline.jobs/",
+   "ats": "Unknown",
+   "claude_can_apply": null
+  }
+ ],
+ "years": {
+  "as_of": "2026-11-08",
+  "expect": {
+   "java": {
+    "answer_with": 8,
+    "resume_supported": 7.3,
+    "has_note": true
+   },
+   "spring boot": {
+    "answer_with": 8,
+    "resume_supported": 7.3,
+    "has_note": true
+   },
+   "microservices": {
+    "answer_with": 8,
+    "resume_supported": 3.4,
+    "has_note": true
+   },
+   "aws": {
+    "answer_with": 8,
+    "resume_supported": 3.4,
+    "has_note": true
+   },
+   "javascript": {
+    "answer_with": 5,
+    "resume_supported": 3.4,
+    "has_note": true
+   },
+   "python": {
+    "answer_with": 6,
+    "resume_supported": 1.4,
+    "has_note": true
+   },
+   "react": {
+    "answer_with": 5,
+    "resume_supported": 2.0,
+    "has_note": true
+   },
+   "angular": {
+    "answer_with": 3,
+    "resume_supported": 1.4,
+    "has_note": true
+   },
+   "typescript": {
+    "answer_with": 3,
+    "resume_supported": 3.4,
+    "has_note": false
+   }
+  }
+ }
+}

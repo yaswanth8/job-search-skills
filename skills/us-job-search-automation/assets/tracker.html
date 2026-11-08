@@ -1,0 +1,395 @@
+<!-- Job tracker template. Before publishing, replace {{TRACKER_NAME}} (e.g. "Priya's Job Tracker"), {{OWNER_LINE}} (e.g. "Priya S · Python backend · US citizen") and {{SEARCH_SCOPE}} (one sentence, e.g. "Remote anywhere in the US, or hybrid in Texas."). Publish with capabilities {db:{rules:[{path:"",read:"view",write:"admin"}]}, user:{}}. -->
+<title>{{TRACKER_NAME}}</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single working column. Summary strip, then the "Needs you" queue (the only thing that asks for action),
+   then pipeline charts, follow-ups, the full ledger and run history. Data tables scroll inside their own boxes. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --sunk:#e9edf3; --fg:#17202b; --muted:#566476; --faint:#8a96a6; --line:#d9dfe7;
+  --accent:#2457c5; --accent-ink:#ffffff; --accent-soft:#e3ebfa;
+  --good:#17784a; --good-soft:#dcf1e5; --warn:#8f5f00; --warn-soft:#f8ecd0; --bad:#a83a30; --bad-soft:#f6e0dd; --idle:#5f6b7a; --idle-soft:#e7ebf0;
+  --font-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-data:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10151c; --surface:#171e27; --sunk:#1d2530; --fg:#e4e9f0; --muted:#9daabb; --faint:#6f7c8d; --line:#2a3441;
+  --accent:#7aa5f8; --accent-ink:#0d1420; --accent-soft:#1c2c48;
+  --good:#5cc88f; --good-soft:#143224; --warn:#e2b04a; --warn-soft:#382c12; --bad:#ee8a80; --bad-soft:#3d201d; --idle:#9aa6b5; --idle-soft:#232c37; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151c; --surface:#171e27; --sunk:#1d2530; --fg:#e4e9f0; --muted:#9daabb; --faint:#6f7c8d; --line:#2a3441;
+  --accent:#7aa5f8; --accent-ink:#0d1420; --accent-soft:#1c2c48;
+  --good:#5cc88f; --good-soft:#143224; --warn:#e2b04a; --warn-soft:#382c12; --bad:#ee8a80; --bad-soft:#3d201d; --idle:#9aa6b5; --idle-soft:#232c37; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:14px;line-height:1.5;margin:0;
+  padding-block:28px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2{font-family:var(--font-display);font-weight:600;letter-spacing:-.005em;margin:0;text-wrap:balance}
+h1{font-size:30px;line-height:1.1}
+h2{font-size:19px}
+.eyebrow{font-family:var(--font-data);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.sub{color:var(--muted);margin:6px 0 0;max-width:72ch}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+.live{font-family:var(--font-data);font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.dot.on{background:var(--good)}
+.sec-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 16px;margin-bottom:12px}
+.sec-head p{margin:0;color:var(--muted);font-size:13px;max-width:70ch}
+
+/* summary strip */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.stat{background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat b{font-family:var(--font-display);font-size:34px;line-height:1;font-weight:600;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.stat.attn b{color:var(--warn)}
+.stat.go b{color:var(--good)}
+
+/* needs-you queue */
+.queue{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card.queued{border-style:dashed}
+.card .top{display:flex;gap:8px;justify-content:space-between;align-items:flex-start}
+.card h3{font-size:15px;margin:0;font-weight:600;line-height:1.3}
+.card .co{color:var(--muted);font-size:13px}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--font-data);font-size:11.5px;background:var(--sunk);color:var(--muted);border-radius:4px;padding:2px 7px;white-space:nowrap}
+.card p.why{margin:0;font-size:13px;color:var(--fg)}
+.reason{font-size:12px;font-weight:600;display:flex;gap:6px;align-items:center}
+.reason.call{color:var(--warn)}
+.reason.site{color:var(--accent)}
+.reason.queued{color:var(--good)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:4px}
+.btn{font:inherit;font-size:13px;font-weight:500;border-radius:6px;padding:7px 12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;line-height:1.2}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.quiet{border-color:transparent;color:var(--muted);padding-inline:8px}
+.btn:disabled{opacity:.55;cursor:default}
+.btn:focus-visible,select:focus-visible,input:focus-visible,th button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:20px;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:13px;z-index:20;max-width:calc(100% - 32px)}
+
+/* charts */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.panel h3{font-size:13px;font-weight:600;margin:0 0 12px}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(110px,38%) 1fr auto;gap:10px;align-items:center;font-size:13px}
+.bar .lab{color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .track{height:14px;background:var(--sunk);border-radius:2px;position:relative}
+.bar .fill{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:0 4px 4px 0;min-width:2px}
+.bar .num{font-family:var(--font-data);font-size:12.5px;font-variant-numeric:tabular-nums;min-width:3ch;text-align:right;color:var(--fg)}
+.bar .pct{color:var(--faint);margin-left:6px}
+.cols{display:flex;align-items:flex-end;gap:6px;height:140px;padding-top:8px;border-bottom:1px solid var(--line)}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;min-width:0}
+.col .v{font-family:var(--font-data);font-size:11px;color:var(--fg)}
+.col .stick{width:min(28px,70%);background:var(--accent);border-radius:4px 4px 0 0;min-height:0}
+.col.zero .stick{background:transparent}
+.xlabels{display:flex;gap:6px;margin-top:6px}
+.xlabels span{flex:1;text-align:center;font-family:var(--font-data);font-size:10.5px;color:var(--muted);min-width:0;overflow:hidden;white-space:nowrap}
+.note{font-size:12px;color:var(--muted);margin:10px 0 0}
+
+/* table */
+.bar-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.bar-filters input,.bar-filters select{font:inherit;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-width:0}
+.bar-filters input{flex:1 1 220px}
+.count{font-family:var(--font-data);font-size:12px;color:var(--muted)}
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:1180px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap;background:var(--surface);position:sticky;top:0}
+th button{all:unset;cursor:pointer}
+th button::after{content:" \2195";opacity:.35}
+tbody tr:last-child td{border-bottom:0}
+td.co{min-width:170px}
+td.co b{font-weight:600;display:block}
+td.co small{color:var(--muted);font-size:12px}
+td.role{min-width:200px}
+td.mono{font-family:var(--font-data);font-size:12.5px;white-space:nowrap}
+td.notes{min-width:280px;max-width:420px;color:var(--muted);font-size:13px}
+td a{color:var(--accent)}
+.pill{display:inline-flex;gap:5px;align-items:center;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill::before{font-family:var(--font-data);font-weight:600}
+.s-Applied{background:var(--good-soft);color:var(--good)} .s-Applied::before{content:"✓"}
+.s-Review{background:var(--warn-soft);color:var(--warn)} .s-Review::before{content:"!"}
+.s-Queued{background:var(--accent-soft);color:var(--accent)} .s-Queued::before{content:"→"}
+.s-New{background:var(--accent-soft);color:var(--accent)} .s-New::before{content:"+"}
+.s-Skipped{background:var(--idle-soft);color:var(--idle)} .s-Skipped::before{content:"–"}
+.s-Declined{background:var(--idle-soft);color:var(--idle)} .s-Declined::before{content:"×"}
+.f-High{color:var(--good);font-weight:600} .f-Medium{color:var(--warn);font-weight:600} .f-Low{color:var(--bad);font-weight:600}
+.sp-Verified{color:var(--good)} .sp-Excluded{color:var(--bad)} .sp-Needs{color:var(--muted)}
+select.stage{font:inherit;font-size:12.5px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+.runs{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.run{background:var(--surface);padding:12px 16px;display:grid;grid-template-columns:150px 1fr;gap:4px 16px}
+.run .when{font-family:var(--font-data);font-size:12.5px;color:var(--muted)}
+.run .what{font-size:13.5px}
+.run .gap{font-size:12.5px;color:var(--warn);grid-column:2}
+.foot{color:var(--muted);font-size:12.5px;max-width:95ch;margin:0}
+@media (max-width:560px){.run{grid-template-columns:1fr}.run .gap{grid-column:1}h1{font-size:26px}.bar{grid-template-columns:minmax(90px,40%) 1fr auto}}
+@media (prefers-reduced-motion:no-preference){.fill,.stick{transition:width .3s ease,height .3s ease}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">{{OWNER_LINE}}</div>
+      <h1>{{TRACKER_NAME}}</h1>
+      <p class="sub">{{SEARCH_SCOPE}} Claude searches LinkedIn, Indeed and Dice, applies where it can, and leaves company-site jobs and judgment calls for you below.</p>
+    </div>
+    <div class="live"><span class="dot" id="dot"></span><span id="liveText">Connecting to the tracker…</span></div>
+  </header>
+
+  <section class="stats" id="stats" aria-label="Summary"></section>
+
+  <section aria-labelledby="needs-h">
+    <div class="sec-head"><h2 id="needs-h">Needs you</h2><p>Company-site applications and requirements only you can judge. <b>Let Claude apply</b> queues a job for the next run; account-based sites (Workday, iCIMS, Taleo) need you to apply yourself.</p></div>
+    <div class="queue" id="queue"></div>
+  </section>
+
+  <section aria-labelledby="pipe-h">
+    <div class="sec-head"><h2 id="pipe-h">Pipeline</h2><p>Set a stage on any applied job in the table to grow the response rows.</p></div>
+    <div class="grid2">
+      <div class="panel"><h3>From reviewed to offer</h3><div class="bars" id="funnel"></div></div>
+      <div class="panel"><h3>Why jobs were skipped</h3><div class="bars" id="reasons"></div></div>
+      <div class="panel"><h3>Applications per day, last 14 days</h3><div id="daily"></div></div>
+      <div class="panel"><h3>Where jobs came from</h3><div class="bars" id="sources"></div><p class="note" id="sourceNote"></p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="fu-h">
+    <div class="sec-head"><h2 id="fu-h">Follow-ups</h2><p>Applied 7 or more days ago with no response recorded. A short note to the recruiter often moves these.</p></div>
+    <div id="followups"></div>
+  </section>
+
+  <section aria-labelledby="all-h">
+    <div class="sec-head"><h2 id="all-h">All jobs</h2><span class="count" id="count"></span></div>
+    <div class="bar-filters">
+      <input id="q" type="search" placeholder="Search company, role, notes" aria-label="Search jobs">
+      <select id="fstatus" aria-label="Status"><option value="">All statuses</option><option>Applied</option><option>Review</option><option>Queued</option><option>New</option><option>Skipped</option><option>Declined</option></select>
+      <select id="ffit" aria-label="Fit"><option value="">All fits</option><option>High</option><option>Medium</option><option>Low</option></select>
+      <select id="fwork" aria-label="Work type"><option value="">Remote, hybrid, on-site</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select>
+      <select id="fsource" aria-label="Source"><option value="">All sources</option></select>
+    </div>
+    <div class="tablebox">
+      <table>
+        <thead><tr id="head"></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+      <div id="tempty" class="empty" hidden style="border:0">No jobs match these filters.</div>
+    </div>
+  </section>
+
+  <section aria-labelledby="runs-h">
+    <div class="sec-head"><h2 id="runs-h">Runs</h2><p>What each search covered, and what it could not reach.</p></div>
+    <div class="runs" id="runs"></div>
+  </section>
+
+  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor (for example Dice's "Able to Sponsor"); <b>Needs Confirmation</b> means it says nothing either way; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure; nothing is estimated. Applied means Claude saw a confirmation screen (or you pressed <i>I applied</i>). Rows live in this page's shared database; Claude adds them after each run, and your buttons and stage changes save there too.</p>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const safeUrl = u => { try { const x = new URL(u); return (x.protocol === "https:" || x.protocol === "http:") ? x.href : ""; } catch { return ""; } };
+  const today = () => new Date().toISOString().slice(0, 10);
+  const daysSince = d => d ? Math.floor((Date.now() - new Date(d + "T12:00:00").getTime()) / 864e5) : null;
+  const STAGES = ["", "Screening", "Interview", "Offer", "Rejected", "Withdrawn", "No response"];
+  const RESPONDED = ["Screening", "Interview", "Offer", "Rejected"];
+
+  let JOBS = [], RUNS = [], db = null, canWrite = true, loaded = false, sortKey = "updatedAt", sortDir = -1;
+  const pending = new Set();
+
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 3200); }
+  function setLive(on, text) { $("dot").className = "dot" + (on ? " on" : ""); $("liveText").textContent = text; }
+
+  // ---------------------------------------------------------------- writes
+  async function save(id, patch, okMsg) {
+    if (!db || pending.has(id)) return;
+    pending.add(id); render();
+    try {
+      await db.doc("jobs/" + id).update(Object.assign({ updatedAt: today() }, patch));
+      toast(okMsg);
+    } catch (e) {
+      if (e && e.code === "invalid_argument") { canWrite = false; toast("Only the tracker's owner can change jobs."); }
+      else if (e && e.code === "unavailable") toast("Couldn't save just now. Try again in a moment.");
+      else toast("Couldn't save: " + ((e && e.message) || "unknown error"));
+    } finally { pending.delete(id); render(); }
+  }
+  const act = {
+    applied: j => save(j.id, { status: "Applied", appliedAt: today(), appliedBy: "you" }, "Marked as applied."),
+    queue: j => save(j.id, { status: "Queued" }, "Queued. Claude applies on the next run."),
+    unqueue: j => save(j.id, { status: "Review" }, "Moved back to Needs you."),
+    decline: j => save(j.id, { status: "Declined" }, "Dismissed. It won't come back."),
+    stage: (j, v) => save(j.id, { stage: v }, v ? "Stage set to " + v + "." : "Stage cleared."),
+  };
+
+  // ---------------------------------------------------------------- pieces
+  const pill = s => `<span class="pill s-${esc(s)}">${esc(s)}</span>`;
+  function stats() {
+    const n = s => JOBS.filter(j => j.status === s).length;
+    const week = JOBS.filter(j => j.status === "Applied" && daysSince(j.appliedAt) !== null && daysSince(j.appliedAt) < 7).length;
+    const inProc = JOBS.filter(j => ["Screening", "Interview", "Offer"].includes(j.stage)).length;
+    const items = [
+      [n("Applied"), "Applied", `${week} in the last 7 days`, "go"],
+      [n("Review"), "Need you", "company-site or your call", n("Review") ? "attn" : ""],
+      [n("Queued"), "Queued for Claude", "applied on the next run", ""],
+      [inProc, "In process", "screening, interview or offer", ""],
+      [JOBS.length, "Reviewed", `${n("Skipped")} skipped`, ""],
+    ];
+    $("stats").innerHTML = items.map(([v, l, s, c]) => `<div class="stat ${c}"><span>${l}</span><b>${loaded ? v : "–"}</b><span>${loaded ? s : "&nbsp;"}</span></div>`).join("");
+  }
+
+  function queue() {
+    const items = JOBS.filter(j => j.status === "Review" || j.status === "Queued")
+      .sort((a, b) => (a.status === "Queued") - (b.status === "Queued") || (a.fit === "High" ? -1 : 0) - (b.fit === "High" ? -1 : 0));
+    const el = $("queue");
+    if (!loaded) { el.innerHTML = `<div class="empty">Loading the jobs waiting on you…</div>`; return; }
+    if (!items.length) { el.innerHTML = `<div class="empty">Nothing waiting on you. Company-site jobs and judgment calls appear here after each run.</div>`; return; }
+    el.innerHTML = items.map(j => {
+      const busy = pending.has(j.id) || !canWrite ? "disabled" : "";
+      const url = safeUrl(j.applyUrl) || safeUrl(j.link);
+      const accountWall = j.claudeCanApply === false;
+      let reason, buttons;
+      if (j.status === "Queued") {
+        reason = `<span class="reason queued">→ Queued: Claude applies on the next run</span>`;
+        buttons = `${url ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Open posting</a>` : ""}<button class="btn quiet" data-a="unqueue" data-id="${esc(j.id)}" ${busy}>Undo</button>`;
+      } else if (j.reviewReason === "needs-call") {
+        reason = `<span class="reason call">! Your call</span>`;
+        buttons = `<button class="btn primary" data-a="queue" data-id="${esc(j.id)}" ${busy}>Apply anyway</button>${url ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">Open posting</a>` : ""}<button class="btn quiet" data-a="decline" data-id="${esc(j.id)}" ${busy}>Not interested</button>`;
+      } else {
+        reason = `<span class="reason site">↗ Applies on the company site${j.ats && j.ats !== "Unknown" ? " · " + esc(j.ats) : ""}</span>`;
+        buttons = `${url ? `<a class="btn ${accountWall ? "primary" : ""}" href="${esc(url)}" target="_blank" rel="noopener">Open posting</a>` : ""}<button class="btn" data-a="applied" data-id="${esc(j.id)}" ${busy}>I applied</button>${accountWall ? "" : `<button class="btn primary" data-a="queue" data-id="${esc(j.id)}" ${busy}>Let Claude apply</button>`}<button class="btn quiet" data-a="decline" data-id="${esc(j.id)}" ${busy}>Not interested</button>`;
+      }
+      return `<article class="card ${j.status === "Queued" ? "queued" : ""}">
+        <div class="top"><div><h3>${esc(j.role)}</h3><div class="co">${esc(j.company)}</div></div>${j.fit ? `<span class="f-${esc(j.fit)}" style="font-size:12px">${esc(j.fit)} fit</span>` : ""}</div>
+        <div class="meta"><span class="chip">${esc(j.where)}</span><span class="chip">${esc(j.pay)}</span><span class="chip">${esc(j.type)}</span><span class="chip">${esc(j.source)}</span></div>
+        ${reason}
+        <p class="why">${esc(j.notes)}</p>
+        ${accountWall && j.status !== "Queued" ? `<p class="note" style="margin:0">${esc(j.ats)} needs a candidate account, so this one is yours to submit.</p>` : ""}
+        <div class="actions">${buttons}</div>
+      </article>`;
+    }).join("");
+  }
+
+  function bars(el, rows, total) {
+    const max = Math.max(1, ...rows.map(r => r[1]));
+    el.innerHTML = rows.map(([lab, v]) => `<div class="bar" title="${esc(lab)}: ${v}${total ? ` (${Math.round(v / total * 100)}%)` : ""}">
+      <span class="lab">${esc(lab)}</span><span class="track"><span class="fill" style="width:${v ? (v / max * 100).toFixed(1) : 0}%"></span></span>
+      <span class="num">${v}${total ? `<span class="pct">${Math.round(v / total * 100)}%</span>` : ""}</span></div>`).join("");
+  }
+
+  function charts() {
+    if (!loaded) { ["funnel", "reasons", "sources"].forEach(id => $(id).innerHTML = ""); $("daily").innerHTML = ""; return; }
+    const applied = JOBS.filter(j => j.status === "Applied");
+    const qualified = JOBS.filter(j => ["Applied", "Review", "Queued", "New"].includes(j.status)).length;
+    bars($("funnel"), [
+      ["Reviewed", JOBS.length], ["Worth applying", qualified], ["Applied", applied.length],
+      ["Responded", applied.filter(j => RESPONDED.includes(j.stage)).length],
+      ["Interviewing", applied.filter(j => ["Interview", "Offer"].includes(j.stage)).length],
+      ["Offers", applied.filter(j => j.stage === "Offer").length],
+    ], JOBS.length);
+    const rc = {};
+    JOBS.filter(j => j.status === "Skipped").forEach(j => rc[j.category || "Other"] = (rc[j.category || "Other"] || 0) + 1);
+    const rrows = Object.entries(rc).sort((a, b) => b[1] - a[1]);
+    rrows.length ? bars($("reasons"), rrows, JOBS.filter(j => j.status === "Skipped").length) : $("reasons").innerHTML = `<p class="note">No skipped jobs yet.</p>`;
+    const src = {};
+    JOBS.forEach(j => { const s = (j.source || "Other").replace(/ Easy Apply| Apply/, ""); (src[s] = src[s] || { all: 0, applied: 0 }).all++; if (j.status === "Applied") src[s].applied++; });
+    bars($("sources"), Object.entries(src).sort((a, b) => b[1].all - a[1].all).map(([k, v]) => [k, v.all]));
+    $("sourceNote").textContent = Object.entries(src).map(([k, v]) => `${k}: ${v.applied} applied`).join(" · ");
+    const days = [...Array(14)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 13 + i); return d.toISOString().slice(0, 10); });
+    const per = days.map(d => applied.filter(j => j.appliedAt === d).length);
+    const max = Math.max(1, ...per);
+    $("daily").innerHTML = `<div class="cols">${per.map((v, i) => `<div class="col ${v ? "" : "zero"}" title="${days[i]}: ${v} application${v === 1 ? "" : "s"}">${v ? `<span class="v">${v}</span>` : ""}<span class="stick" style="height:${(v / max * 100).toFixed(1)}%"></span></div>`).join("")}</div>
+      <div class="xlabels">${days.map((d, i) => `<span>${i % 2 === 1 || i === 13 ? d.slice(5).replace("-", "/") : ""}</span>`).join("")}</div>
+      <p class="note">${applied.length} total · ${applied.filter(j => j.appliedBy === "you").length} by you, ${applied.filter(j => j.appliedBy !== "you").length} by Claude</p>`;
+  }
+
+  function followups() {
+    const el = $("followups");
+    if (!loaded) { el.innerHTML = ""; return; }
+    const due = JOBS.filter(j => j.status === "Applied" && !j.stage && daysSince(j.appliedAt) >= 7).sort((a, b) => a.appliedAt < b.appliedAt ? -1 : 1);
+    if (!due.length) {
+      const next = JOBS.filter(j => j.status === "Applied" && !j.stage && j.appliedAt).map(j => j.appliedAt).sort()[0];
+      el.innerHTML = `<div class="empty">No follow-ups due.${next ? ` The first ones come due on ${esc(new Date(new Date(next + "T12:00:00").getTime() + 7 * 864e5).toISOString().slice(0, 10))}.` : ""}</div>`;
+      return;
+    }
+    el.innerHTML = `<div class="tablebox"><table style="min-width:640px"><thead><tr><th>Company</th><th>Role</th><th>Applied</th><th>Days</th><th>Stage</th></tr></thead><tbody>${due.map(j =>
+      `<tr><td class="co"><b>${esc(j.company)}</b></td><td>${safeUrl(j.link) ? `<a href="${esc(safeUrl(j.link))}" target="_blank" rel="noopener">${esc(j.role)}</a>` : esc(j.role)}</td><td class="mono">${esc(j.appliedAt)}</td><td class="mono">${daysSince(j.appliedAt)}</td><td>${stageSelect(j)}</td></tr>`).join("")}</tbody></table></div>`;
+  }
+
+  function stageSelect(j) {
+    return `<select class="stage" data-id="${esc(j.id)}" aria-label="Stage for ${esc(j.company)}" ${pending.has(j.id) || !canWrite ? "disabled" : ""}>${STAGES.map(s => `<option value="${s}" ${(j.stage || "") === s ? "selected" : ""}>${s || "Awaiting"}</option>`).join("")}</select>`;
+  }
+
+  const COLS = [["company", "Company"], ["role", "Role"], ["where", "Location"], ["type", "Type"], ["pay", "Pay"], ["fit", "Fit"], ["spons", "Sponsorship"], ["status", "Status"], ["stage", "Stage"], ["updatedAt", "Updated"], ["notes", "Notes"]];
+  $("head").innerHTML = COLS.map(([k, l]) => `<th><button type="button" data-k="${k}">${l}</button></th>`).join("");
+  $("head").addEventListener("click", e => { const k = e.target.dataset && e.target.dataset.k; if (!k) return; sortDir = sortKey === k ? -sortDir : 1; sortKey = k; table(); });
+
+  function table() {
+    const q = $("q").value.toLowerCase(), s = $("fstatus").value, f = $("ffit").value, w = $("fwork").value, src = $("fsource").value;
+    let rows = JOBS.filter(j => (!q || [j.company, j.vendor, j.role, j.notes, j.where].join(" ").toLowerCase().includes(q)) && (!s || j.status === s) && (!f || j.fit === f) && (!w || j.workType === w) && (!src || j.source === src));
+    rows = rows.slice().sort((a, b) => String(a[sortKey] ?? "").localeCompare(String(b[sortKey] ?? "")) * sortDir);
+    $("count").textContent = loaded ? `${rows.length} of ${JOBS.length}` : "";
+    $("body").innerHTML = rows.map(j => {
+      const link = safeUrl(j.link);
+      return `<tr>
+        <td class="co"><b>${esc(j.company)}</b>${j.vendor && !/^(none|not stated)/i.test(j.vendor) ? `<small>via ${esc(j.vendor)}</small>` : ""}</td>
+        <td class="role">${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">${esc(j.role)}</a>` : esc(j.role)}<br><small class="count">${esc(j.source)}</small></td>
+        <td>${esc(j.where)}</td><td>${esc(j.type)}</td><td class="mono">${esc(j.pay)}</td>
+        <td>${j.fit ? `<span class="f-${esc(j.fit)}">${esc(j.fit)}</span>` : ""}</td>
+        <td class="sp-${esc((j.spons || "").split(" ")[0])}">${esc(j.spons)}</td>
+        <td>${pill(j.status)}${j.status === "Skipped" && j.category ? `<br><small class="count">${esc(j.category)}</small>` : ""}${j.appliedBy === "you" ? `<br><small class="count">by you</small>` : ""}</td>
+        <td>${j.status === "Applied" ? stageSelect(j) : ""}</td>
+        <td class="mono">${esc(j.updatedAt || j.foundAt || "")}</td>
+        <td class="notes">${esc(j.notes)}</td></tr>`;
+    }).join("");
+    $("tempty").hidden = !loaded || rows.length > 0;
+  }
+
+  function runs() {
+    const el = $("runs");
+    if (!loaded) { el.innerHTML = `<div class="run"><span class="when">…</span><span class="what">Loading run history</span></div>`; return; }
+    if (!RUNS.length) { el.innerHTML = `<div class="run"><span class="when">—</span><span class="what">No runs recorded yet.</span></div>`; return; }
+    el.innerHTML = RUNS.map(r => `<div class="run"><span class="when">${esc(r.date)}${r.label ? " · " + esc(r.label) : ""}</span>
+      <span class="what">${esc((r.portals || []).join(", "))}: ${esc(r.found ?? "?")} reviewed, ${esc(r.applied ?? 0)} applied, ${esc(r.review ?? 0)} for you, ${esc(r.skipped ?? 0)} skipped. ${esc(r.summary || "")}</span>
+      ${(r.notSearched || []).map(n => `<span class="gap">Not searched: ${esc(n.portal)}. ${esc(n.why)}</span>`).join("")}</div>`).join("");
+  }
+
+  function render() { stats(); queue(); charts(); followups(); table(); runs(); }
+
+  document.addEventListener("click", e => {
+    const b = e.target.closest("button[data-a]"); if (!b || b.disabled) return;
+    const j = JOBS.find(x => x.id === b.dataset.id); if (j) act[b.dataset.a](j);
+  });
+  document.addEventListener("change", e => {
+    if (e.target.matches("select.stage")) { const j = JOBS.find(x => x.id === e.target.dataset.id); if (j) act.stage(j, e.target.value); }
+  });
+  ["q", "fstatus", "ffit", "fwork", "fsource"].forEach(id => $(id).addEventListener("input", table));
+
+  render();
+
+  // ---------------------------------------------------------------- data
+  (async () => {
+    if (!window.claude || !window.claude.use) { setLive(false, "Open this page on claude.ai to load the tracker."); loaded = true; render(); return; }
+    db = await window.claude.use("db");
+    if (!db) { setLive(false, "Sign in to claude.ai to see the tracker."); loaded = true; render(); return; }
+    window.claude.use("user").then(async u => {
+      if (!u) return;
+      try { const w = await u.can("data.write"); const ed = await u.canEdit(); if (w === false || ed === false) { canWrite = false; render(); } } catch {}
+    });
+    const timer = setTimeout(() => setLive(false, "Can't reach the tracker yet. Showing what has loaded."), 10000);
+    db.collection("jobs").onSnapshot(snap => {
+      JOBS = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
+      const srcs = [...new Set(JOBS.map(j => j.source).filter(Boolean))].sort();
+      const sel = $("fsource"), cur = sel.value;
+      sel.innerHTML = `<option value="">All sources</option>` + srcs.map(s => `<option ${s === cur ? "selected" : ""}>${esc(s)}</option>`).join("");
+      if (!snap.metadata.fromCache) { clearTimeout(timer); setLive(true, `Live · ${JOBS.length} jobs`); }
+      loaded = true; render();
+    }, err => { clearTimeout(timer); loaded = true; setLive(false, err && err.code === "revoked" ? "Access to the tracker ended." : "The tracker stopped updating. Reload to reconnect."); render(); });
+    db.collection("runs").orderBy("date", "desc").limit(5).onSnapshot(snap => { RUNS = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)); render(); }, () => {});
+  })();
+})();
+</script>

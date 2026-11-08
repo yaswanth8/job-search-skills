@@ -1,0 +1,1023 @@
+{
+ "about": "Vetting back-test from real job postings (Nov 2026) against evals/fixture_profile.json, a Java full-stack developer on an H-1B transfer in Illinois. Descriptions are excerpted or condensed. Cases marked synthetic test a rule no real posting exercised. Once you have run the skill a few times, add cases from your own postings with your own profile's expected outcomes.",
+ "cases": [
+  {
+   "id": "card-dotnet",
+   "mode": "card",
+   "posting": {
+    "title": ".Net Software Engineer / B2B / SaaS",
+    "company": "Motion Recruitment",
+    "location": "Chicago, IL (Hybrid)"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Role mismatch"
+    ]
+   }
+  },
+  {
+   "id": "card-salesforce-lead",
+   "mode": "card",
+   "posting": {
+    "title": "Salesforce Technical Lead - Sales Order Management",
+    "company": "Ascii Group, LLC",
+    "location": "Peoria, IL"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority",
+     "Role mismatch"
+    ]
+   }
+  },
+  {
+   "id": "card-servicenow-manager",
+   "mode": "card",
+   "posting": {
+    "title": "ServiceNow Delivery Manager",
+    "company": "Arkhya Tech Inc.",
+    "location": "Springfield, Illinois Metropolitan Area (Hybrid)"
+   },
+   "expect": {
+    "action": "skip"
+   }
+  },
+  {
+   "id": "card-bayone",
+   "mode": "card",
+   "posting": {
+    "title": "Senior Java Software Engineer",
+    "company": "BayOne Solutions",
+    "location": "United States (Remote)",
+    "pay": "$80/hr - $85/hr"
+   },
+   "expect": {
+    "action": "open"
+   }
+  },
+  {
+   "id": "card-kforce-tx-hybrid",
+   "mode": "card",
+   "posting": {
+    "title": "Java Backend Software Engineer",
+    "company": "Kforce Inc",
+    "location": "Roanoke, TX (Hybrid)",
+    "pay": "$64/hr - $74/hr"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Location"
+    ]
+   }
+  },
+  {
+   "id": "card-cbts-oh-onsite",
+   "mode": "card",
+   "posting": {
+    "title": "Senior Java Full Stack Developer",
+    "company": "CBTS",
+    "location": "Cincinnati, OH (On-site)",
+    "pay": "$45/yr - $53/yr"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Location",
+     "Pay below floor"
+    ]
+   }
+  },
+  {
+   "id": "card-ags",
+   "mode": "card",
+   "posting": {
+    "title": "Full Stack Java Engineer",
+    "company": "AGS",
+    "location": "United States (Remote)",
+    "pay": "$130K/yr + Bonus"
+   },
+   "expect": {
+    "action": "open"
+   }
+  },
+  {
+   "id": "card-cleared",
+   "mode": "card",
+   "posting": {
+    "title": "Senior Fullstack Developer - CLEARED",
+    "company": "Jobgether",
+    "location": "United States (Remote)"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Clearance"
+    ]
+   }
+  },
+  {
+   "id": "card-wi-resident-dotnet",
+   "mode": "card",
+   "posting": {
+    "title": "Candidates must be WI residents || Certified Microsoft .NET Web Developer",
+    "company": "VLS Systems Inc",
+    "location": "Madison, WI (Remote)"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Role mismatch",
+     "Location"
+    ]
+   }
+  },
+  {
+   "id": "card-entry-level",
+   "mode": "card",
+   "posting": {
+    "title": "Entry Level Java Developer",
+    "company": "BeaconFire Inc.",
+    "location": "Delaware, United States (Hybrid)",
+    "pay": "$62K/yr - $80K/yr"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority",
+     "Location",
+     "Pay below floor"
+    ]
+   }
+  },
+  {
+   "id": "card-cafe",
+   "mode": "card",
+   "posting": {
+    "title": "Café Manager – Double Rainbow @ Autistry Studios",
+    "company": "Autistry Studios Incorporated",
+    "location": "San Rafael, CA (Hybrid)"
+   },
+   "expect": {
+    "action": "skip"
+   }
+  },
+  {
+   "id": "card-planet-madison",
+   "mode": "card",
+   "posting": {
+    "title": "Java Developer",
+    "company": "The Planet Group",
+    "location": "Madison, WI (Hybrid)",
+    "pay": "$55/hr - $60/hr"
+   },
+   "expect": {
+    "action": "open"
+   }
+  },
+  {
+   "id": "card-flexcompute",
+   "mode": "card",
+   "posting": {
+    "title": "Senior Backend Software Engineer",
+    "company": "Flexcompute",
+    "location": "Madison, WI (On-site)"
+   },
+   "expect": {
+    "action": "open"
+   }
+  },
+  {
+   "id": "card-jpm-lead",
+   "mode": "card",
+   "posting": {
+    "title": "Lead Software Engineer",
+    "company": "JPMorganChase",
+    "location": "Chicago, IL 60603",
+    "pay": "$137,750 - $185,000 a year"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority"
+    ]
+   }
+  },
+  {
+   "id": "card-low-pay",
+   "mode": "card",
+   "posting": {
+    "title": "Software Engineer",
+    "company": "Seymour of Sycamore",
+    "location": "Sycamore, IL 60178",
+    "pay": "$55,000 - $85,000 a year"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Pay below floor"
+    ]
+   }
+  },
+  {
+   "id": "card-associate",
+   "mode": "card",
+   "posting": {
+    "title": "Associate Software Engineer",
+    "company": "Constellation Inc",
+    "location": "Washington, DC (Remote)"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority"
+    ]
+   }
+  },
+  {
+   "id": "card-curam",
+   "mode": "card",
+   "posting": {
+    "title": "Curam Developer",
+    "company": "InstantServe LLC",
+    "location": "North Carolina, United States (Remote)",
+    "pay": "$60/hr - $70/hr"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Role mismatch"
+    ]
+   }
+  },
+  {
+   "id": "brooksource",
+   "mode": "full",
+   "posting": {
+    "title": "Full Stack Engineer",
+    "company": "Brooksource",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "Contract",
+    "pay": "$60/hr",
+    "age_hours": 30,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/4487344483/",
+    "description": "CIAM Full Stack Engineer. Ongoing contract, 100% remote. Support a CIAM platform migration from Azure AD B2C to Ping Identity for a large national retail client with Deloitte. Required: 6+ years in software engineering; JavaScript or TypeScript with React or Angular; backend development in Java, Node.js, or Python; REST APIs; SQL and NoSQL databases; cloud platforms; CI/CD and automated testing. Preferred: CIAM experience, Ping Identity experience, retail industry background. This role requires true full stack capability."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "High",
+     "Medium"
+    ]
+   }
+  },
+  {
+   "id": "hireclout",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Full Stack Software Engineer",
+    "company": "HIRECLOUT",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "$150K/yr - $200K/yr",
+    "age_hours": 48,
+    "apply_type": "easy_apply",
+    "description": "Health and well-being technology client. Modernization effort with AI-led development practices: decompose work, write specs, let AI agents build, validate output. Must have 5+ years of full stack development experience. Deep server-side experience in a modern language such as Java, Python, C#, Kotlin, or Go, with a track record of owning services end to end. Experience designing APIs and data models: REST contracts, versioning, OAuth2/OIDC, schema design, and SQL."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "Medium",
+     "High"
+    ]
+   }
+  },
+  {
+   "id": "bayone",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Java Software Engineer",
+    "company": "BayOne Solutions",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "pay": "$80/hr - $85/hr",
+    "age_hours": 40,
+    "apply_type": "easy_apply",
+    "description": "Senior Java Backend Engineer, remote, rate $80-85/hr on W2. Strong hands-on Java backend development; distributed systems, microservices, system design. Requirements added by the job poster: 2+ years of Entertainment Providers experience; 8+ years of work experience with Java; 5+ years of work experience with Microservices; 3+ years of work experience with Production Support."
+   },
+   "expect": {
+    "action": "needs_call"
+   }
+  },
+  {
+   "id": "attune",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Software Engineer",
+    "company": "Attune",
+    "location": "Chicago, IL",
+    "work_type": "Hybrid",
+    "employment_type": "Full-Time",
+    "pay": "$125,000.00/yr - $200,000.00/yr",
+    "age_hours": 48,
+    "apply_type": "easy_apply",
+    "description": "Senior / Staff Product Engineer, Agentic Voice (Healthcare). 7+ years of professional software development experience. Experience with LangGraph, LangChain, MCP, LLMs (RAG, fine-tuning, scaled deployments). Proficiency in Typescript, React / NextJs, Python, Java. Full-stack solutions with websockets, SSE, REST APIs. Strong backend skills with Java + Spring, Python. Data modeling; Redis and Postgres a plus. AWS EKS and Kubernetes. Technical leadership and mentoring."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch",
+     "Seniority"
+    ]
+   }
+  },
+  {
+   "id": "alpha-recon",
+   "mode": "full",
+   "posting": {
+    "title": "Full Stack Engineer",
+    "company": "Alpha Recon Technologies",
+    "location": "Colorado, United States",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "age_hours": 50,
+    "apply_type": "easy_apply",
+    "description": "Applicants must be fluent .NET and C#, Dbs, APIs, and preferably Angular. Willing to work for only stock options initially; salary based on company milestones."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch",
+     "Pay below floor"
+    ]
+   }
+  },
+  {
+   "id": "mclean",
+   "mode": "full",
+   "posting": {
+    "title": "Software Engineer (Java Backend)",
+    "company": "McLean Forrester LLC",
+    "location": "Illinois",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "$100,000 - $120,000 a year",
+    "age_hours": 20,
+    "apply_type": "indeed_apply",
+    "description": "Java and Spring Boot backend services, 3+ years. Secret Clearance required at time of hire."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Clearance"
+    ]
+   }
+  },
+  {
+   "id": "precision",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Java Developer",
+    "company": "Precision Technologies",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "age_hours": 30,
+    "apply_type": "easy_apply",
+    "description": "Senior Java developer, Spring Boot microservices, React. W2 only, no C2C. H-1B candidates are not eligible."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Sponsorship / authorization"
+    ]
+   }
+  },
+  {
+   "id": "prominent",
+   "mode": "full",
+   "posting": {
+    "title": "Java Developer (Spring WebFlux)",
+    "company": "Prominent Technology",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "Java developer with Spring WebFlux. Direct W2 hourly, no C2C. No visa sponsorship (current or future)."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Sponsorship / authorization"
+    ]
+   }
+  },
+  {
+   "id": "uline-company-site",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Software Developer - Java",
+    "company": "Uline",
+    "location": "Waukegan, IL",
+    "work_type": "On-site",
+    "employment_type": "Full-Time",
+    "pay": "$96,000 - $148,000 a year",
+    "age_hours": 24,
+    "apply_type": "company_site",
+    "apply_url": "https://www.uline.jobs/",
+    "description": "Java full-stack development with Spring, 7+ years. Uline does not participate in the H-1B lottery."
+   },
+   "expect": {
+    "action": "review",
+    "flag_contains": "lottery"
+   }
+  },
+  {
+   "id": "hexacorp",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Java Developer",
+    "company": "Hexacorp",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "pay": "$70-$92/hr",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "15+ years of Java, 10 years of PostgreSQL, JSF/PrimeFaces."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority",
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "swi",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Java Application Developer",
+    "company": "SWI",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "$70-$80/hr",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "15+ years of Java and 5+ years of JSF/PrimeFaces."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority",
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "blackstraw",
+   "mode": "full",
+   "posting": {
+    "title": "Technical Lead – Java",
+    "company": "Blackstraw LLC",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "12+ years, Java, team handling."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority"
+    ]
+   }
+  },
+  {
+   "id": "excelraise",
+   "mode": "full",
+   "posting": {
+    "title": "Software Developer (Java) Consultant",
+    "company": "Excelraise LLC",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "pay": "$90-$100/hr",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "Duties are data engineering and data architecture: Python and data modeling."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "resourcesoft",
+   "mode": "full",
+   "posting": {
+    "title": "Software Developer (Java) – Consultant",
+    "company": "Resourcesoft, Inc.",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "Java developer. Requires 4+ years of data engineering."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "mprogen",
+   "mode": "full",
+   "posting": {
+    "title": "Java with BPM",
+    "company": "mProgen",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "Java with BPM, Camunda or jBPM experience, 8+ years."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "spar",
+   "mode": "full",
+   "posting": {
+    "title": "Sr Java Developer/Lead (Payments Platform)",
+    "company": "Spar Information Systems",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "10-15+ years, Java, Spring WebFlux, payments. W2 or C2C."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority"
+    ]
+   }
+  },
+  {
+   "id": "rivago-stale",
+   "mode": "full",
+   "posting": {
+    "title": "Java Developer",
+    "company": "Rivago Infotech Inc",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "pay": "$55-$60/hr",
+    "age_hours": 192,
+    "apply_type": "dice",
+    "description": "Java, Struts, J2EE. Able to Sponsor."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stale / duplicate"
+    ]
+   }
+  },
+  {
+   "id": "sundial-wi-resident",
+   "mode": "full",
+   "posting": {
+    "title": "WI Resident Java Developer 4",
+    "company": "Sundial Software Corp",
+    "location": "Madison, WI",
+    "work_type": "On-site",
+    "employment_type": "Full-Time",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "Java, Spring Boot, Angular, Kafka, Redis, 8+ years."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Location"
+    ]
+   }
+  },
+  {
+   "id": "sgs-integration",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Software Engineer",
+    "company": "SGS Consulting",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "pay": "$90-$95/hr",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "Integration work with IBM ACE, IIB, ITX and Informatica. 4-month contract."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "censys-go",
+   "mode": "full",
+   "posting": {
+    "title": "Software Engineer II (Backend)",
+    "company": "Censys",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "$137K",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "Go is the primary language for our backend. Java experience is accepted as a stepping stone."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "toast",
+   "mode": "full",
+   "posting": {
+    "title": "Software Engineer II, Backend (Kotlin/Java)",
+    "company": "Toast",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "$133K-$213K",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "Kotlin-first backend team; Java developers willing to learn Kotlin are welcome."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "Medium"
+    ]
+   }
+  },
+  {
+   "id": "genome",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Java Developer (Spring Boot / Angular)",
+    "company": "Genome International Corp",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "W2",
+    "pay": "$76-$82/hr",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "12-month contract, W2 or independent. Able to Sponsor. Skills: Java, Spring Boot, Angular, Kafka, Redis, Hibernate, Playwright, REST."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "High"
+    ],
+    "sponsorship": "Verified"
+   }
+  },
+  {
+   "id": "symphony",
+   "mode": "full",
+   "posting": {
+    "title": "Java Developer",
+    "company": "Symphony Corporation",
+    "location": "Madison, WI",
+    "work_type": "Hybrid",
+    "employment_type": "W2",
+    "age_hours": 30,
+    "apply_type": "dice",
+    "description": "12-month contract; W2, C2C or independent. 10+ years of Java; Spring Boot, Angular 21, Kafka, Redis."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "Medium"
+    ]
+   }
+  },
+  {
+   "id": "ptr",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Software Engineer (Java, Spring Boot, AWS, Kafka, Spark)",
+    "company": "PTR Global",
+    "location": "Chicago, IL",
+    "work_type": "On-site",
+    "employment_type": "W2",
+    "age_hours": 30,
+    "apply_type": "easy_apply",
+    "description": "Contract-to-hire, W2 only. Java, Spring Boot, AWS, Kafka; duties centre on Apache Spark."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "Medium"
+    ]
+   }
+  },
+  {
+   "id": "anagh",
+   "mode": "full",
+   "posting": {
+    "title": "Full Stack Engineer (Java 50% / React 50%)",
+    "company": "Anagh Technologies Inc",
+    "location": "Chicago, IL",
+    "work_type": "Hybrid",
+    "employment_type": "W2",
+    "age_hours": 48,
+    "apply_type": "easy_apply",
+    "description": "9+ years. Java 50% and React 50%. Spring Boot, REST, SQL, AWS. Direct W2, no C2C or third-party vendors."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "Medium"
+    ]
+   }
+  },
+  {
+   "id": "synechron",
+   "mode": "full",
+   "posting": {
+    "title": "Java Developer",
+    "company": "Synechron",
+    "location": "Chicago, IL",
+    "work_type": "Hybrid",
+    "employment_type": "Contract",
+    "age_hours": 48,
+    "apply_type": "easy_apply",
+    "description": "8-10+ years. Java, Spring Boot, microservices for digital payments and digital assets."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "Medium"
+    ]
+   }
+  },
+  {
+   "id": "krasan",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Full-Stack Integration Developer",
+    "company": "Krasan Consulting Services",
+    "location": "Springfield, Illinois Metropolitan Area",
+    "work_type": "Remote",
+    "age_hours": 48,
+    "apply_type": "easy_apply",
+    "description": "Public-sector identity verification. Requires Experian identity-proofing, OAuth/mTLS and NIST 800-63 experience."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "hts-parttime",
+   "mode": "full",
+   "posting": {
+    "title": "Part-Time Software Engineer / Software Developer (Remote | Contract)",
+    "company": "HTS",
+    "location": "Remote",
+    "work_type": "Remote",
+    "employment_type": "Contract",
+    "pay": "$40 - $65 an hour",
+    "age_hours": 24,
+    "apply_type": "indeed_apply",
+    "description": "Part-time, contract / project-based. Java / Spring Boot, Python, .NET / C#, JavaScript / TypeScript. Submit desired hourly compensation and available hours per week."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Employment type",
+     "Application barrier"
+    ]
+   }
+  },
+  {
+   "id": "appnovate24",
+   "mode": "full",
+   "posting": {
+    "title": "Sr Software Engineer",
+    "company": "APPNOVATE24 LLC",
+    "location": "Chicago, IL 60617",
+    "work_type": "Hybrid",
+    "employment_type": "Contract",
+    "age_hours": 24,
+    "apply_type": "indeed_apply",
+    "description": "Lead the architecture, design and testing of prototypes and reusable platform capabilities. Evaluate and implement Generative AI (GenAI), Agentic AI and automated workflows, Retrieval-Augmented Generation (RAG), cloud-native services."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "synergies",
+   "mode": "full",
+   "posting": {
+    "title": "Senior Application Developer",
+    "company": "SYNERGIES PLUS RESOURCES",
+    "location": "Chicago, IL 60601",
+    "work_type": "Hybrid",
+    "employment_type": "Full-Time",
+    "pay": "$100,000 - $130,000 a year",
+    "age_hours": 24,
+    "apply_type": "indeed_apply",
+    "description": "Customization and support of law-firm business applications. Minimum 7 years of software development and 3 years in the legal industry required. Intapp and Boomi; C# or other object-oriented languages."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "wheaton-anon",
+   "mode": "full",
+   "posting": {
+    "title": "Software Developer",
+    "company": "Financial Sector",
+    "location": "Wheaton, IL 60187",
+    "employment_type": "Full-Time",
+    "age_hours": 24,
+    "apply_type": "indeed_apply",
+    "description": "Investment Operations Technology team. Proven experience in software development with a strong understanding of programming languages; microservices architecture; Agile."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch",
+     "Spam / duplicate"
+    ]
+   }
+  },
+  {
+   "id": "save-a-lot",
+   "mode": "full",
+   "posting": {
+    "title": "Sr. Software Engineer - Merchandising",
+    "company": "Save A Lot",
+    "location": "Saint Ann, MO 63074",
+    "employment_type": "Full-Time",
+    "pay": "$99,000 - $125,000 a year",
+    "age_hours": 48,
+    "apply_type": "company_site",
+    "description": "Build next generation solutions to support the Save A Lot business. Firsthand technical expertise in a variety of configuration management and programming languages."
+   },
+   "expect": {
+    "action": "skip"
+   }
+  },
+  {
+   "id": "ags-pod-lead",
+   "mode": "full",
+   "note": "The earlier run applied to this one; the profile rule 'skip Lead titles' says it should have been skipped.",
+   "posting": {
+    "title": "Full Stack Engineer – Pod Lead (Java + React)",
+    "company": "AGS",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "$130K/yr + Bonus",
+    "age_hours": 30,
+    "apply_type": "easy_apply",
+    "description": "Lead 3-4 engineers in the Philippines. Java, Spring Boot, React."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority"
+    ]
+   }
+  },
+  {
+   "id": "synthetic-greenhouse",
+   "mode": "full",
+   "note": "synthetic",
+   "posting": {
+    "title": "Senior Java Engineer",
+    "company": "Example Fintech",
+    "location": "Chicago, IL",
+    "work_type": "Hybrid",
+    "employment_type": "Full-Time",
+    "pay": "$140,000 - $170,000 a year",
+    "age_hours": 12,
+    "apply_type": "company_site",
+    "apply_url": "https://job-boards.greenhouse.io/examplefintech/jobs/12345",
+    "description": "Java 17, Spring Boot, React, PostgreSQL, AWS, Kubernetes, REST microservices. 6+ years. We sponsor H-1B transfers."
+   },
+   "expect": {
+    "action": "review",
+    "fit": [
+     "High"
+    ],
+    "sponsorship": "Verified",
+    "claude_can_apply": true
+   }
+  },
+  {
+   "id": "synthetic-workday",
+   "mode": "full",
+   "note": "synthetic",
+   "posting": {
+    "title": "Java Full Stack Developer",
+    "company": "Example Insurer",
+    "location": "Madison, WI",
+    "work_type": "Hybrid",
+    "employment_type": "Full-Time",
+    "age_hours": 12,
+    "apply_type": "company_site",
+    "apply_url": "https://example.wd5.myworkdayjobs.com/en-US/careers/job/Madison-WI/Java-Full-Stack-Developer_R123",
+    "description": "Java, Spring Boot, Angular, SQL, Jenkins. 5+ years."
+   },
+   "expect": {
+    "action": "review",
+    "claude_can_apply": false
+   }
+  },
+  {
+   "id": "synthetic-duplicate",
+   "mode": "full",
+   "note": "synthetic: link already in the tracker",
+   "seen": [
+    "https://www.linkedin.com/jobs/view/4487344483/"
+   ],
+   "posting": {
+    "title": "Full Stack Engineer",
+    "company": "Brooksource",
+    "location": "United States",
+    "work_type": "Remote",
+    "link": "https://www.linkedin.com/jobs/view/4487344483/",
+    "description": "Java, React"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stale / duplicate"
+    ]
+   }
+  },
+  {
+   "id": "synthetic-gc-only",
+   "mode": "full",
+   "note": "synthetic",
+   "posting": {
+    "title": "Java Developer",
+    "company": "Example Bank",
+    "location": "Chicago, IL",
+    "work_type": "Hybrid",
+    "employment_type": "W2",
+    "age_hours": 10,
+    "apply_type": "easy_apply",
+    "description": "Java, Spring Boot, Angular. USC and GC only."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Sponsorship / authorization"
+    ]
+   }
+  }
+ ]
+}
