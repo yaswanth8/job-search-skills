@@ -50,8 +50,7 @@ def main():
     ap.add_argument("--table", action="store_true")
     a = ap.parse_args()
     profile = load_profile(a.profile)
-    if a.hours:
-        profile["window_hours"] = a.hours
+    profile["window_hours"] = a.hours or (profile.get("search") or {}).get("post_window_hours") or 12   # posts have their own window
     seen = set()
     if a.seen and Path(a.seen).exists():
         raw = Path(a.seen).read_text().strip()

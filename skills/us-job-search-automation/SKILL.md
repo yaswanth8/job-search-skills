@@ -5,7 +5,7 @@ description: "Automates a US job search end to end: finds fresh listings on Link
 
 # US Job Search Automation
 
-Version: 1.3.1 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 1.4.0 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **plan, search, vet, apply, track, report**. An application is a statement in the candidate's name: the profile and resume are the only sources of facts. Anything they don't cover is asked once or skipped, never guessed.
 
@@ -29,8 +29,9 @@ PROFILE is the `job-search-profile` skill's SKILL.md path, the `--profile` argum
 1. **Tools.** `git clone --depth 1 -q https://github.com/yaswanth8/job-search-skills <scratch>/jss`. If it fails, use this skill's folder when it has `scripts/`; otherwise stop and say so. If `TOOLS/VERSION` is newer than the Version line above, tell the user in a line what `CHANGELOG.md` says changed and offer the new instructions (`propose_skills`, improvement, full text of `TOOLS/SKILL.md`; or `dist/us-job-search-automation.zip`). A release marked **Requires new instructions** means: follow `TOOLS/SKILL.md` for this run.
 2. **Profile.** Load `job-search-profile`. Template placeholders (`"profile_status": "TEMPLATE"`, `<...>`) mean First-time setup below. On the first run or after any edit, `run_evals.py` must pass and `vet.py` must load PROFILE.
 3. **Authorization.** "Apply" or "submit" pre-authorizes Easy Apply, Apply with Indeed and the Dice wizard for this run, plus whatever the user queued on the dashboard; say so in the first line. A bare slash command authorizes nothing: ask once (apply or search only). Company-site jobs the user did not queue need their explicit words, per job or "the company-site ones too". Never carry authorization to another run. Nothing authorizes contacting recruiters: outreach is always the user's.
-4. **Tracker state.** `ArtifactData list` on `jobs` (limit 1000, `out_dir`). Every `link` goes into `<scratch>/seen.txt`; keep each doc's `version`. Note Queued rows (the user asked Claude to apply) and Review rows (waiting on the user). If `assets/tracker.version` is newer than `meta/tracker.template`, offer the dashboard refresh (`tracker-db.md`).
-5. **Tasks and browser.** Task list: Queued jobs, one task per portal, apply, tracker, report. Use the profile's browser (Chrome by default) and load its tools in one ToolSearch (`portals.md`). Probe the three portals in one `browser_batch`: a blocked domain means ask once and go on; a guest view means ask the user to sign in.
+4. **Time window.** Before any search, ask once how far back to look (AskUserQuestion, two questions; with the authorization question if that is being asked too). Job postings: 12 hours, 24 hours, **2 days (default)**, 3 days. Recruiter posts: **12 hours (default)**, 24 hours, 2 days, 3 days. The defaults are the profile's `window_hours` and `search.post_window_hours`. Skip a question the request already answers ("today" is 24 hours, "last 3 days" is 72); in an unattended run use the defaults and say so. State both windows in the first line and pass them as `--hours` and `--post-hours`.
+5. **Tracker state.** `ArtifactData list` on `jobs` (limit 1000, `out_dir`). Every `link` goes into `<scratch>/seen.txt`; keep each doc's `version`. Note Queued rows (the user asked Claude to apply) and Review rows (waiting on the user). If `assets/tracker.version` is newer than `meta/tracker.template`, offer the dashboard refresh (`tracker-db.md`).
+6. **Tasks and browser.** Task list: Queued jobs, one task per portal, apply, tracker, report. Use the profile's browser (Chrome by default) and load its tools in one ToolSearch (`portals.md`). Probe the three portals in one `browser_batch`: a blocked domain means ask once and go on; a guest view means ask the user to sign in.
 
 ## First-time setup
 1. Read the resume and fill everything it answers: contact, roles (YYYY-MM dates, skills per role), education, certifications, domains, stack lists.
@@ -43,11 +44,11 @@ PROFILE is the `job-search-profile` skill's SKILL.md path, the `--profile` argum
 Apply to every Queued row before searching: Easy Apply rows through the portal, company-site rows through `company-sites.md`. Your explicit requests then get done even if the search later stalls. A row that cannot be finished (sign-in wall, CAPTCHA, an answer the user hasn't given) goes back to Review with the reason.
 
 ## 2. Search
-`plan.py --profile PROFILE` builds the run's searches from the profile's roles (`search.titles`, `search_queries`) and locations: one combined query per location bucket and portal, inside the profile's window. Add `--hours 24` for "today" and `--company-site` when the user wants company-site roles listed too. Follow "Fast runs" in `portals.md`: one `browser_batch` per portal, one card-vetting call for everything.
+`plan.py --profile PROFILE` builds the run's searches from the profile's roles (`search.titles`, `search_queries`) and locations: one combined query per location bucket and portal, inside the windows chosen in step 0 (`--hours <jobs> --post-hours <posts>`). Add `--company-site` when the user wants company-site roles listed too. Follow "Fast runs" in `portals.md`: one `browser_batch` per portal, one card-vetting call for everything.
 - Read result pages with the `*_cards.js` snippet, page through with `PAGE`, and save the lines to a `.txt` file. `vet.py --mode card --seen seen.txt cards.txt` decides what to open; it also skips cards the portal already marks Applied.
 - An Indeed header starting `NO RESULTS` means the cards are Indeed's suggestions: vet nothing from that page.
 - Read each opened job with `linkedin_job.js`, `indeed_job.js` or `dice_job.js`. They return the key sentences (`PART = -1`) or raw text pages. On LinkedIn, check the job id against `seen.txt` before reading.
-- **Recruiter posts.** Run the plan's `post_searches` with `linkedin_posts.js`, then `posts.py` (`portals.md`). When the user gives keywords or a role ("search posts for JAVA AND CONTRACT/W2"), pass them with `plan.py --post-query`. Passing posts become **Reach out** rows carrying the recruiter's name, email, phone and profile link.
+- **Recruiter posts.** Run the plan's `post_searches` with `linkedin_posts.js`, then `posts.py --hours <posts window>` (`portals.md`). When the user gives keywords or a role ("search posts for JAVA AND CONTRACT/W2"), pass them with `plan.py --post-query`. Passing posts become **Reach out** rows carrying the recruiter's name, email, phone and profile link.
 - **Contacts.** `linkedin_job.js` prints `hiring:` and `contacts:` lines; carry them into the posting so the row shows who to reach.
 - One progress line per portal, never per job.
 

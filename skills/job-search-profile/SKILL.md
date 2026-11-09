@@ -32,7 +32,7 @@ Sponsorship counts as Verified only when a posting says so. A posting that says 
 Remote: <anywhere in the US, or your state only>. Hybrid or on-site only in: <states>. Willing to relocate: <Yes/No>.
 
 ## Portals
-Browser: Chrome, signed in to LinkedIn, Indeed and Dice. Window: 72 hours. Extra search strings beyond the target titles go in `search_queries`; Boolean ("Full Stack" AND Java AND (React OR Angular)) works on LinkedIn and Dice.
+Browser: Chrome, signed in to LinkedIn, Indeed and Dice. Default windows: job postings from the last 48 hours (`window_hours`), recruiter posts from the last 12 hours (`search.post_window_hours`). Each run asks before searching; these are what it uses when you don't say. Extra search strings beyond the target titles go in `search_queries`; Boolean ("Full Stack" AND Java AND (React OR Angular)) works on LinkedIn and Dice.
 LinkedIn geoIds (Claude looks these up on the first run): United States 103644278; <your states>.
 The JSON `search` block drives each run's searches:
 - `titles`: your role titles. One combined search per location covers them all.
@@ -63,7 +63,7 @@ The `stack` section is set up for a Java developer. For another language, change
  "profile_status": "TEMPLATE",
  "candidate": "<Your full name>",
  "home_state": "<two-letter state you live in, e.g. TX>",
- "window_hours": 72,
+ "window_hours": 48,
  "search_queries": [],
  "accepted_types": ["Full-Time", "W2", "C2C", "Contract"],
  "pay_floor": {"annual": 100000, "w2_hourly": 60, "c2c_hourly": 55, "contract_hourly": 55},
@@ -92,7 +92,7 @@ The `stack` section is set up for a Java developer. For another language, change
   "missing": ["golang", "camunda", "jbpm", "bpm", "informatica", "ibm ace", "iib", "itx", "jsf", "primefaces", "intapp", "boomi", "langgraph", "langchain", "llm", "llms", "rag", "generative ai", "genai", "agentic", "spark", "pyspark", "data engineering", "airflow", "snowflake", "databricks", ".net", "c#", "salesforce", "apex", "identity-proofing", "identity proofing", "nist 800-63", "data architecture", "data modeling", "data pipelines"],
   "missing_regex_cs": ["~Go~(?! (to|through|live|ahead|beyond|above|back|out|over|forward)~)"]
  },
- "search": {"titles": ["<Role title 1, e.g. Java Full Stack Developer>", "<Role title 2>", "<Role title 3>"], "post_queries": ["<keywords for recruiter posts, e.g. Java AND (C2C OR W2 OR contract) AND (hiring OR requirement)>"], "linkedin_geo_ids": {"US": "103644278"}, "include_company_site": false, "max_open_per_search": 12},
+ "search": {"titles": ["<Role title 1, e.g. Java Full Stack Developer>", "<Role title 2>", "<Role title 3>"], "post_queries": ["<keywords for recruiter posts, e.g. Java AND (C2C OR W2 OR contract) AND (hiring OR requirement)>"], "linkedin_geo_ids": {"US": "103644278"}, "post_window_hours": 12, "include_company_site": false, "max_open_per_search": 12},
  "domains_have": ["<industries you have worked in, e.g. banking>"],
  "industries": ["entertainment", "legal", "law firm", "retail", "healthcare", "health care", "insurance", "government", "public sector", "media", "gaming", "pharma", "pharmaceutical", "energy", "utilities", "e-commerce", "ecommerce", "hospitality", "education", "manufacturing", "logistics", "aviation", "defense"],
  "barrier_patterns": ["desired (hourly )?(compensation|rate|salary|pay)", "hours per week", "create an account", "identity verification", "video (introduction|interview) required", "coding (assessment|test) required before"],

@@ -632,13 +632,13 @@ def _quote(t: str) -> str:
 
 
 def build_search_plan(profile: dict, window_hours: int | None = None, post_queries: list | None = None,
-                      include_company_site: bool | None = None) -> dict:
+                      include_company_site: bool | None = None, post_window_hours: int | None = None) -> dict:
     """The smallest set of searches that covers the profile's roles and locations.
 
     One combined OR query per location bucket and portal, instead of one search per title.
     """
     from urllib.parse import quote
-    hours = int(window_hours or profile.get("window_hours", 72))
+    hours = int(window_hours or profile.get("window_hours", 48))
     days = max(1, -(-hours // 24))
     st, sr = profile.get("stack", {}), profile.get("search", {})
     primary = st.get("primary_name", "Java")
@@ -681,10 +681,13 @@ def build_search_plan(profile: dict, window_hours: int | None = None, post_queri
 
     types = [t for t in profile.get("accepted_types", []) if t.lower() in ("c2c", "w2", "contract")] or ["contract"]
     queries = post_queries or sr.get("post_queries") or [f"{primary} AND ({' OR '.join(types)}) AND (hiring OR requirement)"]
-    window = "past-24h" if hours <= 24 else "past-week" if hours <= 168 else "past-month"
-    posts = [{"portal": "LinkedIn posts", "query": q, "snippet": "linkedin_posts.js", "max_age_hours": hours,
+    # Posts go stale fast (a recruiter fills a contract role in a day or two), so they get their own, shorter window.
+    # LinkedIn only filters posts by 24h / week / month: posts.py --hours trims to the exact figure.
+    phours = int(post_window_hours or sr.get("post_window_hours") or 12)
+    window = "past-24h" if phours <= 24 else "past-week" if phours <= 168 else "past-month"
+    posts = [{"portal": "LinkedIn posts", "query": q, "snippet": "linkedin_posts.js", "max_age_hours": phours,
               "url": f"https://www.linkedin.com/search/results/content/?keywords={quote(q)}&datePosted=%22{window}%22&sortBy=%22date_posted%22"}
              for q in queries[:4]]
-    return {"window_hours": hours, "titles": titles, "job_searches": searches, "post_searches": posts,
+    return {"window_hours": hours, "post_window_hours": phours, "titles": titles, "job_searches": searches, "post_searches": posts,
             "total_page_loads": len(searches) + len(posts), "missing_linkedin_geo_ids": missing_geo,
             "max_open_per_search": sr.get("max_open_per_search", 12)}

@@ -1,5 +1,5 @@
 {
- "window_hours": 72,
+ "window_hours": 48,
  "search_queries": [],
  "accepted_types": [
   "Full-Time",
@@ -257,6 +257,7 @@
  ],
  "_about": "Fallback values for profile keys an older profile may not have yet. Never personal data. The profile always wins.",
  "search": {
+  "post_window_hours": 12,
   "include_company_site": false,
   "max_open_per_search": 12
  }

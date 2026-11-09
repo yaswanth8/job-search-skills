@@ -2,6 +2,11 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.4.0 (2026-11-09) **Requires new instructions**
+- Every run now asks, before searching, how far back to look: job postings (12 hours, 24 hours, 2 days, 3 days; default 2 days) and recruiter posts (default 12 hours). A request that already says ("today", "last 3 days") is not asked again.
+- Recruiter posts have their own window: `search.post_window_hours` in the profile (default 12), `plan.py --post-hours`, and `posts.py` drops older posts.
+- The default job window is 48 hours (was 72). A profile that sets `window_hours` keeps its own value.
+
 ## 1.3.1 (2026-11-09)
 First live run of the recruiter-post search, and the fixes it called for.
 - `linkedin_posts.js` reads LinkedIn's current search page (posts are `role="listitem"` cards with no post ids), names the person rather than the group for posts inside groups, and is pasted once: later pages are `__lp(1)`, `__lp(2)`...

@@ -104,6 +104,13 @@ def main():
         plan, plan24 = build_search_plan(fx), build_search_plan(fx, 24)
         urls, urls24 = " ".join(s["url"] for s in plan["job_searches"] + plan["post_searches"]), " ".join(s["url"] for s in plan24["job_searches"] + plan24["post_searches"])
         probs = []
+        if plan["post_window_hours"] != 12 or "past-24h" not in plan["post_searches"][0]["url"]:
+            probs.append("recruiter posts should default to the last 12 hours")
+        if "past-week" not in build_search_plan(fx, None, None, None, 72)["post_searches"][0]["url"]:
+            probs.append("--post-hours 72 should search the past week")
+        stale = vet(parse_post({"author": "A", "age": "20h", "text": "Hiring: Java Full Stack Developer\nLocation: Remote\nC2C, Java, Spring Boot, React"}), dict(fx, window_hours=12), "post")
+        if stale["category"] != "Stale / duplicate":
+            probs.append("a 20h-old post should be outside a 12h window")
         if plan["total_page_loads"] > e["max_page_loads"]:
             probs.append(f"{plan['total_page_loads']} page loads > {e['max_page_loads']}")
         if len(plan["job_searches"]) != e["job_searches"] or len(plan["post_searches"]) != e["post_searches"]:

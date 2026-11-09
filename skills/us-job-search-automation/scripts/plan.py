@@ -2,7 +2,7 @@
 """Build the search plan: the fewest searches that cover the profile's roles and locations.
 
 Usage:
-  python3 plan.py --profile PROFILE [--hours 24] [--post-query 'java AND (c2c OR w2)' ...]
+  python3 plan.py --profile PROFILE [--hours 48] [--post-hours 12] [--post-query 'java AND (c2c OR w2)' ...]
                   [--company-site] [--urls]
 
 One combined OR query per location bucket and portal (remote US + each on-site state), built
@@ -24,12 +24,13 @@ from jobkit_core import build_search_plan, load_profile  # noqa: E402
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--profile", required=True)
-    ap.add_argument("--hours", type=int)
+    ap.add_argument("--hours", type=int, help="job postings no older than this (default: profile window_hours, 48)")
+    ap.add_argument("--post-hours", type=int, help="recruiter posts no older than this (default: search.post_window_hours, 12)")
     ap.add_argument("--post-query", action="append")
     ap.add_argument("--company-site", action="store_true", default=None)
     ap.add_argument("--urls", action="store_true")
     a = ap.parse_args()
-    plan = build_search_plan(load_profile(a.profile), a.hours, a.post_query, a.company_site)
+    plan = build_search_plan(load_profile(a.profile), a.hours, a.post_query, a.company_site, a.post_hours)
     if a.urls:
         for s in plan["job_searches"] + plan["post_searches"]:
             print(s["url"])
