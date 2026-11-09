@@ -1,59 +1,46 @@
 # Company-site applications
 
-Read this when a vetted posting applies on the employer's own site instead of Easy Apply, Apply with Indeed or the Dice wizard.
+For postings that apply on the employer's own site instead of Easy Apply, Apply with Indeed or the Dice wizard.
 
-## Who applies: the decision
+## Who applies
+Classify the **final** application host, not the careers page in front of it. Careers sites often hand off: Uline's `uline.jobs` "Apply Now" opens `uline.wd1.myworkdayjobs.com` (Workday). Click through to the form and run `ats.py <final url>`.
 
-Run `ats.py <apply_url>` (or read `ats` from `vet.py` output). It names the applicant tracking system (ATS) and says whether Claude can apply.
+| ATS family | Examples | Who applies |
+|---|---|---|
+| Guest form, no sign-in | Greenhouse, Lever, Ashby, Workable, SmartRecruiters, BambooHR, JazzHR, Breezy, Recruitee, Rippling, Jobvite | **Claude**, once the user has allowed the domain |
+| Account or email code | Workday, iCIMS, Taleo, SuccessFactors, Oracle Cloud HCM, ADP, UKG, Avature, Eightfold, Phenom | **The user** |
+| Unknown | the employer's own form | Run `js/form_scan.js`. No password field and no CAPTCHA means Claude can apply; anything else means the user does |
 
-| ATS family | Examples | Who applies | Why |
-|---|---|---|---|
-| Guest form, no sign-in | Greenhouse, Lever, Ashby, Workable, SmartRecruiters, BambooHR, JazzHR, Breezy, Recruitee, Rippling, Jobvite | **Claude**, once the user has allowed the domain | One page, resume upload plus a few questions, no account |
-| Account or email code | Workday, iCIMS, Taleo, SuccessFactors, Oracle Cloud HCM, ADP, UKG, Avature, Eightfold, Phenom | **The user** | Needs a candidate account or a verification code. Claude never creates accounts or types passwords |
-| Unknown | the employer's own careers page | Decide on sight | Open the page once and run `form_scan.js`. A plain form with no password field and no CAPTCHA means Claude can apply. Anything else means the user applies |
+A CAPTCHA anywhere means the user applies. Claude never creates an account, types a password or solves a CAPTCHA, even when the user asks. Say so in one sentence and offer a ready-to-paste answer sheet from the profile instead.
 
-A CAPTCHA anywhere means the user applies. Claude never solves or bypasses one.
+## Statuses
+- **Review**, reviewReason `company-site`: worth applying, waiting on the user. The dashboard offers *I applied*, *Let Claude apply* (only when `claudeCanApply` is not false) and *Not interested*.
+- **Queued**: the user pressed *Let Claude apply* (or *Apply anyway* on a needs-call row). The next run applies first.
+- An account-walled row: set `ats`, `claudeCanApply: false` and `applyUrl` to the final form URL, so the dashboard's *Open posting* goes straight there. Notes give the user what they need, for example the resume file name, "Autofill with Resume", and sponsorship caveats.
 
-## Statuses on the tracker
-
-- **Review, reviewReason "company-site"**: vetted and worth applying; waiting on the user. The dashboard shows it in "Needs you" with three buttons: *I applied*, *Let Claude apply* (only when `claudeCanApply` is true or the ATS is Unknown) and *Not interested*.
-- **Queued**: the user pressed *Let Claude apply*. The next run applies to every Queued job before searching.
-- **Applied**: confirmation seen. Set `appliedBy` to "claude" or "you".
-- **Declined**: the user pressed *Not interested*. Never re-surface it.
-
-Write new company-site jobs as Review. Never apply to one the user hasn't queued unless the run's request explicitly said to apply on company sites (for example "apply to the company-site ones too"). That explicit instruction covers only guest-form ATSs whose domains are already allowed.
+Write new company-site jobs as Review. Apply without a queue entry only when the user's words this run say so.
 
 ## Before the first company-site application of a run
+1. Collect the Queued rows plus any job the user named.
+2. Ask for domain access for all their hosts in one message. If a host stays blocked, leave the row Queued with "domain not allowed yet". Never route around it.
 
-1. Collect every Queued job (`ArtifactData query jobs where status == Queued`) plus any the user named.
-2. List their hosts and ask for domain access in **one** message: in Chrome, the user allows each host in the extension. In the built-in browser, call `request_access` once per host with scope "site".
-3. If a host stays blocked, leave the job Queued with the note "domain not allowed yet" and move on. Never route around it with another browser, a cached copy, a mirror or a direct HTTP request.
+## Filling a guest form
+1. Open the apply URL in your own tab and run `js/form_scan.js` (it pages with `PAGE`). If `signInWall` or `captcha` is true, stop: the row goes to Review with the reason.
+2. Map every field to a source before typing:
+   - Contact details: the profile's Contact section.
+   - Resume: the upload field via `file_upload` with the user's resume. If that fails, the row goes to Review with "resume upload needs you".
+   - Authorization, sponsorship, notice, relocation: standard answers.
+   - Years: `years.py`.
+   - EEO, veteran, disability: decline to identify.
+   - "How did you hear": the portal.
+   - A required field with no source: ask once for all of them across the batch; unanswered means Review with the field named.
+   - Optional fields with no source: leave them blank. Leave opt-ins unticked.
+3. Fill with `form_input` by ref, re-scan, and compare every value, prefilled ones included.
+4. Submit only when every required field has a sourced value. Success is a confirmation page or "Thank you for applying" / "Application received".
+5. Update the row: Applied, `appliedAt` today, `appliedBy` "claude", notes listing the non-obvious answers.
 
-## Filling a guest form: protocol
-
-1. Open the apply URL in your own tab. Screenshot once to see the layout.
-2. Run `js/form_scan.js`. If `signInWall` or `hasCaptcha` is true, stop: set the job to Review with the reason, so the user applies.
-3. Map every field to a source before typing:
-   - Name, email, phone, location, LinkedIn URL: the profile's Contact section.
-   - Resume: the upload field. The OS file picker cannot be driven. Use the browser's `file_upload` tool if the session has it, with the resume staged from the user's computer. If neither works, stop and set the job back to Review with "resume upload needs you".
-   - Work authorization and sponsorship: the profile's standard answers.
-   - Years of experience: `years.py --skill <x>` and its `answer_with`.
-   - EEO, veteran and disability fields: decline to identify.
-   - "How did you hear about us": the portal where the job was found.
-   - Any required field with no source (salary number, notice period, essay, "why this company", relocation while still TODO): **do not invent it**. Ask the user once, for all such fields across the batch, in one AskUserQuestion. Unanswered means the job goes back to Review with the missing field named.
-   - Optional fields with no source: leave them blank. Leave marketing opt-ins and talent-community sign-ups unticked.
-4. Fill with `form_input` by ref. Screenshot. Compare every visible value with the mapping, prefilled ones included.
-5. Submit only when every required field has a sourced value. Success evidence is a confirmation page or a message such as "Thank you for applying" or "Application received". Screenshot it.
-6. Update the doc: status Applied, appliedAt today, appliedBy "claude", notes listing the non-obvious answers given.
-
-## Greenhouse
-Single page. Resume upload (often also "or paste"), sometimes custom questions at the bottom, EEO block last. The confirmation reads "Thank you for applying".
-
-## Lever
-`/apply` page. Resume upload parses into fields: check what the parse filled (often wrong). "Additional information" is optional: leave it blank.
-
-## Ashby
-Single page, resume first, then questions. Watch for required yes/no questions that default to blank.
-
-## Workday, iCIMS, Taleo and others: user applies
-Record Review with "account required (Workday)". The dashboard's *Open posting* button takes the user there; *I applied* records it. Never start the sign-up.
+## Per system
+- **Greenhouse**: one page; resume upload, custom questions, EEO block last. Confirmation reads "Thank you for applying".
+- **Lever**: `/apply`; the resume parse fills fields, often wrongly, so check them. "Additional information" stays blank.
+- **Ashby**: one page; required yes/no questions default to blank.
+- **Workday** and other account systems: user applies (see Statuses).

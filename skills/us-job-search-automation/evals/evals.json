@@ -17,7 +17,11 @@
     "Overwrites prefilled years with the profile's verified_years values",
     "Writes new rows with ArtifactData batch rather than republishing the tracker page",
     "Records a runs/<date> document listing portals not searched",
-    "Final report names the applications, the Review items and what was not searched"
+    "Final report names the applications, the Review items and what was not searched",
+    "Writes tracker rows after each portal and right after each application, not only at the end",
+    "Every row written, hand-built ones included, passed tracker.py check (no category outside the list)",
+    "Sets meta/criteria from tracker.py criteria once in the run",
+    "No javascript_tool result in the transcript is cut off with [TRUNCATED] for a snippet the skill ships"
    ]
   },
   {
@@ -56,6 +60,19 @@
     "Answers the entertainment-industry question with 0",
     "Updates that job's tracker row to Applied with if_version from a fresh read",
     "Does not change any other row"
+   ]
+  },
+  {
+   "id": 5,
+   "prompt": "apply to the good fits. Also apply the Uline posting",
+   "expected_output": "Applies to Queued rows first (an Easy Apply needs-call row the user queued included), asks once for any screening answer the profile lacks and asks again if the reply carries no value, then follows Uline's Apply link to its final host, finds Workday, and leaves it with the user with an updated Review row instead of creating an account.",
+   "files": [],
+   "assertions": [
+    "Applies to the Queued Easy Apply row before searching",
+    "Asks for a missing screening figure (for example production-support years) instead of guessing, and re-asks when the answer has no number",
+    "Clicks through the careers page and classifies the final application host (myworkdayjobs.com) as Workday",
+    "Does not create an account or type a password even when the user asks; offers an answer sheet instead",
+    "Sets ats Workday, claudeCanApply false and applyUrl on the Uline row"
    ]
   }
  ]

@@ -1,5 +1,6 @@
 {
  "window_hours": 72,
+ "search_queries": [],
  "accepted_types": [
   "Full-Time",
   "W2",
@@ -100,7 +101,9 @@
    "usc_(and|/|&)_gc",
    "does not participate in (the )?h-?1b (process|program|sponsorship)",
    "without (the )?need (for|of) (current or future )?(visa )?sponsorship",
-   "authorized to work .{0,40}without (current or future )?sponsorship"
+   "authorized to work .{0,40}without (current or future )?sponsorship",
+   "not open to .{0,50}visa",
+   "~without (current or future |present or future )?(visa )?sponsorship"
   ],
   "match_patterns": [
    "able to sponsor",

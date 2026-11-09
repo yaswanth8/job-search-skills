@@ -1,5 +1,5 @@
 {
- "about": "Vetting back-test from real job postings (Nov 2026) against evals/fixture_profile.json, a Java full-stack developer on an H-1B transfer in Illinois. Descriptions are excerpted or condensed. Cases marked synthetic test a rule no real posting exercised. Once you have run the skill a few times, add cases from your own postings with your own profile's expected outcomes.",
+ "about": "Vetting back-test from real job postings (Nov 8-9 2026) against evals/fixture_profile.json, a Java full-stack developer on an H-1B transfer in Illinois. Descriptions are excerpted or condensed. Cases marked synthetic test a rule no real posting exercised. Once you have run the skill a few times, add cases from your own postings with your own profile's expected outcomes.",
  "cases": [
   {
    "id": "card-dotnet",
@@ -1017,6 +1017,260 @@
     "category": [
      "Sponsorship / authorization"
     ]
+   }
+  },
+  {
+   "id": "bluesky-no-visa",
+   "mode": "full",
+   "note": "LinkedIn 2026-11-09. Wording the old patterns missed: 'not open to ... any Visa consideration'.",
+   "posting": {
+    "title": "Senior Java Developer",
+    "company": "BlueSky Resource Solutions",
+    "location": "United States",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "apply_type": "easy_apply",
+    "description": "This a 100% remote fulltime opportunity. Candidates MUST be local to the United States and MUST be in the Eastern or Central time zone. This role is NOT open to C2C, OPT, or any Visa consideration. No vendor support of any kind allowed. We are seeking an experienced Java Developer to design, develop, enhance, and support enterprise applications using Java, Spring Boot, REST, SQL and microservices."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Sponsorship / authorization"
+    ]
+   }
+  },
+  {
+   "id": "natera-no-future-visa",
+   "mode": "full",
+   "note": "Dice 2026-11-09. 'without current or future visa sponsorship' has 'visa' between the words the old pattern expected.",
+   "posting": {
+    "title": "Sr. Software Engineer (EHR Integration Team)",
+    "company": "Natera, Inc.",
+    "location": "Remote",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "USD $125,000.00 - 156,300.00 per year",
+    "apply_type": "dice",
+    "description": "Build EHR integration services in Java and Spring Framework, REST APIs, SQL, AWS and microservices. Candidates must be authorized to work in the US without current or future visa sponsorship."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Sponsorship / authorization"
+    ]
+   }
+  },
+  {
+   "id": "aem-citizen-tier3",
+   "mode": "full",
+   "note": "Indeed 2026-11-09.",
+   "posting": {
+    "title": "Full Stack Software Engineer",
+    "company": "AEM Corporation",
+    "location": "Remote in Reston, VA",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "$135,000 - $145,000 a year",
+    "apply_type": "indeed_apply",
+    "description": "5 or more years of experience developing web applications or enterprise software systems with React, TypeScript and Node. Eligibility: U.S. citizenship and a favorably adjudicated Tier 3 background investigation or higher (an active DoD Secret or Top Secret clearance qualifies) before starting work."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Clearance",
+     "Sponsorship / authorization"
+    ]
+   }
+  },
+  {
+   "id": "technipros-tx-onsite",
+   "mode": "full",
+   "note": "Dice 2026-11-09. Dice header says 'Remote in Dallas' but the workplace field says On-site.",
+   "posting": {
+    "title": "Java Full Stack Developer - Dallas, TX, Austin, TX, Houston, TX, San Antonio, TX.",
+    "company": "TechniPros, LLC",
+    "location": "Remote in Dallas, TX, US",
+    "work_type": "On-site",
+    "employment_type": "W2",
+    "pay": "Depends on Experience",
+    "apply_type": "dice",
+    "description": "Senior Java Full Stack Developer, 8+ years. Looking for W2 candidates. No C2C. Able to Sponsor. Java 17/21, Spring Boot, Microservices, REST, React.js or Angular, Oracle, PostgreSQL, AWS, Docker, Kubernetes, Jenkins."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Location"
+    ]
+   }
+  },
+  {
+   "id": "pearson-austin-onsite",
+   "mode": "full",
+   "note": "Dice 2026-11-09. Strong stack match, on site in Austin.",
+   "posting": {
+    "title": "Senior Software Engineer",
+    "company": "Pearson",
+    "location": "Remote in Austin, TX, US",
+    "work_type": "On-site",
+    "employment_type": "Full-Time",
+    "pay": "USD $140,000.00 - 160,000.00 per year",
+    "apply_type": "dice",
+    "description": "Full Stack Developer. Expertise in Angular 15+, Java 21, JavaScript, REST and frameworks such as Spring Boot 3.x+. We believe in the importance of in-office collaboration and fully intend for the selected candidate for this role to work on site in Austin, TX."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Location"
+    ]
+   }
+  },
+  {
+   "id": "luxoft-remote-bank",
+   "mode": "full",
+   "note": "Dice 2026-11-09, applied.",
+   "posting": {
+    "title": "Senior Java Developer",
+    "company": "Luxoft",
+    "location": "Remote",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "apply_type": "dice",
+    "description": "For the world most global bank we are building the platform for reference data. At least 6+ years of experience with Java, and 7+ total IT experience. Java (Core, JDBC, MT, Collections, I/O), Spring Boot. SQL, PL-SQL on Oracle DB. Container platform based on Kubernetes. REST web services, Kafka, Redis. Unix commands and shell scripting. Nice to have: microservices, financial services technology experience."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "High",
+     "Medium"
+    ]
+   }
+  },
+  {
+   "id": "destination-pet-vue",
+   "mode": "full",
+   "note": "Dice 2026-11-09. Vue.js-centred; Java is one of seven acceptable languages.",
+   "posting": {
+    "title": "Senior Software Engineer",
+    "company": "Destination Pet LLC",
+    "location": "Remote in TX, US",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "USD $135,000.00 - 165,000.00 per year",
+    "apply_type": "dice",
+    "description": "Our IT team is seeking a Senior Software Engineer with full stack experience in Vue.js and developing APIs. This role will provide key software development and solution design. 5+ years commercial software development - Typescript, Javacript, Java, C#, Scala, python, Go. Experience with Vue.js required."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "global-tech-monthly",
+   "mode": "full",
+   "note": "Indeed 2026-11-09. Monthly pay far below the floor; React/Node pool.",
+   "posting": {
+    "title": "Remote Software Developer",
+    "company": "Global Tech Talent",
+    "location": "Remote",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "$1,000 - $2,500 a month",
+    "apply_type": "indeed_apply",
+    "description": "We place developers for international software companies. We are adding TypeScript/JavaScript full-stack developers (React, Node) to this week's review round."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Pay below floor",
+     "Stack mismatch",
+     "Role mismatch"
+    ]
+   }
+  },
+  {
+   "id": "card-15-years",
+   "mode": "card",
+   "note": "Dice 2026-11-09.",
+   "posting": {
+    "title": "Java Developer/With Spring Boot, Angular/Remote/15+ years",
+    "company": "Not stated",
+    "location": "Remote"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority"
+    ]
+   }
+  },
+  {
+   "id": "healthinsurance-csharp",
+   "mode": "full",
+   "note": "Indeed 2026-11-09. Screening questions require C# and MongoDB years.",
+   "posting": {
+    "title": "Back End Developer",
+    "company": "HealthInsurance.com",
+    "location": "Remote",
+    "work_type": "Remote",
+    "employment_type": "Full-Time",
+    "pay": "$100,000 - $140,000 a year",
+    "apply_type": "indeed_apply",
+    "description": "Develop and maintain our internal CRM. Strong proficiency with at least one backend programming language, such as Java, Python, C#, or Node.js. Experience: 3+ years of professional experience as a Backend Developer. MongoDB: 3 years (Required). C#: 3 years (Required). Kusto Query Language."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "wellsky-ks-onsite",
+   "mode": "full",
+   "note": "Dice 2026-11-09.",
+   "posting": {
+    "title": "Sr Software Engineer - Remote",
+    "company": "WellSky",
+    "location": "Remote in Overland Park, KS, US",
+    "work_type": "On-site",
+    "employment_type": "Full-Time",
+    "apply_type": "dice",
+    "description": "Backend: .NET/C#, Python (Django/Flask), Java, or Ruby. Microservices, domain-driven design, CQRS."
+   },
+   "expect": {
+    "action": "skip"
+   }
+  },
+  {
+   "id": "card-15-year-singular",
+   "mode": "card",
+   "note": "Dice 2026-11-09. Singular 'Year' in the title.",
+   "posting": {
+    "title": "Java full Stack Engineer (15+Year EXP)",
+    "company": "Key Business Solutions, Inc.",
+    "location": "Remote",
+    "pay": "Depends on Experience"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Seniority"
+    ]
+   }
+  },
+  {
+   "id": "card-purple-drive-il",
+   "mode": "card",
+   "note": "LinkedIn 2026-11-09. On-site in an allowed state.",
+   "posting": {
+    "title": "Senior Java Engineer",
+    "company": "Purple Drive Technologies",
+    "location": "Naperville, IL (On-site)"
+   },
+   "expect": {
+    "action": "open"
    }
   }
  ]

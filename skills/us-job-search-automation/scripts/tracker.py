@@ -5,8 +5,8 @@ Subcommands:
   id LINK                          doc id for a posting link (li-<id>, dice-<uuid>, indeed-<jk>, web-<hash>)
   new DECISIONS POSTINGS --out F   build tracker docs for newly vetted postings (vet.py output + its input)
   writes DOCS --dir D [--update]   write one JSON file per doc and print ArtifactData batch `writes` (<=50 each)
-  check DOCS                       validate fields and enums, print counts (applied+skipped+... = total)
-  migrate HTML --out F             convert an old static tracker page (const ROWS=[...]) into docs
+  check DOCS                       validate fields and enums, print counts. Run it on hand-built rows too.
+  criteria --profile P --out F     the meta/criteria doc for the dashboard's what-if panel
 
 A doc: {id, company, vendor, role, where, workType, type, pay, source, fit, spons, status,
         reviewReason, ats, applyUrl, link, category, notes, foundAt, appliedAt, appliedBy,
@@ -21,12 +21,11 @@ import datetime as dt
 import hashlib
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from jobkit_core import CATEGORIES, classify_ats  # noqa: E402
+from jobkit_core import CATEGORIES, STATES, classify_ats, load_profile  # noqa: E402
 
 STATUSES = ["New", "Review", "Queued", "Applied", "Skipped", "Declined"]
 STAGES = ["", "Screening", "Interview", "Offer", "Rejected", "Withdrawn", "No response"]
@@ -46,29 +45,6 @@ def doc_id(link: str) -> str:
         return f"indeed-{m.group(1)}"
     return "web-" + hashlib.sha1(link.encode()).hexdigest()[:16]
 
-
-def work_type(where: str) -> str:
-    w = where.lower()
-    return "Remote" if "remote" in w else "Hybrid" if "hybrid" in w else "On-site" if "on-site" in w or "onsite" in w else ""
-
-
-def guess_category(notes: str) -> str:
-    n = notes.lower()
-    rules = [
-        ("Clearance", ["clearance"]),
-        ("Sponsorship / authorization", ["sponsorship", "h-1b", "h1b"]),
-        ("Stale / duplicate", ["outside the 72-hour", "posted 8 days", "already in"]),
-        ("Location", ["residen", "outside il", "out of state"]),
-        ("Spam / duplicate", ["two vendors", "mass recruiter", "anonymous", "employer not named"]),
-        ("Employment type", ["part-time"]),
-        ("Seniority", ["lead", "15+ years", "12+", "10–15", "senior/staff", "mid-level"]),
-        ("Application barrier", ["application barrier", "profile does not cover"]),
-        ("Pay below floor", ["below your", "below the floor", "stock options"]),
-    ]
-    for cat, keys in rules:
-        if any(k in n for k in keys):
-            return cat
-    return "Stack mismatch"
 
 
 def today() -> str:
@@ -148,36 +124,23 @@ def cmd_check(a):
     sys.exit(1 if errors else 0)
 
 
-def cmd_migrate(a):
-    html = Path(a.html).read_text(encoding="utf-8")
-    m = re.search(r"const ROWS=(\[.*?\n\]);", html, re.S)
-    if not m:
-        sys.exit("ROWS array not found")
-    rows = json.loads(subprocess.run(["node", "-e", f"process.stdout.write(JSON.stringify({m.group(1)}))"],
-                                     capture_output=True, text=True, check=True).stdout)
-    docs = []
-    for r in rows:
-        status = r["status"]
-        reason = ""
-        if status == "New":
-            status, reason = "Review", ("needs-call" if "needs your call" in r["notes"].lower() else "company-site")
-        ats = ""
-        if reason == "company-site":
-            ats = "Unknown"
-        notes = re.sub(r"^Skipped:\s*", "", r["notes"])
-        doc = {
-            "id": doc_id(r["link"]), "company": r["company"], "vendor": r.get("vendor", ""), "role": r["role"],
-            "where": r["where"], "workType": work_type(r["where"]), "type": r["type"], "pay": r["pay"],
-            "source": r["source"], "fit": r["fit"], "spons": r["spons"], "status": status, "reviewReason": reason,
-            "ats": ats, "claudeCanApply": None, "applyUrl": "", "link": r["link"],
-            "category": guess_category(r["notes"]) if status == "Skipped" else "", "notes": notes,
-            "foundAt": a.date, "updatedAt": a.date, "stage": "",
-        }
-        if status == "Applied":
-            doc["appliedAt"], doc["appliedBy"] = a.date, "claude"
-        docs.append(doc)
-    Path(a.out).write_text(json.dumps(docs, indent=1, ensure_ascii=False))
-    print(f"{len(docs)} docs -> {a.out}")
+def cmd_criteria(a):
+    """The dashboard's meta/criteria doc: the rules in force, for its "What if we widen the criteria" panel."""
+    p = load_profile(a.profile)
+    names = {v: k.title() for k, v in STATES.items()}
+    states = p["locations"]["onsite_states"]
+    f = p["pay_floor"]
+    rules = [
+        ["Remote", "Anywhere in the US" if p["locations"].get("remote_scope", "US") == "US" else str(p["locations"]["remote_scope"])],
+        ["Hybrid or on-site", ", ".join(names.get(s, s) for s in states) + " only" if states else "Not accepted"],
+        ["Pay floors", f"${f['annual'] / 1000:.0f}K full-time, ${f['w2_hourly']}/hr W2, ${f['c2c_hourly']}/hr C2C, ${f['contract_hourly']}/hr contract (only when pay is listed)"],
+        ["Seniority", f"No more than {p['max_years_required']} years asked; skips titles with " + ", ".join(p["title_exclude"]["seniority"][:4])],
+        ["Visa", "Skips postings that rule out sponsorship" if p["auth"]["exclude_patterns"] else "No sponsorship needed"],
+        ["Clearance", "Skips clearance-required roles" if p["clearance_patterns"] else "Clearance roles allowed"],
+    ]
+    doc = {"onsiteStates": states, "rules": [{"label": k, "text": v} for k, v in rules], "updatedAt": today()}
+    Path(a.out).write_text(json.dumps(doc, indent=1))
+    print(f"meta/criteria -> {a.out}: write it with ArtifactData set (collection meta, doc_id criteria)")
 
 
 if __name__ == "__main__":
@@ -187,9 +150,9 @@ if __name__ == "__main__":
     s = sub.add_parser("new"); s.add_argument("decisions"); s.add_argument("postings"); s.add_argument("--out", required=True)
     s = sub.add_parser("writes"); s.add_argument("docs"); s.add_argument("--dir", required=True); s.add_argument("--update", action="store_true")
     s = sub.add_parser("check"); s.add_argument("docs")
-    s = sub.add_parser("migrate"); s.add_argument("html"); s.add_argument("--out", required=True); s.add_argument("--date", default=today())
+    s = sub.add_parser("criteria"); s.add_argument("--profile", required=True); s.add_argument("--out", required=True)
     a = ap.parse_args()
     if a.cmd == "id":
         print(doc_id(a.link))
     else:
-        {"new": cmd_new, "writes": cmd_writes, "check": cmd_check, "migrate": cmd_migrate}[a.cmd](a)
+        {"new": cmd_new, "writes": cmd_writes, "check": cmd_check, "criteria": cmd_criteria}[a.cmd](a)

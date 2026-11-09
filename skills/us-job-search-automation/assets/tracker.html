@@ -126,6 +126,53 @@ select.stage{font:inherit;font-size:12.5px;background:var(--surface);color:var(-
 .run .what{font-size:13.5px}
 .run .gap{font-size:12.5px;color:var(--warn);grid-column:2}
 .foot{color:var(--muted);font-size:12.5px;max-width:95ch;margin:0}
+
+/* what-if */
+.fold{background:var(--surface);border:1px solid var(--line);border-radius:10px;min-width:0}
+.fold>summary{list-style:none;cursor:pointer;display:flex;gap:16px;align-items:center;justify-content:space-between;padding:16px 18px}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:10px}
+.fold .fh{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fold .teaser{color:var(--muted);font-size:13px}
+.fold .chev{flex:none;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:-3px 4px 0 0;transition:transform .2s}
+.fold[open]>summary .chev{transform:rotate(-135deg);margin-top:3px}
+.fold[open]>summary{border-bottom:1px solid var(--line)}
+.foldbody{padding:16px 18px 18px;display:flex;flex-direction:column;gap:14px}
+.foldbody .intro{margin:0;color:var(--muted);font-size:13px;max-width:70ch}
+@media (prefers-reduced-motion:reduce){.fold .chev{transition:none}}
+.stbar{display:grid;grid-template-columns:18px minmax(90px,30%) 1fr auto;gap:10px;align-items:center;font-size:13px;cursor:pointer}
+.stbar input{margin:0;accent-color:var(--accent);width:16px;height:16px}
+.stbar .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stbar .track{height:14px;background:var(--sunk);border-radius:2px;position:relative}
+.stbar .fill{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:0 4px 4px 0;min-width:2px;opacity:.55}
+.stbar input:checked ~ .track .fill{opacity:1}
+.stbar .num{font-family:var(--font-data);font-size:12.5px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.stbar .num small{color:var(--faint);font-size:11.5px;margin-left:6px}
+.pickline{margin:12px 0 0;font-size:13px;padding:10px 12px;border-radius:8px;background:var(--accent-soft);color:var(--fg)}
+.rules{display:grid;gap:10px;margin:0}
+.rules div{display:grid;grid-template-columns:112px 1fr;gap:10px;font-size:13px}
+.rules dt{color:var(--muted)}
+.rules dd{margin:0}
+.levers{display:flex;flex-direction:column;gap:10px}
+.lever{background:var(--surface);border:1px solid var(--line);border-radius:10px;min-width:0}
+.lever summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;padding:14px 16px;align-items:center}
+.lever summary::-webkit-details-marker{display:none}
+.lever summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:10px}
+.lever h3{font-size:14.5px;font-weight:600;margin:0;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.lever h3 .count{font-weight:400}
+.lever .chg{margin:2px 0 0;color:var(--muted);font-size:13px}
+.lever[open] summary{border-bottom:1px solid var(--line)}
+.tag{font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.tag.can{background:var(--good-soft);color:var(--good)}
+.tag.fixed{background:var(--idle-soft);color:var(--idle)}
+.jobs{max-height:360px;overflow:auto}
+.jrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:2px 14px;padding:10px 16px;border-bottom:1px solid var(--line);align-items:baseline}
+.jrow:last-child{border-bottom:0}
+.jrow a{color:var(--accent);font-weight:500}
+.jrow small{display:block;color:var(--muted);font-size:12.5px}
+.jrow .n{grid-column:1/-1;color:var(--muted);font-size:12.5px;margin:0}
+.jrow.hit{background:var(--accent-soft)}
+@media (max-width:560px){.rules div{grid-template-columns:1fr;gap:2px}.jrow{grid-template-columns:minmax(0,1fr) auto}.jrow .pay{grid-column:1}.stbar{grid-template-columns:18px minmax(70px,34%) 1fr auto}}
 @media (max-width:560px){.run{grid-template-columns:1fr}.run .gap{grid-column:1}h1{font-size:26px}.bar{grid-template-columns:minmax(90px,40%) 1fr auto}}
 @media (prefers-reduced-motion:no-preference){.fill,.stick{transition:width .3s ease,height .3s ease}}
 </style>
@@ -155,6 +202,21 @@ select.stage{font:inherit;font-size:12.5px;background:var(--surface);color:var(-
       <div class="panel"><h3>Applications per day, last 14 days</h3><div id="daily"></div></div>
       <div class="panel"><h3>Where jobs came from</h3><div class="bars" id="sources"></div><p class="note" id="sourceNote"></p></div>
     </div>
+  </section>
+
+  <section aria-labelledby="wi-h">
+   <details class="fold" id="wiFold">
+    <summary><span class="fh"><h2 id="wi-h">What if we widen the criteria</h2><span class="teaser" id="wiTeaser">Loading…</span></span><span class="chev" aria-hidden="true"></span></summary>
+    <div class="foldbody">
+    <p class="intro">Every job Claude skipped, grouped by the rule that stopped it. Counts come from the rows reviewed so far, so a wider search would find more than shown. "Strong" means a High or Medium fit.</p>
+    <div class="stats" id="wiStats" aria-label="What-if summary"></div>
+    <div class="grid2">
+      <div class="panel"><h3>Rules in force today</h3><dl class="rules" id="rules"></dl></div>
+      <div class="panel"><h3>Skipped for location, by state</h3><div class="bars" id="wiStates"></div><p class="pickline" id="wiPick" aria-live="polite"></p></div>
+    </div>
+    <div class="levers" id="levers"></div>
+    </div>
+   </details>
   </section>
 
   <section aria-labelledby="fu-h">
@@ -358,7 +420,107 @@ select.stage{font:inherit;font-size:12.5px;background:var(--surface);color:var(-
       ${(r.notSearched || []).map(n => `<span class="gap">Not searched: ${esc(n.portal)}. ${esc(n.why)}</span>`).join("")}</div>`).join("");
   }
 
-  function render() { stats(); queue(); charts(); followups(); table(); runs(); }
+
+  // ---------------------------------------------------------------- what-if
+  let CRIT = null;  // meta/criteria, written by Claude from the profile on each run (tracker.py criteria)
+  const allowedStates = () => (CRIT && CRIT.onsiteStates) || [];
+  const STATES = Object.fromEntries(("AL:Alabama,AK:Alaska,AZ:Arizona,AR:Arkansas,CA:California,CO:Colorado,CT:Connecticut,DE:Delaware,FL:Florida,GA:Georgia,HI:Hawaii,ID:Idaho,IL:Illinois,IN:Indiana,IA:Iowa,KS:Kansas,KY:Kentucky,LA:Louisiana,ME:Maine,MD:Maryland,MA:Massachusetts,MI:Michigan,MN:Minnesota,MS:Mississippi,MO:Missouri,MT:Montana,NE:Nebraska,NV:Nevada,NH:New Hampshire,NJ:New Jersey,NM:New Mexico,NY:New York,NC:North Carolina,ND:North Dakota,OH:Ohio,OK:Oklahoma,OR:Oregon,PA:Pennsylvania,RI:Rhode Island,SC:South Carolina,SD:South Dakota,TN:Tennessee,TX:Texas,UT:Utah,VT:Vermont,VA:Virginia,WA:Washington,WV:West Virginia,WI:Wisconsin,WY:Wyoming,DC:District of Columbia").split(",").map(p => p.split(":")));
+  const BY_NAME_LEN = Object.entries(STATES).sort((a, b) => b[1].length - a[1].length);
+  const stateOf = j => {
+    const w = String(j.where || "");
+    for (const a of (w.match(/\b[A-Z]{2}\b/g) || [])) if (STATES[a]) return a;
+    const low = w.toLowerCase();
+    for (const [a, n] of BY_NAME_LEN) if (low.includes(n.toLowerCase())) return a;
+    return "";
+  };
+  const LEVERS = {
+    "Location": { can: true, change: "Add states to the hybrid and on-site list. Remote roles are already open everywhere in the US." },
+    "Pay below floor": { can: true, change: "Lower a pay floor, or accept postings that do not list pay." },
+    "Seniority": { can: true, change: "Raise the years ceiling, or allow lead titles." },
+    "Employment type": { can: true, change: "Accept another contract type." },
+    "Role mismatch": { can: true, change: "Add titles to your targets." },
+    "Stack mismatch": { can: true, change: "Widen the stack, only where your resume supports it." },
+    "Application barrier": { can: true, change: "Answer the blocking question once (a salary figure, for example) and Claude can proceed." },
+    "Sponsorship / authorization": { can: false, change: "The posting itself rules out an H-1B transfer. Nothing on your side changes this." },
+    "Clearance": { can: false, change: "Needs a clearance or citizenship you do not hold." },
+    "Stale / duplicate": { can: false, change: "Already covered by another posting, or no longer open." },
+    "Spam / duplicate": { can: false, change: "Mass-recruiter or duplicate posting." },
+    "Other": { can: false, change: "No reason was recorded." },
+  };
+  const wiSel = new Set(), wiOpen = new Set();
+  const strong = j => j.fit === "High" || j.fit === "Medium";
+  const fitRank = j => ({ High: 0, Medium: 1, Low: 2 })[j.fit] ?? 3;
+  const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+  const clip = (s, n) => { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+
+  function jobRow(j, hit) {
+    const url = safeUrl(j.link);
+    return `<div class="jrow ${hit ? "hit" : ""}"><div>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(j.role)}</a>` : esc(j.role)}<small>${esc(j.company)} · ${esc(j.where)}</small></div>
+      <span class="mono pay" style="font-family:var(--font-data);font-size:12.5px">${esc(j.pay)}</span>
+      <span class="${j.fit ? "f-" + esc(j.fit) : ""}" style="font-size:12.5px">${j.fit ? esc(j.fit) + " fit" : '<span style="color:var(--faint)">fit not scored</span>'}</span>
+      <p class="n">${esc(clip(j.notes, 190))}</p></div>`;
+  }
+
+  function whatIf() {
+    if (!loaded) { $("wiTeaser").textContent = "Loading…"; $("wiStats").innerHTML = ""; $("rules").innerHTML = ""; $("wiStates").innerHTML = ""; $("wiPick").hidden = true; $("levers").innerHTML = `<div class="empty">Loading skipped jobs…</div>`; return; }
+    const skipped = JOBS.filter(j => j.status === "Skipped");
+    const cat = j => LEVERS[j.category] ? j.category : "Other";
+    const changeable = skipped.filter(j => LEVERS[cat(j)].can);
+    const byState = {};
+    skipped.filter(j => j.category === "Location").forEach(j => { const a = stateOf(j) || "??"; if (allowedStates().includes(a)) return; (byState[a] = byState[a] || []).push(j); });
+    const stRows = Object.entries(byState).sort((a, b) => b[1].filter(strong).length - a[1].filter(strong).length || b[1].length - a[1].length);
+    const top = stRows.find(([a]) => a !== "??");
+
+    const items = [
+      [skipped.filter(strong).length, "Strong matches skipped", "High or Medium fit", "go"],
+      [changeable.length, "Skipped by a rule you set", `${changeable.filter(strong).length} of them strong matches`, changeable.length ? "attn" : ""],
+      [top ? top[1].length : 0, top ? "Blocked only by " + (STATES[top[0]] || top[0]) : "Blocked by one state", top ? `${top[1].filter(strong).length} strong · the biggest location gap` : "no location skips yet", ""],
+      [skipped.length - changeable.length, "Ruled out by the posting", "visa, clearance, duplicates", ""],
+    ];
+    $("wiStats").innerHTML = items.map(([v, l, s, c]) => `<div class="stat ${c}"><span>${l}</span><b>${v}</b><span>${s}</span></div>`).join("");
+    $("wiTeaser").textContent = `${skipped.filter(strong).length} strong matches skipped, ${changeable.length} by rules you can change` + (top ? `. ${STATES[top[0]] || top[0]} is the biggest location gap.` : ".") + " Click to expand.";
+    const rules = (CRIT && CRIT.rules) || [];
+    $("rules").innerHTML = rules.length ? rules.map(r => `<div><dt>${esc(r.label)}</dt><dd>${esc(r.text)}</dd></div>`).join("") : `<p class="note" style="margin:0">Claude records the rules here on its next run.</p>`;
+
+    const max = Math.max(1, ...stRows.map(r => r[1].length));
+    $("wiStates").innerHTML = stRows.length ? stRows.map(([a, js]) => {
+      const nm = a === "??" ? "State unclear" : STATES[a] || a, s = js.filter(strong).length;
+      return `<label class="stbar" title="${esc(nm)}: ${plural(js.length, "job")}, ${s} strong">
+        <input type="checkbox" data-st="${esc(a)}" ${wiSel.has(a) ? "checked" : ""} ${a === "??" ? "disabled" : ""} aria-label="Include ${esc(nm)}">
+        <span class="lab">${esc(nm)}</span><span class="track"><span class="fill" style="width:${(js.length / max * 100).toFixed(1)}%"></span></span>
+        <span class="num">${js.length}<small>${s} strong</small></span></label>`;
+    }).join("") : `<p class="note">No jobs have been skipped for location yet.</p>`;
+
+    const pick = [...wiSel].filter(a => byState[a]);
+    const pickEl = $("wiPick"); pickEl.hidden = !stRows.length;
+    if (pick.length) {
+      const js = pick.flatMap(a => byState[a]);
+      pickEl.innerHTML = `Adding <b>${esc(pick.map(a => STATES[a] || a).join(", "))}</b> brings back <b>${plural(js.length, "reviewed job")}</b>, ${js.filter(strong).length} of them strong matches. Ask Claude to add ${pick.length === 1 ? "it" : "them"} and the next run applies where they fit.`;
+    } else if (top) {
+      pickEl.innerHTML = `Tick states to see what adding them would bring back. Adding <b>${esc(STATES[top[0]] || top[0])}</b> alone returns ${plural(top[1].length, "job")}, ${top[1].filter(strong).length} strong.`;
+    }
+
+    const groups = {};
+    skipped.forEach(j => (groups[cat(j)] = groups[cat(j)] || []).push(j));
+    const ordered = Object.entries(groups).sort((a, b) => (LEVERS[b[0]].can - LEVERS[a[0]].can) || (b[1].filter(strong).length - a[1].filter(strong).length) || (b[1].length - a[1].length));
+    $("levers").innerHTML = ordered.length ? ordered.map(([c, js]) => {
+      const L = LEVERS[c], s = js.filter(strong).length;
+      const rows = js.slice().sort((a, b) => fitRank(a) - fitRank(b) || String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+      return `<details class="lever" data-lv="${esc(c)}" ${wiOpen.has(c) ? "open" : ""}>
+        <summary><div><h3>${esc(c)}<span class="count">${plural(js.length, "job")} · ${s} strong</span></h3><p class="chg">${esc(L.change)}</p></div>
+        <span class="tag ${L.can ? "can" : "fixed"}">${L.can ? "You can change this" : "Fixed by the posting"}</span></summary>
+        <div class="jobs">${rows.map(j => jobRow(j, c === "Location" && wiSel.has(stateOf(j)))).join("")}</div></details>`;
+    }).join("") : `<div class="empty">Nothing has been skipped yet.</div>`;
+  }
+
+  document.addEventListener("change", e => {
+    if (e.target.matches && e.target.matches("input[data-st]")) { const a = e.target.dataset.st; e.target.checked ? wiSel.add(a) : wiSel.delete(a); whatIf(); }
+  });
+  document.addEventListener("toggle", e => {
+    const d = e.target; if (d && d.matches && d.matches("details[data-lv]")) d.open ? wiOpen.add(d.dataset.lv) : wiOpen.delete(d.dataset.lv);
+  }, true);
+
+  function render() { stats(); queue(); charts(); whatIf(); followups(); table(); runs(); }
 
   document.addEventListener("click", e => {
     const b = e.target.closest("button[data-a]"); if (!b || b.disabled) return;
@@ -389,6 +551,7 @@ select.stage{font:inherit;font-size:12.5px;background:var(--surface);color:var(-
       if (!snap.metadata.fromCache) { clearTimeout(timer); setLive(true, `Live · ${JOBS.length} jobs`); }
       loaded = true; render();
     }, err => { clearTimeout(timer); loaded = true; setLive(false, err && err.code === "revoked" ? "Access to the tracker ended." : "The tracker stopped updating. Reload to reconnect."); render(); });
+    db.collection("meta").onSnapshot(snap => { const d = snap.docs.find(x => x.id === "criteria"); CRIT = d ? d.data() : null; render(); }, () => {});
     db.collection("runs").orderBy("date", "desc").limit(5).onSnapshot(snap => { RUNS = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)); render(); }, () => {});
   })();
 })();

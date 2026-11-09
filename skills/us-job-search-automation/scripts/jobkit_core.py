@@ -41,9 +41,16 @@ def _merge_missing(dst: dict, src: dict) -> None:
 
 
 def _fill_defaults(prof: dict) -> None:
-    """A profile written for an older version lacks newer keys: fill them from the bundled defaults."""
-    if DEFAULTS_FILE.exists():
-        _merge_missing(prof, json.loads(DEFAULTS_FILE.read_text(encoding="utf-8")))
+    """A profile written for an older version lacks newer keys: fill them from the bundled defaults.
+    A profile that excludes no-sponsorship postings also inherits newly added exclusion wordings,
+    so a toolkit update reaches it without a profile edit. An empty list (citizen, green card) stays empty."""
+    if not DEFAULTS_FILE.exists():
+        return
+    defaults = json.loads(DEFAULTS_FILE.read_text(encoding="utf-8"))
+    _merge_missing(prof, defaults)
+    mine = prof.get("auth", {}).get("exclude_patterns")
+    if mine:
+        mine.extend(p for p in defaults["auth"]["exclude_patterns"] if p not in mine)
 
 
 def load_profile(path: str | Path) -> dict:
@@ -120,7 +127,7 @@ def parse_states(location: str) -> list[str]:
 
 
 def parse_pay(text: str) -> dict | None:
-    """Return {'low','high','unit'} with unit 'year' or 'hour', or None."""
+    """Return {'low','high','unit'} with unit 'year' or 'hour', or None. Monthly pay is annualised."""
     if not text:
         return None
     t = text.lower().replace(",", "")
@@ -130,6 +137,8 @@ def parse_pay(text: str) -> dict | None:
         nums.append(v)
     if not nums:
         return None
+    if re.search(r"a month|per month|/\s*mo(nth)?\b|monthly", t):
+        return {"low": min(nums) * 12, "high": max(nums) * 12, "unit": "year"}
     hourly_hint = re.search(r"/\s*h(ou)?r|an hour|per hour|hourly", t)
     yearly_hint = re.search(r"/\s*yr|a year|per year|annual|/year", t)
     unit = "hour" if hourly_hint else "year" if yearly_hint else ("hour" if max(nums) < 400 else "year")
@@ -142,7 +151,7 @@ def parse_pay(text: str) -> dict | None:
 def years_required(text: str) -> int | None:
     """Largest 'N+ years' figure in the text (ignores numbers above 25)."""
     best = None
-    for m in re.finditer(r"(\d{1,2})\s*\+?\s*(?:(?:-|to|–)\s*(\d{1,2})\s*\+?\s*)?(?:years|yrs)", text, re.I):
+    for m in re.finditer(r"(\d{1,2})\s*\+?\s*(?:(?:-|to|–)\s*(\d{1,2})\s*\+?\s*)?(?:years?|yrs?)\b", text, re.I):
         n = max(int(m.group(1)), int(m.group(2) or 0))
         if n <= 25:
             best = n if best is None else max(best, n)
@@ -209,6 +218,9 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
             return _skip(res, "Role mismatch", f"title contains '{term}'")
     if not any(_has(t, tl) for t in profile["title_include"]):
         return _skip(res, "Role mismatch", "title is not a target role")
+    t_yrs = years_required(title)
+    if t_yrs is not None and t_yrs > profile["max_years_required"]:
+        return _skip(res, "Seniority", f"title asks for {t_yrs}+ years (ceiling {profile['max_years_required']})")
 
     # 4. location
     wt = parse_work_type(posting)
@@ -295,6 +307,19 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
     def term_re(t):
         return (rf"\b{re.escape(t)}\b", 0) if t in cs_terms else (re.escape(t), re.I)
 
+    # Indeed's screening format "C#: 3 years (Required)" is a hard requirement, even when the same
+    # skill also appears as an alternative elsewhere in the posting.
+    known = set(core) | set(profile.get("verified_years", {})) | {s for r in profile.get("roles", []) for s in r.get("skills", [])}
+    req_gaps = []
+    for skill, n in re.findall(r"([A-Za-z][\w#+./ -]{0,30}?)\s*:\s*(\d{1,2})\s*\+?\s*years?\s*\((?:required|req\.?)\)", everything, re.I):
+        skill = re.split(r"[.;,]\s+", skill)[-1].strip()
+        s = skill.lower()
+        if any(_has(m_, s) for m_ in st["missing"]):
+            return _skip(res, "Stack mismatch", f"screening requires {n} years of {skill}, which the resume does not show")
+        if not any(_has(k, s) or _has(s, k) for k in known):
+            res["flags"].append(f"screening requires {n} years of {skill}: not on the resume")
+            req_gaps.append(f"{skill} required")
+
     # terms offered as alternatives to the primary language ("Java, Python, C#, Kotlin, or Go") are not gaps
     for sent in re.split(r"(?<=[.;\n])", everything):
         alt_list = (re.search(rf"(such as|one of|any of|e\.g\.|languages? like)[^.;\n]{{0,80}}{lang_re}", sent, re.I)
@@ -333,7 +358,7 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
     # 13. fit
     frontend = [f for f in profile["stack"]["frontend"] if f in core]
     has_spring = any(c.startswith("spring") for c in core)
-    gaps = list(missing)
+    gaps = list(missing) + req_gaps
     if yrs is not None and yrs > profile.get("candidate_years", 8):
         gaps.append(f"asks {yrs}+ years")
     if java_present and frontend and len(core) >= 5 and not gaps:
