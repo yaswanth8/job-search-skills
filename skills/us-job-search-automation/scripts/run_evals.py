@@ -20,7 +20,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from jobkit_core import build_search_plan, classify_ats, extract_contacts, load_profile, parse_post, skill_years, vet  # noqa: E402
+from jobkit_core import build_search_plan, classify_ats, extract_contacts, load_profile, parse_post, post_prefer, skill_years, vet  # noqa: E402
 
 
 def main():
@@ -78,7 +78,7 @@ def main():
         fx = load_profile(ev / "fixture_profile.json")
         cases = json.loads(pp.read_text())
         for c in cases["posts"]:
-            p = parse_post(c["post"])
+            p = parse_post(c["post"], post_prefer(fx))
             r = vet(p, fx, "post")
             e, probs = c["expect"], []
             if r["action"] != e["action"]:

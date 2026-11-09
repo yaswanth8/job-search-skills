@@ -63,12 +63,14 @@ def cmd_new(a):
     for d in decisions:
         p = postings.get(d["id"], {})
         link = p.get("link") or d["id"]
+        if p.get("source") == "LinkedIn post" and d["action"] == "skip" and (d.get("category") == "Not a job post" or not p.get("title")):
+            continue   # bench lists and role-less posts are noise on the dashboard
         status = {"apply": "New", "review": "Review", "needs_call": "Review", "contact": "Review", "skip": "Skipped"}.get(d["action"], "New")
         contacts, poster = d.get("contacts") or {}, p.get("poster") or {}
         ats = d.get("ats") or (classify_ats(p.get("apply_url", "")) if p.get("apply_type") == "company_site" else None)
         doc = {
             "id": doc_id(link), "company": p.get("company", "") or "Not stated", "vendor": p.get("vendor", ""), "role": p.get("title", "") or "Role not stated in post",
-            "where": " · ".join(x for x in [p.get("location", ""), p.get("work_type", "")] if x),
+            "where": " · ".join(x for x in [p.get("location", ""), p.get("work_type", "") if p.get("work_type", "").lower().replace("-", "") not in p.get("location", "").lower().replace("-", "") else ""] if x),
             "workType": p.get("work_type", ""), "type": p.get("employment_type") or d.get("engagement") or "Not stated",
             "pay": p.get("pay") or "Not listed", "source": p.get("source", ""), "fit": d.get("fit") or "",
             "spons": d.get("sponsorship", "Needs Confirmation"), "status": status,

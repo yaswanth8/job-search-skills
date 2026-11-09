@@ -5,7 +5,7 @@ description: "Automates a US job search end to end: finds fresh listings on Link
 
 # US Job Search Automation
 
-Version: 1.3.0 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 1.3.1 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **plan, search, vet, apply, track, report**. An application is a statement in the candidate's name: the profile and resume are the only sources of facts. Anything they don't cover is asked once or skipped, never guessed.
 

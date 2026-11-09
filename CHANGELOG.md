@@ -2,6 +2,14 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.3.1 (2026-11-09)
+First live run of the recruiter-post search, and the fixes it called for.
+- `linkedin_posts.js` reads LinkedIn's current search page (posts are `role="listitem"` cards with no post ids), names the person rather than the group for posts inside groups, and is pasted once: later pages are `__lp(1)`, `__lp(2)`...
+- `parse_post` reads labels that follow an emoji ("📍 Location:"), finds the role in posts without a "Title:" line, picks the candidate's role out of a multi-role post, and reads locations written as "Hybrid | Lansing, MI" or "Newark, NJ – Onsite". The location line outranks a passing "remote" elsewhere in the post.
+- A post naming an office state outside the profile's states, with no mention of remote, is skipped for location.
+- Bench lists and posts with no role are no longer written to the tracker.
+- Six back-test cases from the live run (names and contacts replaced). 107 checks.
+
 ## 1.3.0 (2026-11-09) **Requires new instructions**
 - **Dashboard rebuilt** (template 2): five views (Overview, Needs you, Applied, All jobs, What if) with clickable tiles, tabs and chart bars; a time-range filter; row details; contact details with copy buttons. The "What if we widen the criteria" panel from 1.2.0 is now its own view. Existing trackers are offered a refresh (`meta/tracker`); rows are untouched.
 - **Recruiter posts**: `posts.py` and `linkedin_posts.js` search LinkedIn feed posts by keyword or role, read role, C2C/W2, rate, email and phone, drop job-seeker posts and bench lists, and add passing posts to the tracker as "Reach out" (reviewReason `contact`). Claude never contacts anyone itself. The snippet has not yet run against the live site.

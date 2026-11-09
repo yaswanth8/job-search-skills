@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from jobkit_core import load_profile, parse_post, vet  # noqa: E402
+from jobkit_core import load_profile, parse_post, post_prefer, vet  # noqa: E402
 
 
 def read_posts(text: str) -> list[dict]:
@@ -56,11 +56,12 @@ def main():
     if a.seen and Path(a.seen).exists():
         raw = Path(a.seen).read_text().strip()
         seen = set(json.loads(raw)) if raw.startswith("[") else {l.strip() for l in raw.splitlines() if l.strip()}
+    prefer = post_prefer(profile)
     postings, decisions, hashes = [], [], set()
     for post in read_posts(Path(a.posts).read_text(encoding="utf-8")):
         if len((post.get("text") or "").strip()) < 40:
             continue
-        p = parse_post(post)
+        p = parse_post(post, prefer)
         if p["text_hash"] in hashes:
             continue
         hashes.add(p["text_hash"])

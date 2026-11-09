@@ -20,11 +20,11 @@ Page loads and reading are what make a run slow. Keep both small:
 
 ## LinkedIn posts (recruiter requirements)
 Many contract roles only ever appear as feed posts ("Java C2C/W2, share resumes to..."). The plan's `post_searches` cover them. When the user asks for a keyword or role search ("search posts for JAVA AND CONTRACT/W2"), run `plan.py --post-query '<their words>'`.
-1. Open the post-search URL, wait, and run `js/linkedin_posts.js`, raising `PAGE` until the header says all posts are read. Scroll and repeat for more. Save every page's output to one `.txt` file.
+1. Open the post-search URL, wait, and paste `js/linkedin_posts.js` once (it expands every "… more"). Wait two seconds, then call `__lp(0)`, `__lp(1)`... in one `browser_batch` until the header says all pages are read. The page loads more posts as it is read, so the page count can grow; scroll and repeat for more. Save every page's output to one `.txt` file.
 2. `posts.py posts.txt --profile PROFILE --seen seen.txt --out-postings pp.json --out-decisions pd.json` reads each post's role, location, C2C/W2, rate, email and phone, drops job-seeker posts and bench lists, removes reposts, and vets the rest.
 3. `tracker.py new pd.json pp.json` turns passing posts into **Reach out** rows (status Review, reviewReason contact) with the recruiter's name, email, phone and profile link.
 
-These are manual applies. Never email, call, message or connect with a recruiter for the user; draft a message only when asked. This snippet has not yet run against the live site: if it prints `NO POSTS FOUND`, read the page text it returns and build the same `@@` lines by hand.
+These are manual applies. Never email, call, message or connect with a recruiter for the user; draft a message only when asked. Verified on the live site 2026-11-09 (about 20 posts per search, most of them bench lists that `posts.py` drops). LinkedIn's search page carries no post ids, so a row links to the poster's profile. If the snippet prints `NO POSTS FOUND`, read the page text it returns and build the same `@@` lines by hand.
 
 ## Contacts on ordinary postings
 `linkedin_job.js` prints a `hiring:` line (the "Meet the hiring team" person) and a `contacts:` line (emails and phones in the description). Put the hiring person in the posting object as `poster` {name, title}, and keep the contacts line inside `description`: `vet.py` extracts them and `tracker.py new` saves them on the row.

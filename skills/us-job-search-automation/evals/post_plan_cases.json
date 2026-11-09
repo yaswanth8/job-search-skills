@@ -139,6 +139,103 @@
      "+1 469-555-0188"
     ]
    }
+  },
+  {
+   "id": "post-live-emoji-labels",
+   "note": "2026-11-09 live LinkedIn post search; names and contacts replaced",
+   "post": {
+    "author": "Recruiter Example",
+    "authorTitle": "C2C and W2 positions",
+    "authorUrl": "https://www.linkedin.com/groups/1/",
+    "age": "6m",
+    "text": "Hiring: Java Full Stack Developer – AWS & AEM\n📍 Location: Malvern, PA - Onsite\n⏳ Duration: 6 Months Contract\n💼 Experience: 8+ Years\nWe are looking for an experienced Java Full Stack Developer with strong hands-on experience in Java, Spring Boot\ncontacts: lead@example.com"
+   },
+   "expect": {
+    "action": "skip",
+    "category": "Location",
+    "work_type": "On-site",
+    "title_contains": "Java Full Stack"
+   }
+  },
+  {
+   "id": "post-live-pipe-location",
+   "note": "2026-11-09 live LinkedIn post search; names and contacts replaced",
+   "post": {
+    "author": "Example Staffing",
+    "authorTitle": "",
+    "authorUrl": "https://www.linkedin.com/company/example/",
+    "age": "15m",
+    "text": "Programmer 6 — Java Full-Stack Developer\nHybrid | Lansing, MI | Temporary W-2 contract\nRFQ 1 | Estimated 13 months | 1 opening\nDevelop and deploy full-stack Java applications with Spring\ncontacts: careers@example.com"
+   },
+   "expect": {
+    "action": "skip",
+    "category": "Location",
+    "work_type": "Hybrid"
+   }
+  },
+  {
+   "id": "post-live-role-list",
+   "note": "2026-11-09 live LinkedIn post search; names and contacts replaced",
+   "post": {
+    "author": "Recruiter Example",
+    "authorTitle": "OPT recruiter",
+    "authorUrl": "https://www.linkedin.com/in/example-r/",
+    "age": "3h",
+    "text": "WE ARE HIRING | MULTIPLE IT OPPORTUNITIES ACROSS THE USA\nWe are actively connecting experienced IT professionals with client opportunities\n🔹 Open Positions\nData Engineer (Azure, AWS, GCP)\nPython Developer\nJava Full Stack Developer\ncontacts: r@example.com"
+   },
+   "expect": {
+    "action": "contact",
+    "emails": [
+     "r@example.com"
+    ],
+    "title_contains": "Java Full Stack"
+   }
+  },
+  {
+   "id": "post-live-state-no-remote",
+   "note": "2026-11-09 live LinkedIn post search; names and contacts replaced",
+   "post": {
+    "author": "Example IT LLC",
+    "authorTitle": "",
+    "authorUrl": "https://www.linkedin.com/company/example-it/",
+    "age": "2h",
+    "text": "🚨 WE ARE HIRING: PROGRAMMER 6 – SENIOR JAVA / REACT DEVELOPER 🚨\nExample IT is looking for an experienced Senior Java Full Stack Developer\n📌 Position: Programmer 6 – Java / React Developer\n📍 Location: Lansing, MI\ncontacts: n@example.com"
+   },
+   "expect": {
+    "action": "skip",
+    "category": "Location"
+   }
+  },
+  {
+   "id": "post-live-onsite-remote-aside",
+   "note": "2026-11-09 live LinkedIn post search; names and contacts replaced",
+   "post": {
+    "author": "Recruiter Example",
+    "authorTitle": "US IT Recruiter",
+    "authorUrl": "https://www.linkedin.com/in/example-s/",
+    "age": "3h",
+    "text": "Hi All,\nW2\nJava Full Stack Developer\nNewark, NJ – Onsite\nRemote is also fine if we have a strong candidate\nExperience: 10 years\ncontacts: s@example.com"
+   },
+   "expect": {
+    "action": "skip",
+    "category": "Location",
+    "work_type": "On-site"
+   }
+  },
+  {
+   "id": "post-live-hotlist",
+   "note": "2026-11-09 live LinkedIn post search; names and contacts replaced",
+   "post": {
+    "author": "Recruiter Example",
+    "authorTitle": "Bench Sales Recruiter",
+    "authorUrl": "https://www.linkedin.com/in/example-b/",
+    "age": "3m",
+    "text": "AVAILABLE CONSULTANTS | OPEN TO C2C / C2H / CONTRACT OPPORTUNITIES\nDevOps Engineer – 8+ Years | H1B\nJava Backend Developer – 9+ Years | H1B\nJava Full Stack Developer – 9+ Years | H1B\ncontacts: b@example.com, 248-555-0160"
+   },
+   "expect": {
+    "action": "skip",
+    "category": "Not a job post"
+   }
   }
  ],
  "contacts": [

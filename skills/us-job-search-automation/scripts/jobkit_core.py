@@ -249,7 +249,7 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
             res["flags"].append("work location state unclear")
     if wt is None:
         res["flags"].append("work type not stated")
-        if states and not (set(states) & set(profile["locations"]["onsite_states"])) and mode == "full" and not re.search(r"\bremote\b", desc, re.I):
+        if states and not (set(states) & set(profile["locations"]["onsite_states"])) and mode in ("full", "post") and not re.search(r"\bremote\b", desc, re.I):
             return _skip(res, "Location", f"office in {', '.join(states)} and remote not mentioned")
 
     # 5. pay floor (from the card or posting pay field)
@@ -546,7 +546,7 @@ def parse_engagement(text: str) -> dict:
 
 
 def _field(text: str, labels: str) -> str:
-    m = re.search(rf"^\s*(?:[-*•▪#>]\s*)?(?:{labels})\s*[:\-–]\s*(.+)$", text, re.I | re.M)
+    m = re.search(rf"^[^\w\n]*(?:{labels})[ \t]*[:\-–][ \t]*(.+)$", text, re.I | re.M)   # labels often follow an emoji or bullet
     return m.group(1).strip(" *_.") [:140] if m else ""
 
 
@@ -559,25 +559,54 @@ def post_age_hours(age: str) -> float | None:
     return n * {"m": 1 / 60, "h": 1, "d": 24, "w": 168, "mo": 720, "y": 8760, "yr": 8760}[u]
 
 
-def parse_post(post: dict) -> dict:
+ROLE_NOUN_RE = re.compile(r"\b(developer|engineer|architect|programmer|analyst|administrator|consultant|tester|scientist|manager|lead)s?\b", re.I)
+HIRING_LEAD_RE = re.compile(r"^[^\w\n]*(?:(?:we(?:'| a)re|we are|i am|i'm|now|urgent(?:ly)?|immediate|actively)\s+)*(?:hiring|opening|requirement|needed?|looking for)\b\s*(?:an?\s+|the\s+)?[:|\-–]*\s*", re.I)
+
+
+def _clean_title(line: str) -> str:
+    s = HIRING_LEAD_RE.sub("", line.strip())
+    s = re.sub(r"^[^\w(]+|[^\w)+#]+$", "", s)
+    s = re.split(r"\s+[|–—]\s+|\s+-\s+|\s+(?:with|who|for|in|at)\s+(?=[a-z])", s)[0] if len(s) > 60 else s
+    return s.strip(" *_|-–")[:70]
+
+
+def post_prefer(profile: dict) -> list[str]:
+    """The profile's distinctive title words ("java", "full stack"), for picking a role out of a multi-role post."""
+    generic = {"developer", "engineer", "software engineer", "software developer", "application developer"}
+    return [w for w in profile.get("title_include", []) if w not in generic]
+
+
+def parse_post(post: dict, prefer: list[str] | None = None) -> dict:
     """Turn a raw LinkedIn feed post into a posting object vet() understands.
 
     post: {text, author, authorTitle, authorUrl, age, postUrl, urn}
+    prefer: title words of the candidate's roles; in a post listing several roles, the title is
+            the first role line containing one of them.
     """
     import hashlib
     text = (post.get("text") or "").strip()
-    title = _field(text, "job title|position|role|title|job role|(?:urgent |immediate )?requirement")
+    title = _clean_title(_field(text, "job title|position|role|title|job role|(?:urgent |immediate )?requirement"))
+    if not title or not ROLE_NOUN_RE.search(title):
+        cands = [c for c in (_clean_title(l) for l in text.splitlines() if ROLE_NOUN_RE.search(l) and len(l) < 130) if ROLE_NOUN_RE.search(c) and len(c.split()) <= 9]
+        best = next((c for c in cands if any(_has(w, c.lower()) for w in (prefer or []))), None)
+        title = best or title or (cands[0] if cands else "")
     if not title:
         m = re.search(r"(?i:hiring|looking for|need|opening for|requirement for|urgent(?:ly)? (?:need|hiring|looking for))\s*(?:an?|the)?\s*[:\-–]?\s*([A-Z][A-Za-z0-9+#./ &-]{3,70}?)(?:\s+(?:in|at|for|with|who|to|\||–|-)\b|[.,!\n]|$)", text)
         title = m.group(1).strip() if m else ""
-    location = _field(text, "location|work location|job location|loc")
+    location = _field(text, "location|work location|job location|job locations|loc")
+    if not location:   # "Hybrid | Lansing, MI | W-2" or "Newark, NJ – Onsite"
+        m = re.search(r"^.*\b[A-Z][A-Za-z.]+(?: [A-Z][A-Za-z.]+)*,\s?(?:%s)\b.*$" % "|".join(sorted(CODES)), text, re.M)
+        location = m.group(0).strip()[:140] if m and len(m.group(0)) < 90 else ""
     low = text.lower()
     work = "Remote" if re.search(r"\b(100%\s*)?remote\b", low) and not re.search(r"\bno remote\b|not remote", low) else \
         "Hybrid" if "hybrid" in low else "On-site" if re.search(r"\bon-?site\b|day 1 onsite|in[- ]office", low) else ""
-    if "hybrid" in low and work == "Remote" and re.search(r"hybrid", location.lower()):
+    ll = location.lower()   # the location line outranks a passing "remote" elsewhere in the post
+    if re.search(r"hybrid", ll):
         work = "Hybrid"
+    elif re.search(r"\bon-?site\b", ll) and "remote" not in ll:
+        work = "On-site"
     eng = parse_engagement(text)
-    rate = _field(text, "rate|pay rate|bill rate|salary|pay|compensation")
+    rate = _field(text, "(?:max |pay |bill |hourly )?rate|salary|pay|compensation")
     if not rate:
         m = re.search(r"\$\s?\d{2,3}(?:\.\d+)?\s?(?:-|to|–)?\s?\$?\d{0,3}\s?(?:/|per\s)?\s?(?:hr|hour)\b[^\n]{0,20}", text, re.I)
         rate = m.group(0).strip() if m else ""
