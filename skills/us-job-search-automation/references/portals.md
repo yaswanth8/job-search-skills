@@ -10,6 +10,25 @@ What worked and what broke on real runs. Read the section for the portal you are
 - Never print a full URL with a query string from `javascript_tool`; a privacy filter blocks it. Read single parameters instead.
 - Close your tabs at the end. A tab you lost track of may sit outside your tab group; mention it so the user can close it.
 
+## Fast runs
+Page loads and reading are what make a run slow. Keep both small:
+1. `plan.py --profile PROFILE` prints every search URL: one combined OR query per location bucket and portal (about 14 page loads, instead of one search per title), plus the profile's `search_queries` and the LinkedIn post searches.
+2. Run each portal's plan URLs in one `browser_batch` (navigate, wait, snippet, next URL). Page a results list only while its header says more cards remain.
+3. Append every portal's card lines to one file and vet them in a single `vet.py --mode card` call.
+4. Open only "open" cards, newest first, at most `max_open_per_search` per search, five per batch.
+5. If a combined LinkedIn query returns nothing sensible, rerun that bucket once with the plan's `fallback_keywords`.
+
+## LinkedIn posts (recruiter requirements)
+Many contract roles only ever appear as feed posts ("Java C2C/W2, share resumes to..."). The plan's `post_searches` cover them. When the user asks for a keyword or role search ("search posts for JAVA AND CONTRACT/W2"), run `plan.py --post-query '<their words>'`.
+1. Open the post-search URL, wait, and run `js/linkedin_posts.js`, raising `PAGE` until the header says all posts are read. Scroll and repeat for more. Save every page's output to one `.txt` file.
+2. `posts.py posts.txt --profile PROFILE --seen seen.txt --out-postings pp.json --out-decisions pd.json` reads each post's role, location, C2C/W2, rate, email and phone, drops job-seeker posts and bench lists, removes reposts, and vets the rest.
+3. `tracker.py new pd.json pp.json` turns passing posts into **Reach out** rows (status Review, reviewReason contact) with the recruiter's name, email, phone and profile link.
+
+These are manual applies. Never email, call, message or connect with a recruiter for the user; draft a message only when asked. This snippet has not yet run against the live site: if it prints `NO POSTS FOUND`, read the page text it returns and build the same `@@` lines by hand.
+
+## Contacts on ordinary postings
+`linkedin_job.js` prints a `hiring:` line (the "Meet the hiring team" person) and a `contacts:` line (emails and phones in the description). Put the hiring person in the posting object as `poster` {name, title}, and keep the contacts line inside `description`: `vet.py` extracts them and `tracker.py new` saves them on the row.
+
 ## LinkedIn
 **Search URL**: `https://www.linkedin.com/jobs/search-results/?keywords=<q>&geoId=<id>&f_TPR=r259200&f_AL=true`
 - `f_TPR=r259200` is 72 hours and `r86400` is 24 hours. `f_AL=true` limits results to Easy Apply. The UI ignores `location=` and `f_WT=`.

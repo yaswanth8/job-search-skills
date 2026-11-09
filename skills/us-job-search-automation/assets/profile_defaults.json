@@ -255,5 +255,9 @@
   "undisclosed",
   "a client of ours"
  ],
- "_about": "Fallback values for profile keys an older profile may not have yet. Never personal data. The profile always wins."
+ "_about": "Fallback values for profile keys an older profile may not have yet. Never personal data. The profile always wins.",
+ "search": {
+  "include_company_site": false,
+  "max_open_per_search": 12
+ }
 }

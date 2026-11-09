@@ -363,5 +363,25 @@
   "eeo": "Decline to identify",
   "follow_company": "No",
   "salary_expectation": "TODO"
+ },
+ "search": {
+  "titles": [
+   "Java Full Stack Developer",
+   "Senior Java Developer",
+   "Java Backend Engineer",
+   "Spring Boot Developer"
+  ],
+  "post_queries": [
+   "Java AND (C2C OR W2 OR contract) AND (hiring OR requirement)",
+   "\"Java Full Stack\" AND (C2C OR W2) AND remote"
+  ],
+  "linkedin_geo_ids": {
+   "US": "103644278",
+   "IL": "101949407",
+   "MO": "101486475",
+   "WI": "104454774"
+  },
+  "include_company_site": false,
+  "max_open_per_search": 12
  }
 }

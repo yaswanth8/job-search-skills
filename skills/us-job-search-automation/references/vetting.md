@@ -27,6 +27,9 @@
 15. **Needs your call**: "N+ years of <industry the resume lacks>". Only the user can decide whether to apply with an honest 0.
 16. **Company site** → review. Otherwise → apply.
 
+## Post mode (`posts.py`)
+For LinkedIn feed posts. Same checks, with three differences: a post that reads as a job seeker or a bench list is skipped as **Not a job post**; a missing title is allowed when the primary language is present; and a post that allows only an engagement type the profile does not accept ("C2C only" for a W2-only candidate) is skipped. Passing posts return **contact**, never apply.
+
 ## Judgment the script cannot make
 - **One requisition, several vendors** (same city, client, stack, duration): apply once; skip the rest as Spam / duplicate, "same role as <company>".
 - **Mass-recruiter posts** with no client, no pay and a generic description: Spam / duplicate.

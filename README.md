@@ -1,6 +1,6 @@
 # job-search-skills
 
-Two Claude skills that run a US job search for you. Claude searches LinkedIn, Indeed and Dice, vets each posting against your profile (work authorization, location, pay, seniority, stack), applies through Easy Apply and similar one-page forms, and keeps a live tracker dashboard. Company-site applications wait for your go-ahead.
+Two Claude skills that run a US job search for you. Claude searches LinkedIn, Indeed and Dice, vets each posting against your profile (work authorization, location, pay, seniority, stack), applies through Easy Apply and similar one-page forms, and keeps a live tracker dashboard. It also searches LinkedIn recruiter posts by your keywords and saves each recruiter's contact details so you can reach out yourself. Company-site applications wait for your go-ahead.
 
 | Skill | What it is | Updates |
 |---|---|---|
@@ -47,4 +47,5 @@ tools/build.py                     self-test + version check + zip build
 
 - Submits only when you ask it to apply in that chat.
 - Never creates accounts, types passwords or solves CAPTCHAs. Workday, iCIMS and Taleo applications stay with you.
+- Never emails, calls or messages a recruiter for you. It collects the contact details; the outreach is yours.
 - Every answer on a form comes from your profile or resume. If neither covers a question, it asks once or leaves the job for you.

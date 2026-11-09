@@ -1,0 +1,195 @@
+{
+ "about": "Synthetic LinkedIn posts, contact strings and search-plan checks. All names, emails and phone numbers are invented (example.com, 555 numbers).",
+ "posts": [
+  {
+   "id": "post-c2c-remote",
+   "post": {
+    "author": "Priya Example",
+    "authorTitle": "Senior Technical Recruiter at Example Staffing",
+    "authorUrl": "https://www.linkedin.com/in/priya-example",
+    "age": "5h",
+    "urn": "urn:li:activity:7390000000000000001",
+    "text": "Hiring: Java Full Stack Developer\nLocation: Remote (US)\nDuration: 12 months\nC2C / W2 both fine. H-1B transfer OK.\nSkills: Java 17, Spring Boot, microservices, React, AWS, REST, SQL\nRate: $65/hr on C2C\nShare resumes to priya.r@example.com or call (312) 555-0142"
+   },
+   "expect": {
+    "action": "contact",
+    "emails": [
+     "priya.r@example.com"
+    ],
+    "phones": [
+     "+1 312-555-0142"
+    ],
+    "work_type": "Remote",
+    "title_contains": "Java Full Stack"
+   }
+  },
+  {
+   "id": "post-usc-only",
+   "post": {
+    "author": "Sam Example",
+    "age": "2h",
+    "text": "Urgent requirement: Senior Java Developer, hybrid in Chicago, IL. Spring Boot, Kafka, AWS. USC and GC only, W2 only. Email sam@example.com"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Sponsorship / authorization"
+    ]
+   }
+  },
+  {
+   "id": "post-job-seeker",
+   "post": {
+    "author": "Alex Example",
+    "age": "1h",
+    "text": "Hi network, I am actively looking for Java developer roles (C2C or W2). 8 years with Spring Boot and AWS. #opentowork Please refer me. alex@example.com"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Not a job post"
+    ]
+   }
+  },
+  {
+   "id": "post-hotlist",
+   "post": {
+    "author": "Bench Sales Example",
+    "age": "3h",
+    "text": "Updated hotlist of available consultants for C2C roles: Java developer (10 yrs), .NET developer, QA lead. Reach me at bench@example.com for profiles."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Not a job post"
+    ]
+   }
+  },
+  {
+   "id": "post-onsite-texas",
+   "post": {
+    "author": "Dana Example",
+    "age": "6h",
+    "text": "Position: Java Developer\nLocation: Dallas, TX (Onsite, day 1)\nW2 contract, 6 months. Java, Spring Boot, Oracle. dana@example.com"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Location"
+    ]
+   }
+  },
+  {
+   "id": "post-stale",
+   "post": {
+    "author": "Lee Example",
+    "age": "2w",
+    "text": "We are hiring a Java Backend Engineer, remote. Spring Boot, microservices, AWS, REST, SQL. C2C ok. lee@example.com"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Stale / duplicate"
+    ]
+   }
+  },
+  {
+   "id": "post-dotnet",
+   "post": {
+    "author": "Kim Example",
+    "age": "4h",
+    "text": "Role: .NET Developer\nLocation: Remote\nC2C. C#, .NET Core, Azure. kim@example.com"
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Role mismatch",
+     "Stack mismatch"
+    ]
+   }
+  },
+  {
+   "id": "post-no-contact",
+   "post": {
+    "author": "Jo Example",
+    "authorUrl": "https://www.linkedin.com/in/jo-example",
+    "age": "8h",
+    "text": "Looking for a Senior Java Developer for a banking client in Chicago, IL (hybrid). Contract on W2. Java, Spring Boot, Angular, REST, SQL, Jenkins. DM me if interested."
+   },
+   "expect": {
+    "action": "contact",
+    "emails": [],
+    "phones": [],
+    "work_type": "Hybrid"
+   }
+  },
+  {
+   "id": "post-c2c-only-ok",
+   "post": {
+    "author": "Ravi Example",
+    "age": "10h",
+    "text": "Job Title: Java Microservices Developer\nLocation: Remote\nC2C only. Java, Spring Boot, microservices, Kubernetes, AWS, REST. Rate: $60/hr. ravi@example.com | +1 469.555.0188"
+   },
+   "expect": {
+    "action": "contact",
+    "emails": [
+     "ravi@example.com"
+    ],
+    "phones": [
+     "+1 469-555-0188"
+    ]
+   }
+  }
+ ],
+ "contacts": [
+  {
+   "text": "Send resume to jane.doe@example.com, cc hr@example.co.in. Phone: 312-555-0100 ext 22",
+   "emails": [
+    "jane.doe@example.com",
+    "hr@example.co.in"
+   ],
+   "phones": [
+    "+1 312-555-0100 x22"
+   ]
+  },
+  {
+   "text": "Reach me at john [at] example [dot] com or call 6305550199",
+   "emails": [
+    "john@example.com"
+   ],
+   "phones": [
+    "+1 630-555-0199"
+   ]
+  },
+  {
+   "text": "Job ID 2026-110-4521, zip 60601-1234, salary 120000-140000, posted 11/08/2026",
+   "emails": [],
+   "phones": []
+  },
+  {
+   "text": "Direct: (773) 555 0111. Desk +1 (312) 555-0122",
+   "emails": [],
+   "phones": [
+    "+1 773-555-0111",
+    "+1 312-555-0122"
+   ]
+  }
+ ],
+ "plan": {
+  "max_page_loads": 16,
+  "job_searches": 12,
+  "post_searches": 2,
+  "linkedin_url_contains": [
+   "geoId=101949407",
+   "f_AL=true",
+   "f_TPR=r259200",
+   "%20OR%20"
+  ],
+  "hours_24_contains": [
+   "f_TPR=r86400",
+   "fromage=1",
+   "postedDate=ONE",
+   "past-24h"
+  ]
+ }
+}

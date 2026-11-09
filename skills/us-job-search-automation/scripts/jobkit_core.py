@@ -163,6 +163,7 @@ def years_required(text: str) -> int | None:
 CATEGORIES = [
     "Stale / duplicate", "Clearance", "Sponsorship / authorization", "Employment type", "Location",
     "Seniority", "Role mismatch", "Stack mismatch", "Pay below floor", "Application barrier", "Spam / duplicate",
+    "Not a job post",
 ]
 
 
@@ -184,6 +185,9 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
 
     mode="card": only what a search-result card shows (title, company, location, pay, age).
                  Returns action "open" or "skip".
+    mode="post": a LinkedIn feed post parsed by parse_post(). Same checks as "full" minus the ones
+                 that need a formal listing. Returns "contact" (reach the poster: email, phone or
+                 message) or "skip".
     mode="full": the full description too. Returns "apply", "review" (company-site job that
                  passed), "needs_call" (passes except a requirement only the user can judge),
                  or "skip" with a category from CATEGORIES.
@@ -209,6 +213,11 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
     if hit:
         return _skip(res, "Clearance", f"clearance requirement: '{hit}'")
 
+    if mode == "post":
+        hit = _any_re(NOT_A_JOB_PATTERNS, desc[:1500])
+        if hit:
+            return _skip(res, "Not a job post", f"reads as a job seeker or bench list: '{hit}'")
+
     # 3. title filters
     for term in profile["title_exclude"]["seniority"]:
         if _has(term, tl):
@@ -216,7 +225,7 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
     for term in profile["title_exclude"]["role"]:
         if _has(term, tl):
             return _skip(res, "Role mismatch", f"title contains '{term}'")
-    if not any(_has(t, tl) for t in profile["title_include"]):
+    if mode != "post" and not any(_has(t, tl) for t in profile["title_include"]):
         return _skip(res, "Role mismatch", "title is not a target role")
     t_yrs = years_required(title)
     if t_yrs is not None and t_yrs > profile["max_years_required"]:
@@ -285,6 +294,11 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
         return _skip(res, "Employment type", "part-time role")
     if re.search(r"\bno\s+c2c\b|w2\s+only", everything, re.I) and "c2c" in etype.lower():
         return _skip(res, "Employment type", "posting rules out C2C")
+    eng = parse_engagement(everything)
+    res["engagement"] = eng["label"]
+    accepted = {a.lower() for a in profile.get("accepted_types", [])}
+    if mode == "post" and eng["only"] and accepted and eng["only"].lower() not in accepted:
+        return _skip(res, "Employment type", f"{eng['only']} only, which the profile does not accept")
 
     # 8. seniority by required years
     yrs = years_required(everything)
@@ -352,7 +366,7 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
         return _skip(res, "Application barrier", f"application asks for '{hit}', which the profile cannot answer")
 
     # 12. quality
-    if company.lower() in profile["anonymous_employers"] or not company:
+    if mode != "post" and (company.lower() in profile["anonymous_employers"] or not company):
         return _skip(res, "Spam / duplicate", "employer not named")
 
     # 13. fit
@@ -381,7 +395,13 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
             res["reasons"].append(f"requires {ind} industry experience, which the resume does not show")
             return res
 
-    # 15. how to apply
+    # 15. contacts found in the text, then how to apply
+    res["contacts"] = extract_contacts(desc)
+    if mode == "post":
+        res["action"] = "contact"
+        how = "email" if res["contacts"]["emails"] else "phone" if res["contacts"]["phones"] else "message the poster"
+        res["reasons"].append(f"manual apply: {how}")
+        return res
     if posting.get("apply_type") == "company_site":
         res["ats"] = classify_ats(posting.get("apply_url") or "")
         res["action"] = "review"
@@ -474,3 +494,168 @@ def skill_years(profile: dict, today: _dt.date | None = None) -> dict:
             row["answer_with"] = int(sup) if sup >= 1 else 0
         report[skill] = row
     return report
+
+
+# ---------------------------------------------------------------- contacts, engagement, posts
+
+NOT_A_JOB_PATTERNS = [
+    r"#?open\s?to\s?work", r"\b(i am|i'm|im)\s+(actively\s+)?(looking|seeking|searching)\s+for", r"\bseeking (a )?new (role|opportunit)",
+    r"\bhot\s?list\b", r"\bbench\s+(sales|list|consultants?)\b", r"\bavailable consultants?\b", r"\bour consultants? (is|are) available",
+    r"\bplease refer me\b", r"\bany (openings|opportunities) for me\b",
+]
+EMAIL_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
+PHONE_RE = re.compile(r"(?<![\w.])(?:\+?1[\s.-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.-])\d{3}[\s.-]\d{4}(?:\s?(?:x|ext\.?)\s?\d{1,5})?(?![\w-])")
+PHONE_WORD_RE = re.compile(r"(?:phone|call|cell|mobile|contact|direct|desk|tel|text|whatsapp)[^\d+\n]{0,15}(\+?1?\s?\d{10})\b", re.I)
+
+
+def extract_contacts(text: str) -> dict:
+    """Emails and US phone numbers that appear in a posting, de-duplicated and normalised."""
+    t = re.sub(r"\s*[\[(]\s*at\s*[\])]\s*", "@", text or "", flags=re.I)
+    t = re.sub(r"\s*[\[(]\s*dot\s*[\])]\s*", ".", t, flags=re.I)
+    emails = []
+    for e in EMAIL_RE.findall(t):
+        e = e.rstrip(".").lower()
+        if e not in emails and not e.endswith((".png", ".jpg", ".gif")):
+            emails.append(e)
+    phones = []
+    for raw in PHONE_RE.findall(t) + PHONE_WORD_RE.findall(t):
+        ext = re.search(r"(?:x|ext\.?)\s?(\d{1,5})$", raw, re.I)
+        digits = re.sub(r"\D", "", raw[:ext.start()] if ext else raw)
+        if len(digits) == 11 and digits[0] == "1":
+            digits = digits[1:]
+        if len(digits) != 10 or digits[0] in "01":
+            continue
+        norm = f"+1 {digits[:3]}-{digits[3:6]}-{digits[6:]}" + (f" x{ext.group(1)}" if ext else "")
+        if norm not in phones:
+            phones.append(norm)
+    return {"emails": emails[:4], "phones": phones[:4]}
+
+
+def parse_engagement(text: str) -> dict:
+    """Which engagement types a posting names. `only` is set when it rules the others out."""
+    t = (text or "").lower()
+    c2c = re.search(r"\bc2c\b|corp[\s-]?to[\s-]?corp|\b1099\b", t) is not None
+    w2 = re.search(r"\bw2\b|\bw-2\b", t) is not None
+    ft = re.search(r"full[\s-]?time|\bfte\b|direct hire|permanent", t) is not None
+    no_c2c = re.search(r"\bno\s+(c2c|corp[\s-]?to[\s-]?corp|third[\s-]?part)|\bw2\s+only\b|only\s+(on\s+)?w2|must be on our w2", t) is not None
+    c2c_only = re.search(r"\bc2c\s+only\b|only\s+c2c\b|\bno\s+w2\b", t) is not None
+    names = [n for n, on in (("C2C", c2c and not no_c2c), ("W2", w2 and not c2c_only), ("Full-Time", ft)) if on]
+    only = "W2" if no_c2c and w2 and not ft else "C2C" if c2c_only and not ft else None
+    label = "/".join(names) if names else ("Contract" if re.search(r"\bcontract\b|\bduration\b|\bmonths?\b", t) else "Not stated")
+    return {"types": names, "only": only, "label": label}
+
+
+def _field(text: str, labels: str) -> str:
+    m = re.search(rf"^\s*(?:[-*•▪#>]\s*)?(?:{labels})\s*[:\-–]\s*(.+)$", text, re.I | re.M)
+    return m.group(1).strip(" *_.") [:140] if m else ""
+
+
+def post_age_hours(age: str) -> float | None:
+    """'5h', '2d', '1w', '3mo', '45m' (LinkedIn's relative ages) -> hours."""
+    m = re.match(r"\s*(\d+)\s*(mo|m|h|d|w|yr|y)\b", (age or "").lower())
+    if not m:
+        return None
+    n, u = int(m.group(1)), m.group(2)
+    return n * {"m": 1 / 60, "h": 1, "d": 24, "w": 168, "mo": 720, "y": 8760, "yr": 8760}[u]
+
+
+def parse_post(post: dict) -> dict:
+    """Turn a raw LinkedIn feed post into a posting object vet() understands.
+
+    post: {text, author, authorTitle, authorUrl, age, postUrl, urn}
+    """
+    import hashlib
+    text = (post.get("text") or "").strip()
+    title = _field(text, "job title|position|role|title|job role|(?:urgent |immediate )?requirement")
+    if not title:
+        m = re.search(r"(?i:hiring|looking for|need|opening for|requirement for|urgent(?:ly)? (?:need|hiring|looking for))\s*(?:an?|the)?\s*[:\-–]?\s*([A-Z][A-Za-z0-9+#./ &-]{3,70}?)(?:\s+(?:in|at|for|with|who|to|\||–|-)\b|[.,!\n]|$)", text)
+        title = m.group(1).strip() if m else ""
+    location = _field(text, "location|work location|job location|loc")
+    low = text.lower()
+    work = "Remote" if re.search(r"\b(100%\s*)?remote\b", low) and not re.search(r"\bno remote\b|not remote", low) else \
+        "Hybrid" if "hybrid" in low else "On-site" if re.search(r"\bon-?site\b|day 1 onsite|in[- ]office", low) else ""
+    if "hybrid" in low and work == "Remote" and re.search(r"hybrid", location.lower()):
+        work = "Hybrid"
+    eng = parse_engagement(text)
+    rate = _field(text, "rate|pay rate|bill rate|salary|pay|compensation")
+    if not rate:
+        m = re.search(r"\$\s?\d{2,3}(?:\.\d+)?\s?(?:-|to|–)?\s?\$?\d{0,3}\s?(?:/|per\s)?\s?(?:hr|hour)\b[^\n]{0,20}", text, re.I)
+        rate = m.group(0).strip() if m else ""
+    rate = re.split(r"\s*[|;,]|\.\s|\s+[\w.+-]+@", rate)[0].strip()[:60]
+    norm = re.sub(r"\W+", " ", low)[:240]
+    h = hashlib.sha1(norm.encode()).hexdigest()[:16]
+    link = post.get("postUrl") or (f"https://www.linkedin.com/feed/update/{post['urn']}/" if post.get("urn") else "") \
+        or ((post.get("authorUrl") or "https://www.linkedin.com/feed/").split("?")[0].rstrip("/") + f"/#post-{h}")
+    return {
+        "id": link, "link": link, "source": "LinkedIn post", "apply_type": "contact",
+        "title": title, "company": (post.get("author") or "").strip(), "location": location, "work_type": work,
+        "employment_type": eng["label"], "pay": rate, "age_hours": post_age_hours(post.get("age", "")),
+        "description": text[:6000], "text_hash": h,
+        "poster": {"name": (post.get("author") or "").strip(), "title": (post.get("authorTitle") or "").strip()[:120],
+                   "url": (post.get("authorUrl") or "").split("?")[0]},
+    }
+
+
+# ---------------------------------------------------------------- search plan
+
+def _quote(t: str) -> str:
+    return f'"{t}"' if " " in t else t
+
+
+def build_search_plan(profile: dict, window_hours: int | None = None, post_queries: list | None = None,
+                      include_company_site: bool | None = None) -> dict:
+    """The smallest set of searches that covers the profile's roles and locations.
+
+    One combined OR query per location bucket and portal, instead of one search per title.
+    """
+    from urllib.parse import quote
+    hours = int(window_hours or profile.get("window_hours", 72))
+    days = max(1, -(-hours // 24))
+    st, sr = profile.get("stack", {}), profile.get("search", {})
+    primary = st.get("primary_name", "Java")
+    titles = sr.get("titles") or [f"{primary} Developer", f"{primary} Engineer", f"{primary} Full Stack Developer"]
+    combined = " OR ".join(_quote(t) for t in titles[:5])
+    geo = {k.upper(): str(v) for k, v in (sr.get("linkedin_geo_ids") or {}).items()}
+    geo.setdefault("US", "103644278")
+    code_to_name = {v: k.title() for k, v in STATES.items()}
+    states = [s for s in profile.get("locations", {}).get("onsite_states", []) if s in code_to_name]
+    company_site = sr.get("include_company_site", False) if include_company_site is None else include_company_site
+    al = "" if company_site else "&f_AL=true"
+    searches = []
+
+    def add(portal, bucket, url, **kw):
+        searches.append({"portal": portal, "bucket": bucket, "url": url, **kw})
+
+    li = "https://www.linkedin.com/jobs/search-results/?keywords={k}&geoId={g}&f_TPR=r{s}" + al
+    add("LinkedIn", "Remote US", li.format(k=quote(f"({combined}) remote"), g=geo["US"], s=hours * 3600), snippet="linkedin_cards.js",
+        fallback_keywords=[f"{t} remote" for t in titles[:3]])
+    missing_geo = []
+    for code in states:
+        if code in geo:
+            add("LinkedIn", code_to_name[code], li.format(k=quote(combined), g=geo[code], s=hours * 3600), snippet="linkedin_cards.js",
+                fallback_keywords=titles[:3])
+        else:
+            missing_geo.append(code)
+    iq = quote(f"({combined})")
+    add("Indeed", "Remote US", f"https://www.indeed.com/jobs?q={iq}&l=Remote&fromage={days}&sort=date", snippet="indeed_cards.js")
+    for code in states:
+        add("Indeed", code_to_name[code], f"https://www.indeed.com/jobs?q={iq}&l={quote(code_to_name[code])}&fromage={days}&sort=date", snippet="indeed_cards.js")
+    posted = "ONE" if days <= 1 else "THREE" if days <= 3 else "SEVEN"
+    dq = quote(combined)
+    add("Dice", "Remote US", f"https://www.dice.com/jobs?q={dq}&filters.postedDate={posted}&filters.workplaceTypes=Remote&pageSize=40", snippet="dice_cards.js")
+    for code in states:
+        add("Dice", code_to_name[code], f"https://www.dice.com/jobs?q={dq}&location={quote(code_to_name[code] + ', USA')}&filters.postedDate={posted}&pageSize=40", snippet="dice_cards.js")
+
+    for q in (profile.get("search_queries") or [])[:3]:
+        add("LinkedIn", f"Remote US · {q[:40]}", li.format(k=quote(f"{q} remote"), g=geo["US"], s=hours * 3600), snippet="linkedin_cards.js")
+        add("Dice", f"Remote US · {q[:40]}", f"https://www.dice.com/jobs?q={quote(q)}&filters.postedDate={posted}&filters.workplaceTypes=Remote&pageSize=40", snippet="dice_cards.js")
+
+    types = [t for t in profile.get("accepted_types", []) if t.lower() in ("c2c", "w2", "contract")] or ["contract"]
+    queries = post_queries or sr.get("post_queries") or [f"{primary} AND ({' OR '.join(types)}) AND (hiring OR requirement)"]
+    window = "past-24h" if hours <= 24 else "past-week" if hours <= 168 else "past-month"
+    posts = [{"portal": "LinkedIn posts", "query": q, "snippet": "linkedin_posts.js", "max_age_hours": hours,
+              "url": f"https://www.linkedin.com/search/results/content/?keywords={quote(q)}&datePosted=%22{window}%22&sortBy=%22date_posted%22"}
+             for q in queries[:4]]
+    return {"window_hours": hours, "titles": titles, "job_searches": searches, "post_searches": posts,
+            "total_page_loads": len(searches) + len(posts), "missing_linkedin_geo_ids": missing_geo,
+            "max_open_per_search": sr.get("max_open_per_search", 12)}

@@ -10,9 +10,11 @@ Subcommands:
 
 A doc: {id, company, vendor, role, where, workType, type, pay, source, fit, spons, status,
         reviewReason, ats, applyUrl, link, category, notes, foundAt, appliedAt, appliedBy,
-        stage, followUpAt, updatedAt}
+        stage, followUpAt, updatedAt,
+        contactName, contactTitle, contactEmail, contactPhone, contactUrl}
 status: New | Review | Queued | Applied | Skipped | Declined
-  Review = waiting on the user (company-site job, or a "needs your call" requirement)
+  Review = waiting on the user: reviewReason company-site | needs-call | contact
+           (contact = manual apply: email, call or message the recruiter; from a LinkedIn post)
   Queued = the user pressed "Let Claude apply" on the dashboard; the next run applies
 stage (after Applied): Screening | Interview | Offer | Rejected | Withdrawn | No response
 """
@@ -37,6 +39,9 @@ def doc_id(link: str) -> str:
     m = re.search(r"linkedin\.com/jobs/view/(?:[^/]*-)?(\d+)", link)
     if m:
         return f"li-{m.group(1)}"
+    m = re.search(r"linkedin\.com/.*(?:activity|ugcPost|share)[:-](\d{8,})", link)
+    if m:
+        return f"lip-{m.group(1)}"
     m = re.search(r"dice\.com/job-detail/([0-9a-f-]{36})", link)
     if m:
         return f"dice-{m.group(1)}"
@@ -58,15 +63,19 @@ def cmd_new(a):
     for d in decisions:
         p = postings.get(d["id"], {})
         link = p.get("link") or d["id"]
-        status = {"apply": "New", "review": "Review", "needs_call": "Review", "skip": "Skipped"}.get(d["action"], "New")
+        status = {"apply": "New", "review": "Review", "needs_call": "Review", "contact": "Review", "skip": "Skipped"}.get(d["action"], "New")
+        contacts, poster = d.get("contacts") or {}, p.get("poster") or {}
         ats = d.get("ats") or (classify_ats(p.get("apply_url", "")) if p.get("apply_type") == "company_site" else None)
         doc = {
-            "id": doc_id(link), "company": p.get("company", ""), "vendor": p.get("vendor", ""), "role": p.get("title", ""),
+            "id": doc_id(link), "company": p.get("company", "") or "Not stated", "vendor": p.get("vendor", ""), "role": p.get("title", "") or "Role not stated in post",
             "where": " · ".join(x for x in [p.get("location", ""), p.get("work_type", "")] if x),
-            "workType": p.get("work_type", ""), "type": p.get("employment_type") or "Not stated",
+            "workType": p.get("work_type", ""), "type": p.get("employment_type") or d.get("engagement") or "Not stated",
             "pay": p.get("pay") or "Not listed", "source": p.get("source", ""), "fit": d.get("fit") or "",
             "spons": d.get("sponsorship", "Needs Confirmation"), "status": status,
-            "reviewReason": "needs-call" if d["action"] == "needs_call" else "company-site" if d["action"] == "review" else "",
+            "reviewReason": {"needs_call": "needs-call", "review": "company-site", "contact": "contact"}.get(d["action"], ""),
+            "contactName": poster.get("name", ""), "contactTitle": poster.get("title", ""),
+            "contactEmail": ", ".join(contacts.get("emails", [])[:2]), "contactPhone": ", ".join(contacts.get("phones", [])[:2]),
+            "contactUrl": poster.get("url", ""),
             "ats": (ats or {}).get("ats", ""), "claudeCanApply": (ats or {}).get("claude_can_apply"),
             "applyUrl": p.get("apply_url", ""), "link": link, "category": d.get("category") or "",
             "notes": "; ".join(d.get("reasons", []) + d.get("flags", [])),
@@ -113,8 +122,8 @@ def cmd_check(a):
             errors.append(f"{i}: bad spons {doc.get('spons')}")
         if doc.get("status") == "Skipped" and doc.get("category") not in CATEGORIES:
             errors.append(f"{i}: skipped without a category from the list")
-        if doc.get("status") == "Review" and doc.get("reviewReason") not in ("company-site", "needs-call"):
-            errors.append(f"{i}: Review needs reviewReason company-site|needs-call")
+        if doc.get("status") == "Review" and doc.get("reviewReason") not in ("company-site", "needs-call", "contact"):
+            errors.append(f"{i}: Review needs reviewReason company-site|needs-call|contact")
         if doc.get("status") == "Applied" and not doc.get("appliedAt"):
             errors.append(f"{i}: Applied without appliedAt")
         if doc_id(doc.get("link", "")) != i:

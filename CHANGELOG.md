@@ -2,6 +2,14 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.3.0 (2026-11-09) **Requires new instructions**
+- **Dashboard rebuilt** (template 2): five views (Overview, Needs you, Applied, All jobs, What if) with clickable tiles, tabs and chart bars; a time-range filter; row details; contact details with copy buttons. The "What if we widen the criteria" panel from 1.2.0 is now its own view. Existing trackers are offered a refresh (`meta/tracker`); rows are untouched.
+- **Recruiter posts**: `posts.py` and `linkedin_posts.js` search LinkedIn feed posts by keyword or role, read role, C2C/W2, rate, email and phone, drop job-seeker posts and bench lists, and add passing posts to the tracker as "Reach out" (reviewReason `contact`). Claude never contacts anyone itself. The snippet has not yet run against the live site.
+- **Contacts on postings**: emails and phones in a description and the "Meet the hiring team" person are saved on the tracker row.
+- **Faster runs**: `plan.py` builds one combined search per location and portal from the profile's `search.titles` (about 14 page loads instead of one search per title); "Fast runs" in `portals.md` has the batching rules.
+- New optional profile block `search` (titles, post_queries, linkedin_geo_ids); `search_queries` still works and joins the plan.
+- Back-test: 101 checks (87 postings, plus posts, contact extraction and the search plan).
+
 ## 1.2.0 (2026-11-09) **Requires new instructions**
 Back-tested against the Nov 8-9 runs: 13 new cases from real postings (87 in all). Four would have gone wrong before this release.
 - Vetting catches "not open to … any visa consideration" and "without current or future visa sponsorship". Profiles that exclude no-sponsorship postings inherit new default wordings automatically, with no profile edit.

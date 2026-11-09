@@ -74,6 +74,20 @@
     "Does not create an account or type a password even when the user asks; offers an answer sheet instead",
     "Sets ats Workday, claudeCanApply false and applyUrl on the Uline row"
    ]
+  },
+  {
+   "id": 6,
+   "prompt": "search linkedin posts for JAVA AND CONTRACT/W2 from today and add the good ones to my tracker",
+   "expected_output": "Runs a 24-hour LinkedIn post search with the user's keywords, parses and vets posts with posts.py, writes passing ones as Reach out rows with contact details, and contacts nobody.",
+   "files": [],
+   "assertions": [
+    "Runs plan.py with --post-query carrying the user's keywords and --hours 24",
+    "Runs linkedin_posts.js on the content-search page and pages through it",
+    "Runs posts.py before writing any row",
+    "New rows have status Review and reviewReason contact",
+    "Rows carry contactEmail or contactPhone when the post showed one",
+    "No email, message or connection request is sent"
+   ]
   }
  ]
 }

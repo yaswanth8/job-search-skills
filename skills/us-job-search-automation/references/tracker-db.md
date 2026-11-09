@@ -15,7 +15,9 @@ Collections: `jobs` (one doc per posting), `runs` (one per run), `meta` (doc `cr
 | fit | High, Medium, Low, "" |
 | spons | Verified, Needs Confirmation, Excluded |
 | status | New, Review, Queued, Applied, Skipped, Declined |
-| reviewReason | company-site or needs-call (Review only) |
+| reviewReason | company-site, needs-call or contact (Review only). contact = a recruiter post to answer by email, phone or message |
+| contactName, contactTitle, contactEmail, contactPhone, contactUrl | the recruiter or hiring contact, when the posting or post shows one |
+| appliedVia | "outreach" when the user pressed *I reached out* |
 | ats, claudeCanApply, applyUrl | company-site jobs |
 | category | Skipped only, exactly one of: Stale / duplicate, Clearance, Sponsorship / authorization, Employment type, Location, Seniority, Role mismatch, Stack mismatch, Pay below floor, Application barrier, Spam / duplicate |
 | foundAt, appliedAt, updatedAt, followUpAt | YYYY-MM-DD |
@@ -30,6 +32,9 @@ Status flow: New → Applied or Skipped. Review → Queued (user) → Applied (C
 
 ## meta/criteria
 `{onsiteStates: ["IL", ...], rules: [{label, text}], updatedAt}` from `tracker.py criteria --profile PROFILE --out crit.json`. The what-if panel shows these rules and leaves already-allowed states out of its picker. Set it once per run (`set`, collection `meta`, doc `criteria`, with `if_version` once it exists).
+
+## meta/tracker
+`{template: 2, name, ownerLine, scope}`: which dashboard template the page was published from, and the three header texts. `assets/tracker.version` holds the newest template number. When it is higher than `meta/tracker.template` (or the doc is missing), offer to refresh the dashboard: fill the placeholders in `assets/tracker.html` from this doc (or from the live page's title, eyebrow and first sentence), publish to the same tracker URL with the same capabilities, then `set meta/tracker`. Rows are untouched; they live in the database.
 
 ## Recipes
 - **Read state**: `list` on `jobs` with `out_dir` and `limit` 1000; links → `seen.txt`, versions kept for writes.
