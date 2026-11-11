@@ -2,6 +2,12 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.5.1 (2026-11-11)
+A check of 1.5.0 as a new user would install it: both zips unpacked and every command in the instructions run from them.
+- The skill's description now covers search-and-save runs and Saryom, so "save jobs to my dashboard" and "send my tracker to Saryom" start the skill on their own.
+- A finished run shows its Report stage as done; it used to read "not reached" unless marked by hand.
+- `references/saryom.md` names the upload dialog's checkbox as the site words it, and says that recruiters on Skipped rows are added to Saryom's directory too (rows skipped as spam are not).
+
 ## 1.5.0 (2026-11-11) **Requires new instructions**
 - **Two kinds of run, asked at the start:** *Search and save to the dashboard* (nothing is submitted) or *Apply to jobs*. Asked together with the two time windows. In a search-and-save run, jobs that passed every check are saved as **Ready to apply** (`tracker.py new --save`); you apply yourself or press *Let Claude apply*, per job or all at once, and the next apply run does them.
 - **Progress you can follow.** `tracker.py run start | step | finish` keeps one run log and prints the same list of stages after every step: done, in progress, waiting, or skipped with the reason. Claude shows it in chat, and the dashboard opens with it while a run is going.

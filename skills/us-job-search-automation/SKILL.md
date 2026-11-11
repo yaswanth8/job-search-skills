@@ -1,11 +1,11 @@
 ---
 name: us-job-search-automation
-description: "Automates a US job search end to end: finds fresh listings on LinkedIn, Indeed and Dice, vets them against the candidate profile (visa, location, pay, seniority, stack), submits Easy Apply / Quick Apply applications, applies on company sites the user queued, collects recruiter contacts from postings and LinkedIn posts for manual outreach, and keeps a live tracker dashboard. Use for any request to find, apply to, re-run or follow up on a job search, to search recruiter posts by keyword or role, to set up the job-search profile or tracker, or to act on the tracker's queue, even if the user never says automation."
+description: "Automates a US job search end to end: finds fresh listings on LinkedIn, Indeed and Dice, vets them against the candidate profile (visa, location, pay, seniority, stack), then either saves the good ones to a live tracker dashboard or submits Easy Apply / Quick Apply applications, as the user chooses each run. Also applies on company sites the user queued, collects recruiter contacts from postings and LinkedIn posts for manual outreach, shows each run's progress, and can send the tracker to the user's board on Saryom (saryom.com). Use for any request to find, search, save, apply to, re-run or follow up on a job search, to search recruiter posts by keyword or role, to set up the job-search profile or tracker, to act on the tracker's queue, or to send or upload the tracker to Saryom, even if the user never says automation."
 ---
 
 # US Job Search Automation
 
-Version: 1.5.0 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 1.5.1 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **ask, search, vet, apply or save, track, report**. An application is a statement in the candidate's name: the profile and resume are the only sources of facts. Anything they don't cover is asked once or skipped, never guessed.
 
