@@ -2,6 +2,14 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.5.0 (2026-11-11) **Requires new instructions**
+- **Two kinds of run, asked at the start:** *Search and save to the dashboard* (nothing is submitted) or *Apply to jobs*. Asked together with the two time windows. In a search-and-save run, jobs that passed every check are saved as **Ready to apply** (`tracker.py new --save`); you apply yourself or press *Let Claude apply*, per job or all at once, and the next apply run does them.
+- **Progress you can follow.** `tracker.py run start | step | finish` keeps one run log and prints the same list of stages after every step: done, in progress, waiting, or skipped with the reason. Claude shows it in chat, and the dashboard opens with it while a run is going.
+- **Saryom.** New `saryom.py` and `references/saryom.md`: send the tracker to your board on saryom.com with an import token, or as a file you upload there. Asked at the start until you save an answer in your profile (`Saryom: off | file | token`). If Saryom cannot be reached from where Claude runs, you get the file.
+- **Dashboard** (template 3): live run panel on Overview and in the status line; a *Ready to apply* group and tile; each run's mode and Saryom result in the run list. Existing trackers are offered a refresh; rows are untouched.
+- Instructions tightened: the start-of-run questions are one step, and the run log is no longer assembled by hand.
+- 21 new self-test checks (run log, search-and-save rows, the Saryom file and each upload outcome). 128 checks.
+
 ## 1.4.0 (2026-11-09) **Requires new instructions**
 - Every run now asks, before searching, how far back to look: job postings (12 hours, 24 hours, 2 days, 3 days; default 2 days) and recruiter posts (default 12 hours). A request that already says ("today", "last 3 days") is not asked again.
 - Recruiter posts have their own window: `search.post_window_hours` in the profile (default 12), `plan.py --post-hours`, and `posts.py` drops older posts.

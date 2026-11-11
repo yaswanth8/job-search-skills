@@ -54,6 +54,7 @@ Authorized to work in the US: <Yes/No>. Sponsorship now or later: <Yes/No>. Back
 
 ## Tracker
 Tracker: <created on the first run; Claude adds the link here>
+Saryom: <off, file or token. Claude asks on the first run whether to also send your jobs to your board on saryom.com; delete this line to be asked again>
 
 ## Machine-readable profile
 Pattern lists (`*_patterns`, `missing_regex_cs`) are regular expressions written without backslashes: `~` is a word boundary, a space is one or more whitespace characters and `_` is optional whitespace. Plain lists (titles, core, missing, industries) are whole-word phrases.
