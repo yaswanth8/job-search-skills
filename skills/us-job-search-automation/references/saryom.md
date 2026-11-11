@@ -5,7 +5,7 @@ Saryom (saryom.com) has a Jobs section: a private board of the user's own applic
 ## What goes, and what Saryom does with it
 - Every tracker row goes in the file. Saryom leaves **Skipped** rows off the board, files New, Review and Queued rows as *Saved*, and Applied rows by their stage.
 - It matches rows on the tracker id, so sending again updates and never duplicates. It never moves an application backwards and never touches notes the user wrote on Saryom.
-- Recruiter contacts on the rows (name, email, phone, profile link) also go to the shared directory, where signed-in users can see them. To keep them on the user's own board only: with a token, add `--private-contacts`; with a file, the user unticks *Share recruiter contacts* in the upload dialog. Say which it was in the report.
+- Recruiter contacts on the rows (name, email, phone, profile link) also go to the shared directory, where signed-in users can see them. That includes contacts on Skipped rows, since a job that did not suit this user says nothing against its recruiter; rows skipped as `Spam / duplicate` share nobody. To keep them on the user's own board only: with a token, add `--private-contacts`; with a file, the user unticks *Share recruiter contacts* in the upload dialog. Say which it was in the report.
 
 ## The choice
 Ask at the start unless the profile's Tracker section already has a line `Saryom: off`, `Saryom: file` or `Saryom: token`. After the first answer, offer to save that line (`propose_skills`, improvement to `job-search-profile`) so the next run does not ask.
