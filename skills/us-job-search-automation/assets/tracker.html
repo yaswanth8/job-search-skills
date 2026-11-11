@@ -1,10 +1,11 @@
-<!-- Job tracker template, version 2. Before publishing, replace {{TRACKER_NAME}} (e.g. "Priya's Job Tracker"), {{OWNER_LINE}} (e.g. "Priya S · Python backend · US citizen") and {{SEARCH_SCOPE}} (one sentence, e.g. "Remote anywhere in the US, or hybrid in Texas."). Publish with capabilities {db:{rules:[{path:"",read:"view",write:"admin"}]}, user:{}}. -->
+<!-- Job tracker template, version 3. Before publishing, replace {{TRACKER_NAME}} (e.g. "Priya's Job Tracker"), {{OWNER_LINE}} (e.g. "Priya S · Python backend · US citizen") and {{SEARCH_SCOPE}} (one sentence, e.g. "Remote anywhere in the US, or hybrid in Texas."). Publish with capabilities {db:{rules:[{path:"",read:"view",write:"admin"}]}, user:{}}. -->
 <title>{{TRACKER_NAME}}</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: a sticky bar with four views (Overview, Needs you, Applied, All jobs) and two global filters (time, search).
-   Every count on the page is a button that opens the matching list. Tables scroll inside their own boxes. */
+/* Layout: a sticky bar with five views (Overview, Needs you, Applied, All jobs, What if) and two global filters (time, search).
+   Every count on the page is a button that opens the matching list. Tables scroll inside their own boxes.
+   While Claude is running a search, Overview opens with the run's stages: done, in progress, still to come. */
 :root{
   --bg:#f3f5f8; --surface:#ffffff; --sunk:#e9edf3; --fg:#17202b; --muted:#566476; --faint:#8a96a6; --line:#d9dfe7;
   --accent:#2457c5; --accent-ink:#ffffff; --accent-soft:#e3ebfa;
@@ -77,7 +78,7 @@ input[type=search]{flex:1 1 160px;max-width:300px}
 .mt{font-family:var(--font-data);font-size:11.5px;background:var(--sunk);color:var(--muted);border-radius:4px;padding:2px 7px;overflow-wrap:anywhere}
 .why{margin:0;font-size:13px}
 .reason{font-size:12px;font-weight:600}
-.reason.call{color:var(--warn)} .reason.site,.reason.reach{color:var(--accent)} .reason.queued{color:var(--good)}
+.reason.call{color:var(--warn)} .reason.site,.reason.reach{color:var(--accent)} .reason.queued,.reason.ready{color:var(--good)}
 .contact{background:var(--sunk);border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:5px;font-size:13px}
 .contact .who{font-weight:600}
 .contact .who small{font-weight:400;color:var(--muted);display:block}
@@ -143,6 +144,24 @@ select.stage{font-size:12.5px;padding:4px 6px}
 .run{background:var(--surface);padding:11px 15px;display:grid;grid-template-columns:150px 1fr;gap:4px 16px}
 .run .when{font-family:var(--font-data);font-size:12.5px;color:var(--muted)}
 .run .gap{font-size:12.5px;color:var(--warn);grid-column:2}
+/* run in progress */
+.runlive{border-color:var(--accent);margin-bottom:14px}
+.runlive.stale{border-color:var(--warn)}
+.runlive .sec-head{margin-bottom:12px}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.step{display:grid;grid-template-columns:22px 1fr;gap:1px 8px;align-items:start;background:var(--sunk);border-radius:8px;padding:9px 11px;font-size:13px;min-width:0}
+.step .ic{grid-row:span 2;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-data);font-size:12px;font-weight:600;background:var(--idle-soft);color:var(--idle)}
+.step b{font-weight:600;overflow-wrap:anywhere}
+.step small{grid-column:2;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.step.done .ic{background:var(--good-soft);color:var(--good)}
+.step.doing{background:var(--accent-soft)} .step.doing .ic{background:var(--accent);color:var(--accent-ink)}
+.step.skipped .ic{background:var(--warn-soft);color:var(--warn)}
+.step.todo{opacity:.7}
+@media (prefers-reduced-motion:no-preference){.step.doing .ic{animation:beat 1.6s ease-in-out infinite}}
+@keyframes beat{50%{transform:scale(1.14)}}
+@media (max-width:560px){.steps{grid-template-columns:1fr 1fr}.step{padding:8px 9px}}
+.meter{height:6px;background:var(--sunk);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .4s ease}
 /* what-if */
 .stbar{display:grid;grid-template-columns:18px minmax(90px,30%) 1fr auto;gap:10px;align-items:center;font-size:13px;cursor:pointer}
 .stbar input{margin:0;accent-color:var(--accent);width:16px;height:16px}
@@ -205,7 +224,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
 
   <main id="view"></main>
 
-  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
+  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Ready to apply</b> jobs passed every check in a search-and-save run: nothing was submitted. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
 
@@ -220,9 +239,9 @@ select.stage{font-size:12.5px;padding:4px 6px}
   const STAGES = ["", "Screening", "Interview", "Offer", "Rejected", "Withdrawn", "No response"];
   const RESPONDED = ["Screening", "Interview", "Offer", "Rejected"], LIVE = ["Screening", "Interview", "Offer"], CLOSED = ["Rejected", "Withdrawn", "No response"];
   const VIEWS = [["overview", "Overview"], ["needs-you", "Needs you"], ["applied", "Applied"], ["all", "All jobs"], ["what-if", "What if"]];
-  const KIND = { contact: "Reach out", "company-site": "Company site", "needs-call": "Your call" };
+  const KIND = { ready: "Ready to apply", contact: "Reach out", "company-site": "Company site", "needs-call": "Your call" };
 
-  let JOBS = [], RUNS = [], db = null, canWrite = true, loaded = false;
+  let JOBS = [], RUNS = [], db = null, canWrite = true, loaded = false, online = false;
   const S = { view: "overview", days: 0, q: "", kind: "", applied: "", status: "", fit: "", work: "", source: "", category: "", sortKey: "updatedAt", sortDir: -1, open: "" };
   const pending = new Set();
   try { S.days = +(localStorage.getItem("jt-days") || 0); } catch {}
@@ -236,6 +255,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
   const base = () => JOBS.filter(j => matchQ(j) && inRange(j.foundAt || j.updatedAt));
   const needs = () => base().filter(j => j.status === "Review" || j.status === "Queued");
   const appliedList = () => JOBS.filter(j => j.status === "Applied" && matchQ(j) && inRange(j.appliedAt || j.updatedAt));
+  const isReady = j => j.status === "Review" && j.reviewReason === "ready";
   const followDue = j => j.status === "Applied" && !j.stage && daysSince(j.appliedAt) >= 7;
 
   // ---------------------------------------------------------------- writes
@@ -252,6 +272,8 @@ select.stage{font-size:12.5px;padding:4px 6px}
     applied: j => save(j.id, { status: "Applied", appliedAt: today(), appliedBy: "you" }, "Marked as applied."),
     reached: j => save(j.id, { status: "Applied", appliedAt: today(), appliedBy: "you", appliedVia: "outreach" }, "Marked as contacted."),
     queue: j => save(j.id, { status: "Queued" }, "Queued. Claude applies on the next run."),
+    // Every "Ready to apply" job at once, for a search-and-save run the user is happy with.
+    queueAll: async () => { const js = JOBS.filter(isReady); for (const j of js) await save(j.id, { status: "Queued" }, `Queued ${js.length} for Claude.`); },
     unqueue: j => save(j.id, { status: "Review" }, "Moved back to Needs you."),
     decline: j => save(j.id, { status: "Declined" }, "Dismissed. It won't come back."),
     revive: j => save(j.id, { status: "Review", reviewReason: j.reviewReason || "needs-call" }, "Moved to Needs you."),
@@ -275,6 +297,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
     const d = dis(j), id = esc(j.id), b = (a, label, cls = "") => `<button class="btn ${cls}" type="button" data-a="${a}" data-id="${id}" ${d}>${label}</button>`;
     if (j.status === "Queued") return openBtn(j) + b("unqueue", "Undo", "quiet");
     if (j.status === "Review" && j.reviewReason === "contact") return b("reached", "I reached out", "primary") + openBtn(j) + b("decline", "Not interested", "quiet");
+    if (isReady(j)) return b("queue", "Let Claude apply", "primary") + openBtn(j) + b("applied", "I applied") + b("decline", "Not interested", "quiet");
     if (j.status === "Review" && j.reviewReason === "needs-call") return b("queue", "Apply anyway", "primary") + openBtn(j) + b("decline", "Not interested", "quiet");
     if (j.status === "Review") return openBtn(j, j.claudeCanApply === false) + b("applied", "I applied") + (j.claudeCanApply === false ? "" : b("queue", "Let Claude apply", "primary")) + b("decline", "Not interested", "quiet");
     if (j.status === "Skipped" || j.status === "Declined") return openBtn(j) + b("revive", "Move to Needs you");
@@ -283,6 +306,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
   }
   function card(j) {
     const r = j.status === "Queued" ? `<span class="reason queued">→ Queued: Claude applies on the next run</span>`
+      : j.reviewReason === "ready" ? `<span class="reason ready">✓ Ready to apply: passed every check</span>`
       : j.reviewReason === "contact" ? `<span class="reason reach">✉ Reach out: apply by email, phone or message</span>`
       : j.reviewReason === "needs-call" ? `<span class="reason call">! Your call</span>`
       : `<span class="reason site">↗ Company site${j.ats && j.ats !== "Unknown" ? " · " + esc(j.ats) : ""}${j.claudeCanApply === false ? " · needs your account" : ""}</span>`;
@@ -305,10 +329,11 @@ select.stage{font-size:12.5px;padding:4px 6px}
     const all = base(), ap = appliedList(), nd = needs();
     const n = s => all.filter(j => j.status === s).length;
     const tile = (v, label, sub, go, cls = "") => `<button class="stat ${cls}" type="button" data-go='${esc(JSON.stringify(go))}'><span>${label}</span><b>${loaded ? v : "–"}</b><span>${sub}</span><span class="go">Open →</span></button>`;
-    const reach = nd.filter(j => j.reviewReason === "contact" && j.status === "Review").length;
+    const reach = nd.filter(j => j.reviewReason === "contact" && j.status === "Review").length, ready = nd.filter(isReady).length;
     const tiles = [
       tile(ap.length, "Applied", `${ap.filter(j => j.appliedBy === "you").length} by you, ${ap.filter(j => j.appliedBy !== "you").length} by Claude`, { view: "applied", applied: "" }, "good"),
-      tile(nd.filter(j => j.status === "Review").length, "Need you", "company sites, calls, outreach", { view: "needs-you", kind: "" }, nd.some(j => j.status === "Review") ? "attn" : ""),
+      ready ? tile(ready, "Ready to apply", "saved for you: apply, or let Claude", { view: "needs-you", kind: "ready" }, "attn") : "",
+      tile(nd.filter(j => j.status === "Review").length, "Need you", "ready, company sites, calls, outreach", { view: "needs-you", kind: "" }, nd.some(j => j.status === "Review") ? "attn" : ""),
       tile(reach, "Reach out", "recruiter posts with contacts", { view: "needs-you", kind: "contact" }),
       tile(ap.filter(j => LIVE.includes(j.stage)).length, "In process", "screening, interview or offer", { view: "applied", applied: "live" }),
       tile(ap.filter(followDue).length, "Follow-ups due", "applied 7+ days ago, no reply", { view: "applied", applied: "due" }),
@@ -321,7 +346,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
     const days = [...Array(14)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 13 + i); return iso(d); });
     const allAp = JOBS.filter(j => j.status === "Applied"), per = days.map(d => allAp.filter(j => j.appliedAt === d).length), max = Math.max(1, ...per);
     const qualified = all.filter(j => ["Applied", "Review", "Queued", "New"].includes(j.status)).length;
-    return `<section class="stats" aria-label="Summary">${tiles}</section>
+    return `${runLive()}<section class="stats" aria-label="Summary">${tiles}</section>
     <section><div class="sec-head" style="margin-top:8px"><h2>Pipeline</h2><p>Click any bar to open that list.</p></div><div class="grid2">
       <div class="panel"><h3>From reviewed to offer</h3>${bars([["Reviewed", all.length, { view: "all", status: "" }], ["Worth applying", qualified, { view: "all", status: "open" }], ["Applied", ap.length, { view: "applied", applied: "" }],
         ["Responded", ap.filter(j => RESPONDED.includes(j.stage)).length, { view: "applied", applied: "responded" }], ["Interviewing", ap.filter(j => ["Interview", "Offer"].includes(j.stage)).length, { view: "applied", applied: "live" }], ["Offers", ap.filter(j => j.stage === "Offer").length, { view: "applied", applied: "live" }]], all.length)}</div>
@@ -330,17 +355,37 @@ select.stage{font-size:12.5px;padding:4px 6px}
         <div class="xlabels">${days.map((d, i) => `<span>${i % 2 === 1 ? d.slice(5).replace("-", "/") : ""}</span>`).join("")}</div></div>
       <div class="panel"><h3>Where jobs came from</h3>${bars(Object.entries(src).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, v, { view: "all", status: "", source: k }]))}</div>
     </div></section>
-    <section><div class="sec-head"><h2>Runs</h2><p>What each search covered, and what it could not reach.</p></div><div class="runs">${RUNS.length ? RUNS.map(r => `<div class="run"><span class="when">${esc(r.date)}${r.label ? " · " + esc(r.label) : ""}</span>
+    <section><div class="sec-head"><h2>Runs</h2><p>What each search covered, and what it could not reach.</p></div><div class="runs">${RUNS.length ? RUNS.map(r => `<div class="run"><span class="when">${esc(r.date)}${r.label ? " · " + esc(r.label) : ""}${r.mode ? `<br>${r.mode === "save" ? "search and save" : "apply"}` : ""}${r.status === "running" ? "<br>in progress" : ""}</span>
       <span>${esc((r.portals || []).join(", "))}: ${esc(r.found ?? "?")} reviewed, ${esc(r.applied ?? 0)} applied, ${esc(r.review ?? 0)} for you, ${esc(r.skipped ?? 0)} skipped. ${esc(r.summary || "")}</span>
-      ${(r.notSearched || []).map(x => `<span class="gap">Not searched: ${esc(x.portal)}. ${esc(x.why)}</span>`).join("")}</div>`).join("") : `<div class="run"><span class="when">—</span><span>${loaded ? "No runs recorded yet. Ask Claude to run your job search." : "Loading…"}</span></div>`}</div></section>`;
+      ${(r.notSearched || []).map(x => `<span class="gap">Not searched: ${esc(x.portal)}. ${esc(x.why)}</span>`).join("")}${r.saryom ? `<span class="small" style="grid-column:2">Saryom: ${esc(r.saryom)}</span>` : ""}</div>`).join("") : `<div class="run"><span class="when">—</span><span>${loaded ? "No runs recorded yet. Ask Claude to run your job search." : "Loading…"}</span></div>`}</div></section>`;
+  }
+
+  // The run Claude is on right now, if any. A run that stopped reporting an hour and a half ago did not finish.
+  const STEP_IC = { done: "✓", doing: "▸", todo: "", skipped: "–" };
+  const liveRun = () => { const r = RUNS[0]; return r && r.status === "running" && Array.isArray(r.steps) ? r : null; };
+  const stale = r => Date.now() - new Date(r.updatedAt || 0).getTime() > 90 * 60e3;
+  const clock = t => { const d = new Date(t); return isNaN(d) ? "" : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); };
+  function runLive() {
+    const r = liveRun(); if (!r) return "";
+    const n = r.steps.length, done = r.steps.filter(s => s.state === "done" || s.state === "skipped").length, old = stale(r);
+    const at = r.steps.find(s => s.state === "doing");
+    return `<section class="panel runlive ${old ? "stale" : ""}" aria-label="Run in progress" aria-live="polite">
+      <div class="sec-head"><h2>${old ? "This run stopped before finishing" : "Claude is running your search"}</h2>
+        <p>${r.mode === "save" ? "Search and save: nothing is submitted" : "Apply mode"} · jobs from the last ${esc(r.hours)}h, posts ${esc(r.postHours)}h · ${done} of ${n} stages${at && !old ? " · now: " + esc(at.label) : ""} · updated ${esc(clock(r.updatedAt))}</p></div>
+      <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${done}" aria-label="Stages finished"><i style="width:${(done / n * 100).toFixed(0)}%"></i></div>
+      <ol class="steps">${r.steps.map(s => `<li class="step ${esc(s.state)}"><span class="ic" aria-hidden="true">${STEP_IC[s.state] ?? ""}</span><b>${esc(s.label)}</b>
+        <small>${esc(s.note || ({ done: "Done", doing: "In progress…", todo: "Waiting", skipped: "Skipped" })[s.state] || "")}</small></li>`).join("")}</ol>
+      ${old ? `<p class="note">Rows written before it stopped are saved. Ask Claude to run the search again; it picks up only what is new.</p>` : ""}</section>`;
   }
 
   function needsView() {
     const nd = needs(), c = k => nd.filter(j => k === "Queued" ? j.status === "Queued" : j.status === "Review" && j.reviewReason === k).length;
     const list = nd.filter(j => !S.kind || (S.kind === "Queued" ? j.status === "Queued" : j.status === "Review" && j.reviewReason === S.kind))
       .sort((a, b) => (a.status === "Queued") - (b.status === "Queued") || (b.foundAt || "").localeCompare(a.foundAt || ""));
-    return `<div class="sec-head"><h2>Needs you</h2><p><b>Let Claude apply</b> queues a company-site job for the next run. <b>Reach out</b> jobs are recruiter posts: copy the contact and email or call them yourself, then press <b>I reached out</b>.</p></div>
-      ${chips("kind", [["", "All", nd.length], ["contact", "Reach out", c("contact")], ["company-site", "Company site", c("company-site")], ["needs-call", "Your call", c("needs-call")], ["Queued", "Queued for Claude", c("Queued")]])}
+    const rd = c("ready");
+    return `<div class="sec-head"><h2>Needs you</h2><p><b>Let Claude apply</b> queues a job for the next apply run. <b>Reach out</b> jobs are recruiter posts: copy the contact and email or call them yourself, then press <b>I reached out</b>.</p></div>
+      ${chips("kind", [["", "All", nd.length], ...(rd ? [["ready", "Ready to apply", rd]] : []), ["contact", "Reach out", c("contact")], ["company-site", "Company site", c("company-site")], ["needs-call", "Your call", c("needs-call")], ["Queued", "Queued for Claude", c("Queued")]])}
+      ${rd && (!S.kind || S.kind === "ready") ? `<div class="chips"><button class="btn primary" type="button" data-a="queueAll" ${canWrite && !pending.size ? "" : "disabled"}>Let Claude apply to all ${rd} ready jobs</button></div>` : ""}
       ${!loaded ? emptyBox("Loading…") : list.length ? `<div class="queue">${list.map(card).join("")}</div>` : emptyBox(nd.length ? "Nothing in this group." : "Nothing waiting on you. Company-site jobs, recruiter posts and judgment calls appear here after each run.")}`;
   }
 
@@ -399,8 +444,8 @@ select.stage{font-size:12.5px;padding:4px 6px}
     "Employment type": { can: true, change: "Accept another contract type." },
     "Role mismatch": { can: true, change: "Add titles to your targets." },
     "Stack mismatch": { can: true, change: "Widen the stack, only where your resume supports it." },
-    "Application barrier": { can: true, change: "Answer the blocking question once (a salary figure, for example) and Claude can proceed." },
-    "Sponsorship / authorization": { can: false, change: "The posting itself rules out an H-1B transfer. Nothing on your side changes this." },
+    "Application barrier": { can: true, change: "Answer the blocking question once (a salary figure, for example) and Claude can go ahead." },
+    "Sponsorship / authorization": { can: false, change: "The posting rules out the work authorization you hold. Nothing on your side changes this." },
     "Clearance": { can: false, change: "Needs a clearance or citizenship you do not hold." },
     "Stale / duplicate": { can: false, change: "Already covered by another posting, or no longer open." },
     "Spam / duplicate": { can: false, change: "Mass-recruiter or duplicate posting." },
@@ -494,6 +539,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
     const keep = document.activeElement && document.activeElement.id === "q";
     $("view").innerHTML = { overview, "needs-you": needsView, applied: appliedView, all: allView, "what-if": whatIfView }[S.view]();
     if (S.view === "what-if") whatIf();
+    if (online) { const r = liveRun(), at = r && !stale(r) && r.steps.find(s => s.state === "doing"); setLive(true, `Live · ${JOBS.length} jobs` + (r && !stale(r) ? ` · run in progress${at ? ": " + at.label : ""}` : "")); }
     $("time").value = String(S.days);
     if (keep) $("q").focus();
   }
@@ -510,7 +556,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
     const cp = t.closest("button[data-copy]");
     if (cp) { e.stopPropagation(); try { await navigator.clipboard.writeText(cp.dataset.copy); toast("Copied " + cp.dataset.copy); } catch { const c = cp.previousElementSibling, r = document.createRange(); r.selectNodeContents(c); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected. Press copy."); } return; }
     const a = t.closest("button[data-a]");
-    if (a) { if (!a.disabled) { const j = JOBS.find(x => x.id === a.dataset.id); if (j) act[a.dataset.a](j); } return; }
+    if (a) { if (!a.disabled) { if (a.dataset.a === "queueAll") return act.queueAll(); const j = JOBS.find(x => x.id === a.dataset.id); if (j) act[a.dataset.a](j); } return; }
     const tab = t.closest("[data-view]"); if (tab) return go({ view: tab.dataset.view });
     const g = t.closest("[data-go]"); if (g) return go(JSON.parse(g.dataset.go));
     const set = t.closest("[data-set]"); if (set) return go({ [set.dataset.set]: set.dataset.val });
@@ -539,9 +585,9 @@ select.stage{font-size:12.5px;padding:4px 6px}
     const timer = setTimeout(() => setLive(false, "Can't reach the tracker yet. Showing what has loaded."), 10000);
     db.collection("jobs").onSnapshot(snap => {
       JOBS = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
-      if (!snap.metadata.fromCache) { clearTimeout(timer); setLive(true, `Live · ${JOBS.length} jobs`); }
+      if (!snap.metadata.fromCache) { clearTimeout(timer); online = true; }
       loaded = true; render();
-    }, err => { clearTimeout(timer); loaded = true; setLive(false, err && err.code === "revoked" ? "Access to the tracker ended." : "The tracker stopped updating. Reload to reconnect."); render(); });
+    }, err => { clearTimeout(timer); loaded = true; online = false; setLive(false, err && err.code === "revoked" ? "Access to the tracker ended." : "The tracker stopped updating. Reload to reconnect."); render(); });
     db.collection("meta").onSnapshot(snap => { const d = snap.docs.find(x => x.id === "criteria"); CRIT = d ? d.data() : null; render(); }, () => {});
     db.collection("runs").orderBy("date", "desc").limit(6).onSnapshot(snap => { RUNS = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)); render(); }, () => {});
   })();
