@@ -217,9 +217,10 @@ def run_step(run, key, state, note=None, counters=None):
 
 
 def finish_run(run, summary=""):
-    """Close the run. Anything never started is marked skipped rather than left looking pending."""
+    """Close the run. Anything never started is marked skipped rather than left looking pending.
+    The report is the exception: finishing the run is what writes it."""
     for s in run["steps"]:
-        if s["state"] == "doing":
+        if s["key"] == "report" or s["state"] == "doing":
             s["state"] = "done"
         elif s["state"] == "todo":
             s["state"] = "skipped"

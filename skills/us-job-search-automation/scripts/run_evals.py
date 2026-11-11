@@ -84,7 +84,9 @@ def progress_checks():
     left = [s["key"] for s in apply_run["steps"] if s["state"] in ("todo", "doing")]
     probs = [f"still open: {left}"] if left else []
     probs += [] if apply_run["status"] == "done" and apply_run["saryom"] == "3 added, 12 updated" else ["status or Saryom line not recorded"]
-    probs += [] if next(s for s in apply_run["steps"] if s["key"] == "report")["note"] == "not reached" else ["an unreached stage should say so"]
+    by_key = {s["key"]: s for s in apply_run["steps"]}
+    probs += [] if by_key["posts"]["state"] == "skipped" and by_key["posts"]["note"] == "not reached" else ["an unreached stage should say so"]
+    probs += [] if by_key["report"]["state"] == "done" else ["finishing the run is the report, so it should read as done"]
     check("finishing closes every stage and keeps the Saryom result", probs)
 
     # search-and-save rows: nothing becomes "apply next"
