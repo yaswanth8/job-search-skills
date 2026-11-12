@@ -218,14 +218,14 @@ select.stage{font-size:12.5px;padding:4px 6px}
     <div class="tabs" id="tabs"></div>
     <div class="tools">
       <select id="time" aria-label="Time range"><option value="0">All time</option><option value="1">Today</option><option value="3">Last 3 days</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
-      <select id="etype" aria-label="Employment type"><option value="">All types</option><option value="ft">Full-time</option><option value="w2">W2</option><option value="c2c">C2C</option><option value="contract">Contract (type not stated)</option></select>
+      <select id="etype" aria-label="Employment type"><option value="">All types</option><option value="ft">Full-time</option><option value="w2">W2</option><option value="c2c">C2C / Contract</option></select>
       <input id="q" type="search" placeholder="Search company, role, contact" aria-label="Search jobs">
     </div>
   </nav>
 
   <main id="view"></main>
 
-  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Ready to apply</b> jobs passed every check in a search-and-save run: nothing was submitted. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The type filter (Full-time, W2, C2C) reads each job's employment type; a job posted as "C2C/W2" shows under both. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
+  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Ready to apply</b> jobs passed every check in a search-and-save run: nothing was submitted. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The type filter (Full-time, W2, C2C) reads each job's employment type; a job posted as "C2C/W2" shows under both, and any contract role counts as C2C / Contract. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
 
@@ -258,7 +258,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
     if (/full[\s-]?time|permanent|\bfte\b/.test(t)) k.add("ft");
     if (/\bw-?2\b/.test(t) && !/no w-?2/.test(t)) k.add("w2");
     if (/\bc2c\b|corp[\s-]?to[\s-]?corp/.test(t) && !/no c2c/.test(t)) k.add("c2c");
-    if (!k.size && /contract|cth|temp/.test(t)) k.add("contract");
+    if (/contract|cth|temp|1099/.test(t) && !/no c2c/.test(t)) k.add("c2c");  // a contract role is treated as C2C
     return k; };
   const matchT = j => !S.etype || etypes(j).has(S.etype);
   const base = () => JOBS.filter(j => matchQ(j) && matchT(j) && inRange(j.foundAt || j.updatedAt));

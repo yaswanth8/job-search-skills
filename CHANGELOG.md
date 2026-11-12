@@ -2,6 +2,10 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.8.1 (2026-11-12)
+- Dashboard (template 5): the type filter's C2C option is now **C2C / Contract**; any contract role counts as C2C unless it rules C2C out.
+- SKILL.md states that pay floors are minimums (top of range must reach the floor; no listed pay is not a skip) and never go into searches.
+
 ## 1.8.0 (2026-11-12)
 - **Dashboard (template 4):** an employment-type filter next to the time range (All types, Full-time, W2, C2C, Contract with type not stated), applied to every view. A "C2C/W2" job shows under both. Existing trackers are offered a refresh; rows are untouched.
 - **Overlapped tab loading:** each chosen portal's search loads in its own tab at once, then each is read in turn.

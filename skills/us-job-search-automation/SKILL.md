@@ -5,7 +5,7 @@ description: "Automates a US job search end to end: finds fresh listings on Link
 
 # US Job Search Automation
 
-Version: 1.8.0 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 1.8.1 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **ask, search, vet, apply or save, track, report**. An application is a statement in the candidate's name: the profile and resume are the only sources of facts. Anything they don't cover is asked once or skipped, never guessed.
 
@@ -54,7 +54,7 @@ Apply to every Queued row before searching: Easy Apply rows through the portal, 
 ## 2. Search
 `plan.py --profile PROFILE --hours <jobs> --post-hours <posts>` builds the searches: one combined query per location bucket and portal. Add `--company-site` when the user wants company-site roles listed too. Follow "Fast runs" in `portals.md`: one `browser_batch` per portal, one card-vetting call for everything.
 - **Overlapped tabs and pacing** (`portals.md`): load the chosen portals in parallel tabs, work them one at a time, and stop a portal on any challenge.
-- **All types** ("full-time, W2 and C2C"): one combined query per bucket already covers every `accepted_types`; `vet.py` applies each type's own pay floor and auth rules. Recruiter posts are where most C2C roles live, so don't skip them for a C2C user.
+- **All types** ("full-time, W2 and C2C"): one combined query per bucket already covers every `accepted_types`; `vet.py` applies each type's own pay floor and auth rules. Pay floors are minimums, never search terms: a job passes when the top of its range reaches the floor, and a job with no listed pay is not skipped for pay. A contract role counts as C2C unless it says W2 only. Recruiter posts are where most C2C roles live, so don't skip them for a C2C user.
 - Read result pages with the `*_cards.js` snippet, page with `PAGE`, save the lines to a `.txt` file. `vet.py --mode card --seen seen.txt cards.txt` decides what to open and skips cards the portal already marks Applied.
 - An Indeed header starting `NO RESULTS` means the cards are Indeed's suggestions: vet nothing from that page.
 - Read each opened job with `linkedin_job.js`, `indeed_job.js` or `dice_job.js` (`PART = -1` for the key sentences). On LinkedIn, check the job id against `seen.txt` before reading. Carry the `hiring:` and `contacts:` lines into the posting so the row shows who to reach.
