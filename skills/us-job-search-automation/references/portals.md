@@ -65,6 +65,6 @@ These are manual applies. Never email, call, message or connect with a recruiter
 ## Tool limits (all portals)
 - Strip URLs and "?" from `javascript_tool` output: the tool blocks output holding query strings. `fetch()` of job pages is blocked too; open the page instead.
 - LinkedIn's new search cards have no job-id link: click the card, read the id from the page URL, then read the job.
-- Dice "403 Forbidden": don't work around it; mark Dice skipped and tell the user to retry.
+- A 403 Forbidden on any portal: don't work around it. Stop that portal, ask the user (plain text) to open the same search in the browser Claude uses, sign in, load it once, and reply "done"; then retry once. If it still fails, mark the portal skipped with the reason and give the user its search links.
 - Screenshots at scale 0.6: click at image coordinates / 0.6.
 - A Easy Apply question the resume can't answer truthfully (a skill with no years): leave the job as Review, never guess.

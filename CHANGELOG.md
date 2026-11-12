@@ -2,6 +2,9 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.6.2 (2026-11-12)
+- A 403 Forbidden on a portal (Dice) now asks the user to open the page in the run's browser, sign in and reply "done"; Claude retries once, then skips the portal and hands over the search links. It never works around the block.
+
 ## 1.6.1 (2026-11-12)
 - The start-of-run questions are mandatory: every search, save or apply request asks first (browser and accounts, apply or save, job window 12 h to 3 days, recruiter-post window or skip, Saryom) unless the request already answers.
 - A one-line progress update after every portal and every application, besides the run-log block.

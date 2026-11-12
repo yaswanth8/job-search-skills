@@ -5,7 +5,7 @@ description: "Automates a US job search end to end: finds fresh listings on Link
 
 # US Job Search Automation
 
-Version: 1.6.1 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 1.6.2 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **ask, search, vet, apply or save, track, report**. An application is a statement in the candidate's name: the profile and resume are the only sources of facts. Anything they don't cover is asked once or skipped, never guessed.
 
@@ -38,7 +38,7 @@ PROFILE is the `job-search-profile` skill's SKILL.md path, the `--profile` argum
 4. **Authorization** is the answer to "What to do", for this run only. Search-and-save submits nothing, queued rows included. Company-site jobs the user did not queue need their explicit words, per job or "the company-site ones too". Nothing authorizes contacting recruiters: outreach is always the user's.
 5. **Progress.** `tracker.py run start --out <scratch>/run.json --mode apply|save --hours <jobs> --post-hours <posts> --saryom off|token|file` prints the run's stages. Show that block as the first message, `set` the run doc it names, and mirror the stages in the task list. From here on, every time a stage starts, ends or is skipped: `tracker.py run step run.json <stage> doing|done|skipped --note "<result in a few words>"`, show the block, `set` the doc again. The user reads progress from these, in chat and on the dashboard; never go quiet for a whole portal. **After each portal's search and after each application, send one line in chat**: portal, cards read, opened, applied/saved, skipped (for example "LinkedIn: 72 cards, 9 opened, 1 applied, 3 for you").
 6. **Tracker state.** `ArtifactData list` on `jobs` (limit 1000, `out_dir`). Every `link` goes into `<scratch>/seen.txt`; keep each doc's `version`. Note Queued rows and Review rows. If `assets/tracker.version` is newer than `meta/tracker.template`, offer the dashboard refresh (`tracker-db.md`).
-7. **Browser.** Use the browser chosen in step 3 and load its tools in one ToolSearch (`portals.md`). Probe the three portals in one `browser_batch`: a blocked domain means ask once, mark that portal `skipped` with the reason and go on; a guest view means ask the user to sign in.
+7. **Browser.** Use the browser chosen in step 3 and load its tools in one ToolSearch (`portals.md`). Probe the three portals in one `browser_batch`: a blocked domain or a 403 means ask the user once to open that portal in the browser and reply "done", retry once, otherwise mark it `skipped` with the reason and go on; a guest view means ask the user to sign in.
 
 ## First-time setup
 1. Read the resume and fill everything it answers: contact, roles (YYYY-MM dates, skills per role), education, certifications, domains, stack lists.
