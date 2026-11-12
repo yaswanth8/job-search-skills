@@ -5,13 +5,13 @@ description: "Automates a US job search end to end: finds fresh listings on Link
 
 # US Job Search Automation
 
-Version: 1.6.3 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 1.7.0 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **ask, search, vet, apply or save, track, report**. An application is a statement in the candidate's name: the profile and resume are the only sources of facts. Anything they don't cover is asked once or skipped, never guessed.
 
 ## Files
 Step 0 clones the repo every run; `skills/us-job-search-automation/` in that clone is TOOLS. Run scripts with `python3 -B TOOLS/scripts/<name>.py`.
-- `scripts/`: `plan.py` (the run's searches), `vet.py` (what to do with a posting), `posts.py` (recruiter posts into "Reach out" leads), `ats.py` (who can apply on a company site), `years.py` (years for forms), `tracker.py` (rows, checks, the run log and progress, dashboard criteria), `saryom.py` (send the tracker to Saryom), `run_evals.py` (self-test).
+- `scripts/`: `plan.py` (the run's searches), `vet.py` (what to do with a posting), `posts.py` (recruiter posts into "Reach out" leads), `ats.py` (who can apply on a company site), `years.py` (years for forms), `tracker.py` (rows, checks, the run log and progress, dashboard criteria), `saryom.py` (send the tracker to Saryom), `employers.py` (sponsoring employers or C2C vendors to target), `feeds.py` (company career-page feeds into postings), `run_evals.py` (self-test).
 - `js/`: browser snippets. Paste one file into `javascript_tool`; output is cut near 1,000 characters, so each snippet pages with a `PAGE` or `PART` constant.
 - `references/` (table below), `assets/` (tracker page, profile defaults), `evals/` (back-test).
 
@@ -25,6 +25,7 @@ PROFILE is the `job-search-profile` skill's SKILL.md path, the `--profile` argum
 | Overruling vet.py, or editing rules | `references/vetting.md` |
 | Writing rows, the run log or the criteria doc | `references/tracker-db.md` |
 | The user chose Saryom, or asks about it | `references/saryom.md` |
+| Extra sources: sponsoring employers, C2C vendors, company career-page feeds | `references/employers-and-feeds.md` |
 
 ## 0. Start
 1. **Tools.** `git clone --depth 1 -q https://github.com/yaswanth8/job-search-skills <scratch>/jss`. If it fails, use this skill's folder when it has `scripts/`; otherwise stop and say so. **Always run the latest:** if `TOOLS/VERSION` differs from the Version line above, read `TOOLS/SKILL.md` and follow it instead of this file for the whole run (this file may be a stale installed copy); say so in one line and offer to refresh the installed copy (`propose_skills`, improvement, full text of `TOOLS/SKILL.md`; or `dist/us-job-search-automation.zip`).
@@ -55,6 +56,7 @@ Apply to every Queued row before searching: Easy Apply rows through the portal, 
 - Read result pages with the `*_cards.js` snippet, page with `PAGE`, save the lines to a `.txt` file. `vet.py --mode card --seen seen.txt cards.txt` decides what to open and skips cards the portal already marks Applied.
 - An Indeed header starting `NO RESULTS` means the cards are Indeed's suggestions: vet nothing from that page.
 - Read each opened job with `linkedin_job.js`, `indeed_job.js` or `dice_job.js` (`PART = -1` for the key sentences). On LinkedIn, check the job id against `seen.txt` before reading. Carry the `hiring:` and `contacts:` lines into the posting so the row shows who to reach.
+- **Beyond the portals.** When a run finds little, or the user asks: `employers-and-feeds.md`. Sponsorship-seekers get a target-employer list from public H-1B data, C2C seekers a vendor list from the tracker, and both can read employers' own career-page feeds.
 - **Recruiter posts.** Run the plan's `post_searches` with `linkedin_posts.js`, then `posts.py --hours <posts>` (`portals.md`). For the user's own keywords or role, `plan.py --post-query`. Passing posts become **Reach out** rows with the recruiter's name, email, phone and profile link.
 
 ## 3. Vet

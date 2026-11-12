@@ -135,6 +135,39 @@ class _Saryom(http.server.BaseHTTPRequestHandler):
         pass
 
 
+
+def employer_feed_checks():
+    """Sponsor ranking, vendor ranking and ATS feed normalising, on small inline samples."""
+    import subprocess
+    out, d = [], Path(tempfile.mkdtemp())
+    prof = str(HERE.parent / "evals" / "fixture_profile.json")
+
+    def run(*args):
+        return subprocess.run([sys.executable, "-B", *map(str, args)], capture_output=True, text=True)
+    (d / "lca.csv").write_text("EMPLOYER_NAME,JOB_TITLE,WORKSITE_STATE,WAGE_RATE_OF_PAY_FROM,CASE_STATUS\n"
+                               "Acme Inc,Java Full Stack Developer,IL,120000,Certified\nAcme Inc,Senior Java Developer,IL,130000,Certified\n"
+                               "Beta LLC,Java Developer,TX,110000,Denied\nGamma Corp,Chef,IL,50000,Certified\n")
+    r = run(HERE / "employers.py", "--profile", prof, "--mode", "sponsor", d / "lca.csv", "--out", d / "e.json")
+    e = json.loads((d / "e.json").read_text()) if r.returncode == 0 else []
+    out.append(("employers sponsor", "sponsor mode keeps certified matching titles only", [] if [x["name"] for x in e] == ["Acme Inc"] and e[0]["score"] == 2 else [r.stderr or str(e)]))
+    (d / "rows").mkdir()
+    (d / "rows" / "a.json").write_text(json.dumps({"vendor": "Vendor One", "company": "X", "type": "Contract", "status": "Applied", "role": "Java Dev"}))
+    (d / "rows" / "b.json").write_text(json.dumps({"data": {"company": "Vendor Two", "type": "C2C", "status": "Review", "role": "Java"}}))
+    (d / "rows" / "c.json").write_text(json.dumps({"company": "Skipped Co", "type": "C2C", "status": "Skipped"}))
+    r = run(HERE / "employers.py", "--profile", prof, "--mode", "vendor", d / "rows", "--out", d / "v.json")
+    v = json.loads((d / "v.json").read_text()) if r.returncode == 0 else []
+    out.append(("employers vendor", "vendor mode ranks applied above reviewed, drops skipped", [] if [x["name"] for x in v] == ["Vendor One", "Vendor Two"] else [r.stderr or str(v)]))
+    (d / "greenhouse--acme.json").write_text(json.dumps({"jobs": [
+        {"id": 1, "title": "Senior Java Developer", "location": {"name": "Remote"}, "absolute_url": "https://x/1", "updated_at": dt.datetime.now(dt.timezone.utc).isoformat(), "content": "&lt;p&gt;Java Spring&lt;/p&gt;"},
+        {"id": 2, "title": "Designer", "location": {"name": "NY"}, "absolute_url": "https://x/2", "updated_at": dt.datetime.now(dt.timezone.utc).isoformat()},
+        {"id": 3, "title": "Java Developer", "location": {"name": "NY"}, "absolute_url": "https://x/3", "updated_at": "2020-01-01T00:00:00Z"}]}))
+    r = run(HERE / "feeds.py", "--profile", prof, d / "greenhouse--acme.json", "--out", d / "p.json")
+    p = json.loads((d / "p.json").read_text()) if r.returncode == 0 else []
+    ok = len(p) == 1 and p[0]["description"] == "Java Spring" and p[0]["apply_type"] == "company_site" and p[0]["id"] == "greenhouse-acme-1"
+    out.append(("feeds greenhouse", "title filter, age filter and HTML cleaning", [] if ok else [r.stderr or str(p)]))
+    return out
+
+
 def saryom_checks():
     """Sending the tracker to Saryom: what goes in the file, and what each failure tells Claude to do next."""
     out = []
@@ -313,7 +346,8 @@ def main():
         probs += [f"missing '{x}'" for x in e["linkedin_url_contains"] if x not in urls] + [f"24h plan missing '{x}'" for x in e["hours_24_contains"] if x not in urls24]
         results.append({"suite": "plan", "id": "search-plan", "passed": not probs, "got": f"{plan['total_page_loads']} page loads", "why": "", "problems": probs, "note": ""})
 
-    results += progress_checks() + saryom_checks()
+    results += progress_checks() + saryom_checks() + [
+        {"suite": "employers", "id": i, "passed": not pr, "got": "", "why": w, "problems": pr, "note": ""} for i, w, pr in employer_feed_checks()]
 
     passed = sum(r["passed"] for r in results)
     for r in results:
