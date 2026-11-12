@@ -2,6 +2,9 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.9.0 (2026-11-12)
+- **Criteria table at the start and end of every run.** `tracker.py criteria --profile P --table run.json` prints a markdown table of what the run searched with: mode, portals, time windows, titles, employment types, pay floors (minimums), remote and on-site locations, experience and visa. 1 new check, 132 in all.
+
 ## 1.8.1 (2026-11-12)
 - Dashboard (template 5): the type filter's C2C option is now **C2C / Contract**; any contract role counts as C2C unless it rules C2C out.
 - SKILL.md states that pay floors are minimums (top of range must reach the floor; no listed pay is not a skip) and never go into searches.

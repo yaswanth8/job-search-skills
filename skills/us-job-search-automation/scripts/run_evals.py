@@ -165,6 +165,10 @@ def employer_feed_checks():
     p = json.loads((d / "p.json").read_text()) if r.returncode == 0 else []
     ok = len(p) == 1 and p[0]["description"] == "Java Spring" and p[0]["apply_type"] == "company_site" and p[0]["id"] == "greenhouse-acme-1"
     out.append(("feeds greenhouse", "title filter, age filter and HTML cleaning", [] if ok else [r.stderr or str(p)]))
+    prof_d = load_profile(prof)
+    t = tracker.criteria_table(prof_d, tracker.new_run("save", 24, 12, ["LinkedIn", "Greenhouse"]))
+    need = ["| Mode | Search and save", "| Portals | LinkedIn, Greenhouse |", "| Job postings from the last | 24 hours |", "Pay floors (minimums)"]
+    out.append(("criteria table", "the start/end table names mode, portals, windows and floors", [x for x in need if x not in t]))
     return out
 
 

@@ -155,6 +155,10 @@ def cmd_check(a):
 def cmd_criteria(a):
     """The dashboard's meta/criteria doc: the rules in force, for its "What if we widen the criteria" panel."""
     p = load_profile(a.profile)
+    if a.table is not None:
+        print(criteria_table(p, json.loads(Path(a.table).read_text()) if a.table else None))
+        if not a.out:
+            return
     names = {v: k.title() for k, v in STATES.items()}
     states = p["locations"]["onsite_states"]
     f = p["pay_floor"]
@@ -169,6 +173,27 @@ def cmd_criteria(a):
     doc = {"onsiteStates": states, "rules": [{"label": k, "text": v} for k, v in rules], "updatedAt": today()}
     Path(a.out).write_text(json.dumps(doc, indent=1))
     print(f"meta/criteria -> {a.out}: write it with ArtifactData set (collection meta, doc_id criteria)")
+
+
+def criteria_table(p, run=None) -> str:
+    """The search criteria as a markdown table, shown in chat at the start and end of every run."""
+    names = {v: k.title() for k, v in STATES.items()}
+    f, loc, sr = p["pay_floor"], p["locations"], p.get("search", {})
+    states = loc.get("onsite_states", [])
+    rows = []
+    if run:
+        rows += [["Mode", "Apply to jobs" if run.get("mode") == "apply" else "Search and save (nothing submitted)"],
+                 ["Portals", ", ".join(run.get("portals", []))],
+                 ["Job postings from the last", f"{run.get('hours')} hours"],
+                 ["Recruiter posts from the last", f"{run.get('postHours')} hours" if run.get("postHours") else "skipped"]]
+    rows += [["Titles", ", ".join(sr.get("titles", []) or p.get("search_queries", [])[:4])],
+             ["Employment types", ", ".join(p.get("accepted_types", [])) + " (contract counts as C2C)"],
+             ["Pay floors (minimums)", f"${f['annual'] / 1000:.0f}K full-time, ${f['w2_hourly']}/hr W2, ${f['c2c_hourly']}/hr C2C or contract; unlisted pay is kept"],
+             ["Remote", "Anywhere in the US" if loc.get("remote_scope", "US") == "US" else str(loc.get("remote_scope"))],
+             ["Hybrid or on-site", ", ".join(names.get(s_, s_) for s_ in states) if states else "Not accepted"],
+             ["Experience asked", f"Up to {p['max_years_required']} years; skips " + ", ".join(p["title_exclude"]["seniority"][:4]) + " titles"],
+             ["Visa", "Skips postings that rule out sponsorship" if p["auth"]["exclude_patterns"] else "No sponsorship needed"]]
+    return "| Criterion | Searched with |\n|---|---|\n" + "\n".join(f"| {k} | {str(v).replace('|', '/')} |" for k, v in rows)
 
 
 def now() -> str:
@@ -265,7 +290,8 @@ if __name__ == "__main__":
     s = sub.add_parser("new"); s.add_argument("decisions"); s.add_argument("postings"); s.add_argument("--out", required=True); s.add_argument("--save", action="store_true")
     s = sub.add_parser("writes"); s.add_argument("docs"); s.add_argument("--dir", required=True); s.add_argument("--update", action="store_true")
     s = sub.add_parser("check"); s.add_argument("docs")
-    s = sub.add_parser("criteria"); s.add_argument("--profile", required=True); s.add_argument("--out", required=True)
+    s = sub.add_parser("criteria"); s.add_argument("--profile", required=True); s.add_argument("--out")
+    s.add_argument("--table", metavar="RUN_JSON", nargs="?", const="", help="print the criteria table for chat (with the run's mode, portals and windows when given)")
     run = sub.add_parser("run").add_subparsers(dest="action", required=True)
     s = run.add_parser("start"); s.add_argument("--out", required=True); s.add_argument("--mode", choices=["apply", "save"], default="apply")
     s.add_argument("--hours", type=int, default=48); s.add_argument("--post-hours", type=int, default=12)
