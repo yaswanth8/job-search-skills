@@ -36,7 +36,7 @@ Many contract roles only ever appear as feed posts ("Java C2C/W2, share resumes 
 These are manual applies. Never email, call, message or connect with a recruiter for the user; draft a message only when asked. Verified on the live site 2026-11-09 (about 20 posts per search, most of them bench lists that `posts.py` drops). LinkedIn's search page carries no post ids, so a row links to the poster's profile. If the snippet prints `NO POSTS FOUND`, read the page text it returns and build the same `@@` lines by hand.
 
 ## Contacts on ordinary postings
-`linkedin_job.js` prints a `hiring:` line (the "Meet the hiring team" person) and a `contacts:` line (emails and phones in the description). Put the hiring person in the posting object as `poster` {name, title}, and keep the contacts line inside `description`: `vet.py` extracts them and `tracker.py new` saves them on the row.
+`linkedin_job.js`, `dice_job.js` and `indeed_job.js` all print a `hiring:` line and a `contacts:` line when the posting has them; treat them alike. `linkedin_job.js` prints a `hiring:` line (the "Meet the hiring team" person) and a `contacts:` line (emails and phones in the description). Put the hiring person in the posting object as `poster` {name, title}, and keep the contacts line inside `description`: `vet.py` extracts them and `tracker.py new` saves them on the row.
 
 ## LinkedIn
 **Search URL**: `https://www.linkedin.com/jobs/search-results/?keywords=<q>&geoId=<id>&f_TPR=r259200&f_AL=true`

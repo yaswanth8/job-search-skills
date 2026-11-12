@@ -200,6 +200,10 @@ select.stage{font-size:12.5px;padding:4px 6px}
 .count{font-family:var(--font-data);font-size:12px;color:var(--muted)}
 .wi{display:flex;flex-direction:column;gap:14px}
 .linkbtn{font:inherit;font-size:12.5px;color:var(--accent);background:none;border:0;padding:0;margin-top:10px;cursor:pointer;text-align:left}
+.tlink{color:inherit;text-decoration:none;font-weight:inherit}.tlink:hover{color:var(--accent);text-decoration:underline}
+td .tlink{color:var(--accent)}
+.contactcell{min-width:170px;max-width:240px;font-size:12.5px;overflow-wrap:anywhere}
+.cc{font-family:var(--font-data);cursor:copy}.cc:hover{color:var(--accent)}
 .foot{color:var(--muted);font-size:12.5px;max-width:95ch;margin:0}
 @media (max-width:560px){.run{grid-template-columns:1fr}.run .gap{grid-column:1}h1{font-size:24px}.tools{justify-content:stretch}input[type=search]{max-width:none}}
 </style>
@@ -225,7 +229,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
 
   <main id="view"></main>
 
-  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Ready to apply</b> jobs passed every check in a search-and-save run: nothing was submitted. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The type filter (Full-time, W2, C2C) reads each job's employment type; a job posted as "C2C/W2" shows under both, and any contract role counts as C2C / Contract. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
+  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Ready to apply</b> jobs passed every check in a search-and-save run: nothing was submitted. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The type filter (Full-time, W2, C2C) reads each job's employment type; a job posted as "C2C/W2" shows under both, and any contract role counts as C2C / Contract. The job title opens the posting. The Contact column shows who to reach, or NA and why. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
 
@@ -292,6 +296,21 @@ select.stage{font-size:12.5px;padding:4px 6px}
   // ---------------------------------------------------------------- pieces
   const pill = s => `<span class="pill s-${esc(s)}">${esc(s === "Review" ? "Needs you" : s)}</span>`;
   const dis = j => pending.has(j.id) || !canWrite ? "disabled" : "";
+  const jobUrl = j => safeUrl(j.applyUrl) || safeUrl(j.link);
+  // The job title is the link to the posting everywhere (cards and tables): no separate "Open posting" button.
+  const titleLink = j => { const u = jobUrl(j); return u ? `<a class="tlink" href="${esc(u)}" target="_blank" rel="noopener" title="Open the posting">${esc(j.role)} ↗</a>` : esc(j.role); };
+  // One name per portal, so older rows ("linkedin", "LinkedIn Easy Apply") group with newer ones.
+  const srcName = j => { const s = String(j.source || "").toLowerCase();
+    if (s.startsWith("ats-")) return "Company site (" + s.slice(4).replace(/^./, c => c.toUpperCase()) + ")";
+    return s.includes("post") ? "LinkedIn post" : s.includes("linkedin") ? "LinkedIn" : s.includes("indeed") ? "Indeed" : s.includes("dice") ? "Dice" : s.includes("company") ? "Company site" : (j.source || "Other"); };
+  // Who to reach, in one cell: name, email, phone; or the reason there is none.
+  const NO_CONTACT = { "LinkedIn post": "NA: no email or phone in the post; message the poster", LinkedIn: "NA: no hiring team shown; apply through LinkedIn", Indeed: "NA: Indeed hides the employer contact", Dice: "NA: no recruiter or email on the posting" };
+  const contactCell = j => {
+    const bits = [j.contactName && `<b>${esc(j.contactName)}</b>`, ...String(j.contactEmail || "").split(",").map(x => x.trim()).filter(Boolean).map(x => `<span class="cc" title="Click to copy" data-copy="${esc(x)}">${esc(x)}</span>`),
+      ...String(j.contactPhone || "").split(",").map(x => x.trim()).filter(Boolean).map(x => `<span class="cc" title="Click to copy" data-copy="${esc(x)}">${esc(x)}</span>`)].filter(Boolean);
+    if (bits.length) return bits.join("<br>");
+    const why = j.contactNote || (j.reviewReason === "company-site" ? "NA: apply on the company site; no recruiter named" : NO_CONTACT[srcName(j)] || "NA: no contact on the posting");
+    return `<span class="small">${esc(why)}</span>`; };
   const openBtn = (j, primary) => { const u = safeUrl(j.applyUrl) || safeUrl(j.link); return u ? `<a class="btn ${primary ? "primary" : ""}" href="${esc(u)}" target="_blank" rel="noopener">${j.reviewReason === "contact" ? "Open post" : "Open posting"}</a>` : ""; };
   function contactBox(j) {
     if (!j.contactName && !j.contactEmail && !j.contactPhone && !j.contactUrl) return "";
@@ -304,14 +323,14 @@ select.stage{font-size:12.5px;padding:4px 6px}
   }
   function actions(j) {
     const d = dis(j), id = esc(j.id), b = (a, label, cls = "") => `<button class="btn ${cls}" type="button" data-a="${a}" data-id="${id}" ${d}>${label}</button>`;
-    if (j.status === "Queued") return openBtn(j) + b("unqueue", "Undo", "quiet");
-    if (j.status === "Review" && j.reviewReason === "contact") return b("reached", "I reached out", "primary") + openBtn(j) + b("decline", "Not interested", "quiet");
-    if (isReady(j)) return b("queue", "Let Claude apply", "primary") + openBtn(j) + b("applied", "I applied") + b("decline", "Not interested", "quiet");
-    if (j.status === "Review" && j.reviewReason === "needs-call") return b("queue", "Apply anyway", "primary") + openBtn(j) + b("decline", "Not interested", "quiet");
-    if (j.status === "Review") return openBtn(j, j.claudeCanApply === false) + b("applied", "I applied") + (j.claudeCanApply === false ? "" : b("queue", "Let Claude apply", "primary")) + b("decline", "Not interested", "quiet");
-    if (j.status === "Skipped" || j.status === "Declined") return openBtn(j) + b("revive", "Move to Needs you");
-    if (j.status === "New") return openBtn(j) + b("applied", "I applied") + b("decline", "Not interested", "quiet");
-    return openBtn(j);
+    if (j.status === "Queued") return b("unqueue", "Undo", "quiet");
+    if (j.status === "Review" && j.reviewReason === "contact") return b("reached", "I reached out", "primary") + b("decline", "Not interested", "quiet");
+    if (isReady(j)) return b("queue", "Let Claude apply", "primary") + b("applied", "I applied") + b("decline", "Not interested", "quiet");
+    if (j.status === "Review" && j.reviewReason === "needs-call") return b("queue", "Apply anyway", "primary") + b("decline", "Not interested", "quiet");
+    if (j.status === "Review") return b("applied", "I applied") + (j.claudeCanApply === false ? "" : b("queue", "Let Claude apply", "primary")) + b("decline", "Not interested", "quiet");
+    if (j.status === "Skipped" || j.status === "Declined") return b("revive", "Move to Needs you");
+    if (j.status === "New") return b("applied", "I applied") + b("decline", "Not interested", "quiet");
+    return "";
   }
   function card(j) {
     const r = j.status === "Queued" ? `<span class="reason queued">→ Queued: Claude applies on the next run</span>`
@@ -320,8 +339,8 @@ select.stage{font-size:12.5px;padding:4px 6px}
       : j.reviewReason === "needs-call" ? `<span class="reason call">! Your call</span>`
       : `<span class="reason site">↗ Company site${j.ats && j.ats !== "Unknown" ? " · " + esc(j.ats) : ""}${j.claudeCanApply === false ? " · needs your account" : ""}</span>`;
     return `<article class="card ${j.status === "Queued" ? "queued" : ""}">
-      <div class="top"><div><h3>${esc(j.role)}</h3><div class="co">${esc(j.company)}</div></div>${j.fit ? `<span class="f-${esc(j.fit)}" style="font-size:12px;white-space:nowrap">${esc(j.fit)} fit</span>` : ""}</div>
-      <div class="meta">${[j.where, j.pay, j.type, j.source, j.foundAt].filter(Boolean).map(x => `<span class="mt">${esc(x)}</span>`).join("")}</div>
+      <div class="top"><div><h3>${titleLink(j)}</h3><div class="co">${esc(j.company)}</div></div>${j.fit ? `<span class="f-${esc(j.fit)}" style="font-size:12px;white-space:nowrap">${esc(j.fit)} fit</span>` : ""}</div>
+      <div class="meta">${[j.where, j.pay, j.type, srcName(j), j.foundAt].filter(Boolean).map(x => `<span class="mt">${esc(x)}</span>`).join("")}</div>
       ${r}${contactBox(j)}<p class="why">${esc(j.notes)}</p><div class="actions">${actions(j)}</div></article>`;
   }
   function bars(rows, total, attr) {
@@ -351,7 +370,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
     const rc = {};
     all.filter(j => j.status === "Skipped").forEach(j => rc[j.category || "Other"] = (rc[j.category || "Other"] || 0) + 1);
     const src = {};
-    all.forEach(j => { const s = j.source || "Other"; src[s] = (src[s] || 0) + 1; });
+    all.forEach(j => { const s = srcName(j); src[s] = (src[s] || 0) + 1; });
     const days = [...Array(14)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - 13 + i); return iso(d); });
     const allAp = JOBS.filter(j => j.status === "Applied"), per = days.map(d => allAp.filter(j => j.appliedAt === d).length), max = Math.max(1, ...per);
     const qualified = all.filter(j => ["Applied", "Review", "Queued", "New"].includes(j.status)).length;
@@ -404,7 +423,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
     return `<div class="sec-head"><h2>Applied</h2><p>Set a stage when you hear back. Jobs with no reply after 7 days show under Follow-up due.</p></div>
       ${chips("applied", [["", "All", ap.length], ["awaiting", "Awaiting reply", ap.filter(f.awaiting).length], ["due", "Follow-up due", ap.filter(f.due).length], ["live", "In process", ap.filter(f.live).length], ["closed", "Closed", ap.filter(f.closed).length]])}
       ${!loaded ? emptyBox("Loading…") : list.length ? `<div class="tablebox"><table><thead><tr><th>Company</th><th>Role</th><th>Applied</th><th>Days</th><th>By</th><th>Stage</th><th>Contact</th></tr></thead><tbody>${list.map(j => `
-        <tr class="row" data-open="${esc(j.id)}" tabindex="0"><td class="c"><b>${esc(j.company)}</b><small>${esc(j.where)}</small></td><td>${esc(j.role)}<br><small>${esc(j.source)} · ${esc(j.pay)}</small></td>
+        <tr class="row" data-open="${esc(j.id)}" tabindex="0"><td class="c"><b>${esc(j.company)}</b><small>${esc(j.where)}</small></td><td>${titleLink(j)}<br><small>${esc(srcName(j))} · ${esc(j.pay)}</small></td>
         <td class="mono">${esc(j.appliedAt || "")}</td><td class="mono">${daysSince(j.appliedAt) ?? ""}${followDue(j) ? ` <span class="pill s-Review" style="margin-left:4px">follow up</span>` : ""}</td>
         <td>${j.appliedBy === "you" ? (j.appliedVia === "outreach" ? "You (outreach)" : "You") : "Claude"}</td><td>${stageSelect(j)}</td><td class="small">${esc(j.contactName || "")}${j.contactEmail ? `<br>${esc(j.contactEmail.split(",")[0])}` : ""}</td></tr>${S.open === j.id ? detail(j, 7) : ""}`).join("")}</tbody></table></div>` : emptyBox(ap.length ? "No applications in this group." : "No applications in this time range yet.")}`;
   }
@@ -417,11 +436,11 @@ select.stage{font-size:12.5px;padding:4px 6px}
     </div><div class="actions" style="margin-top:12px">${actions(j)}</div></td></tr>`;
   }
 
-  const COLS = [["company", "Company"], ["role", "Role"], ["where", "Location"], ["type", "Type"], ["pay", "Pay"], ["fit", "Fit"], ["status", "Status"], ["foundAt", "Found"]];
+  const COLS = [["company", "Company"], ["role", "Role"], ["contactName", "Contact"], ["where", "Location"], ["type", "Type"], ["pay", "Pay"], ["fit", "Fit"], ["status", "Status"], ["foundAt", "Found"]];
   function allView() {
     const all = base(), n = s => all.filter(j => j.status === s).length, open = j => ["Applied", "Review", "Queued", "New"].includes(j.status);
-    const srcs = [...new Set(JOBS.map(j => j.source).filter(Boolean))].sort();
-    let rows = all.filter(j => (!S.status || (S.status === "open" ? open(j) : j.status === S.status)) && (!S.fit || j.fit === S.fit) && (!S.work || j.workType === S.work) && (!S.source || j.source === S.source) && (!S.category || j.category === S.category));
+    const srcs = [...new Set(JOBS.map(srcName))].sort();
+    let rows = all.filter(j => (!S.status || (S.status === "open" ? open(j) : j.status === S.status)) && (!S.fit || j.fit === S.fit) && (!S.work || j.workType === S.work) && (!S.source || srcName(j) === S.source) && (!S.category || j.category === S.category));
     rows = rows.slice().sort((a, b) => String(a[S.sortKey] ?? "").localeCompare(String(b[S.sortKey] ?? "")) * S.sortDir);
     const sel = (key, label, opts) => `<select data-sel="${key}" aria-label="${label}"><option value="">${label}</option>${opts.map(o => `<option ${S[key] === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
     return `<div class="sec-head"><h2>All jobs</h2><span class="small">${loaded ? `${rows.length} of ${JOBS.length}` : ""} · click a row for details</span></div>
@@ -429,7 +448,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
       <div class="chips">${sel("fit", "Any fit", ["High", "Medium", "Low"])}${sel("work", "Remote, hybrid, on-site", ["Remote", "Hybrid", "On-site"])}${sel("source", "All sources", srcs)}${S.category ? `<button class="chip" type="button" data-set="category" data-val="" aria-pressed="true">Skip reason: ${esc(S.category)} ×</button>` : ""}</div>
       ${!loaded ? emptyBox("Loading…") : rows.length ? `<div class="tablebox"><table><thead><tr>${COLS.map(([k, l]) => `<th><button type="button" data-sort="${k}">${l}</button></th>`).join("")}</tr></thead><tbody>${rows.map(j => `
         <tr class="row" data-open="${esc(j.id)}" tabindex="0"><td class="c"><b>${esc(j.company)}</b>${j.vendor && !/^(none|not stated)/i.test(j.vendor) ? `<small>via ${esc(j.vendor)}</small>` : ""}</td>
-        <td>${esc(j.role)}<br><small>${esc(j.source)}${j.contactEmail || j.contactPhone ? " · has contact" : ""}</small></td><td>${esc(j.where)}</td><td>${esc(j.type)}</td><td class="mono">${esc(j.pay)}</td>
+        <td>${titleLink(j)}<br><small>${esc(srcName(j))}</small></td><td class="contactcell">${contactCell(j)}</td><td>${esc(j.where)}</td><td>${esc(j.type)}</td><td class="mono">${esc(j.pay)}</td>
         <td>${j.fit ? `<span class="f-${esc(j.fit)}">${esc(j.fit)}</span>` : ""}</td><td>${pill(j.status)}${j.status === "Skipped" && j.category ? `<br><small>${esc(j.category)}</small>` : ""}${j.status === "Review" ? `<br><small>${esc(KIND[j.reviewReason] || "")}</small>` : ""}</td>
         <td class="mono">${esc(j.foundAt || j.updatedAt || "")}</td></tr>${S.open === j.id ? detail(j, COLS.length) : ""}`).join("")}</tbody></table></div>` : emptyBox("No jobs match these filters.")}`;
   }
@@ -563,7 +582,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
   // ---------------------------------------------------------------- events
   document.addEventListener("click", async e => {
     const t = e.target;
-    const cp = t.closest("button[data-copy]");
+    const cp = t.closest("[data-copy]");
     if (cp) { e.stopPropagation(); try { await navigator.clipboard.writeText(cp.dataset.copy); toast("Copied " + cp.dataset.copy); } catch { const c = cp.previousElementSibling, r = document.createRange(); r.selectNodeContents(c); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected. Press copy."); } return; }
     const a = t.closest("button[data-a]");
     if (a) { if (!a.disabled) { if (a.dataset.a === "queueAll") return act.queueAll(); const j = JOBS.find(x => x.id === a.dataset.id); if (j) act[a.dataset.a](j); } return; }

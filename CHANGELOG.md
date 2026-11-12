@@ -2,6 +2,14 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.10.0 (2026-11-12)
+From a back-test of the tracker's 65 rows: 0 of 22 Dice rows and 0 of 11 Indeed rows had a contact, and sources were split ("linkedin" vs "LinkedIn Easy Apply").
+- **Contacts on Dice and Indeed:** `dice_job.js` and `indeed_job.js` now print `hiring:` (a recruiter named on the page) and `contacts:` (every email and phone in the description, not only the key sentences), like `linkedin_job.js`.
+- **Contact note:** rows with no contact get `contactNote`, a short reason (for example "NA: no recruiter or email on the Dice posting").
+- **Dashboard (template 6):** a **Contact** column in All jobs (name, email and phone, click to copy, or NA and why); the **job title is the link** to the posting on every card and table, replacing the "Open posting" button; source names normalized in the chart and filter.
+- **Indeed searches** use one plain query per title instead of a combined OR query, which Indeed answers with suggestions (15 page loads in the fixture plan, within budget).
+- `tracker.py new` normalizes `source` names.
+
 ## 1.9.1 (2026-11-12)
 - The criteria table ends with an offer to change any row; a change goes into the profile for the next run.
 

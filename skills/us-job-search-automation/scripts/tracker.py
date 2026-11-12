@@ -19,7 +19,7 @@ Subcommands:
 A doc: {id, company, vendor, role, where, workType, type, pay, source, fit, spons, status,
         reviewReason, ats, applyUrl, link, category, notes, foundAt, appliedAt, appliedBy,
         stage, followUpAt, updatedAt,
-        contactName, contactTitle, contactEmail, contactPhone, contactUrl}
+        contactName, contactTitle, contactEmail, contactPhone, contactUrl, contactNote (why there is none)}
 status: New | Review | Queued | Applied | Skipped | Declined
   Review = waiting on the user: reviewReason company-site | needs-call | contact | ready
            (contact = manual apply: email, call or message the recruiter; from a LinkedIn post)
@@ -88,12 +88,13 @@ def cmd_new(a):
             "id": doc_id(link), "company": p.get("company", "") or "Not stated", "vendor": p.get("vendor", ""), "role": p.get("title", "") or "Role not stated in post",
             "where": " · ".join(x for x in [p.get("location", ""), p.get("work_type", "") if p.get("work_type", "").lower().replace("-", "") not in p.get("location", "").lower().replace("-", "") else ""] if x),
             "workType": p.get("work_type", ""), "type": p.get("employment_type") or d.get("engagement") or "Not stated",
-            "pay": p.get("pay") or "Not listed", "source": p.get("source", ""), "fit": d.get("fit") or "",
+            "pay": p.get("pay") or "Not listed", "source": normalize_source(p.get("source", "")), "fit": d.get("fit") or "",
             "spons": d.get("sponsorship", "Needs Confirmation"), "status": status,
             "reviewReason": {"needs_call": "needs-call", "review": "company-site", "contact": "contact", "apply": "ready" if a.save else ""}.get(d["action"], ""),
             "contactName": poster.get("name", ""), "contactTitle": poster.get("title", ""),
             "contactEmail": ", ".join(contacts.get("emails", [])[:2]), "contactPhone": ", ".join(contacts.get("phones", [])[:2]),
             "contactUrl": poster.get("url", ""),
+            "contactNote": "" if (poster.get("name") or contacts.get("emails") or contacts.get("phones")) else contact_note(p),
             "ats": (ats or {}).get("ats", ""), "claudeCanApply": (ats or {}).get("claude_can_apply"),
             "applyUrl": p.get("apply_url", ""), "link": link, "category": d.get("category") or "",
             "notes": "; ".join(d.get("reasons", []) + d.get("flags", [])),
@@ -194,6 +195,33 @@ def criteria_table(p, run=None) -> str:
              ["Experience asked", f"Up to {p['max_years_required']} years; skips " + ", ".join(p["title_exclude"]["seniority"][:4]) + " titles"],
              ["Visa", "Skips postings that rule out sponsorship" if p["auth"]["exclude_patterns"] else "No sponsorship needed"]]
     return "| Criterion | Searched with |\n|---|---|\n" + "\n".join(f"| {k} | {str(v).replace('|', '/')} |" for k, v in rows)
+
+
+def normalize_source(src: str) -> str:
+    """One name per portal, so the dashboard's source chart and filter don't split 'linkedin' from 'LinkedIn'."""
+    s = (src or "").strip().lower()
+    if s.startswith("ats-"):
+        return f"Company site ({s[4:].title()})"
+    for key, name in (("post", "LinkedIn post"), ("linkedin", "LinkedIn"), ("indeed", "Indeed"), ("dice", "Dice"), ("company", "Company site")):
+        if key in s:
+            return name
+    return src or "Other"
+
+
+def contact_note(p) -> str:
+    """Why a row has no contact: shown in the dashboard's Contact column instead of a blank."""
+    src, how = (p.get("source") or "").lower(), p.get("apply_type", "")
+    if "post" in src:
+        return "NA: the post names no email or phone; message the poster on LinkedIn"
+    if how == "company_site":
+        return "NA: apply on the company site; no recruiter named"
+    if "dice" in src:
+        return "NA: no recruiter or email on the Dice posting"
+    if "indeed" in src:
+        return "NA: Indeed hides the employer's contact; apply through Indeed"
+    if "linkedin" in src:
+        return "NA: no hiring team shown; apply through LinkedIn"
+    return "NA: no contact on the posting"
 
 
 def now() -> str:

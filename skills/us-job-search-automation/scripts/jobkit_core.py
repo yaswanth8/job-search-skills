@@ -665,10 +665,12 @@ def build_search_plan(profile: dict, window_hours: int | None = None, post_queri
                 fallback_keywords=titles[:3])
         else:
             missing_geo.append(code)
-    iq = quote(f"({combined})")
-    add("Indeed", "Remote US", f"https://www.indeed.com/jobs?q={iq}&l=Remote&fromage={days}&sort=date", snippet="indeed_cards.js")
+    # Indeed answers a combined OR query with "did you mean" suggestions: one plain query per title instead.
+    for t in titles[:2]:
+        add("Indeed", f"Remote US · {t}", f"https://www.indeed.com/jobs?q={quote(t)}&l=Remote&fromage={days}&sort=date", snippet="indeed_cards.js")
     for code in states:
-        add("Indeed", code_to_name[code], f"https://www.indeed.com/jobs?q={iq}&l={quote(code_to_name[code])}&fromage={days}&sort=date", snippet="indeed_cards.js")
+        for t in titles[:1]:
+            add("Indeed", f"{code_to_name[code]} · {t}", f"https://www.indeed.com/jobs?q={quote(t)}&l={quote(code_to_name[code])}&fromage={days}&sort=date", snippet="indeed_cards.js")
     posted = "ONE" if days <= 1 else "THREE" if days <= 3 else "SEVEN"
     dq = quote(combined)
     add("Dice", "Remote US", f"https://www.dice.com/jobs?q={dq}&filters.postedDate={posted}&filters.workplaceTypes=Remote&pageSize=40", snippet="dice_cards.js")

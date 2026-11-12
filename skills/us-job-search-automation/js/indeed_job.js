@@ -1,5 +1,5 @@
 // Indeed job page (/viewjob?jk=...): apply mode, header facts and the description sentences vetting needs.
-// PART = -1 gives the key sentences; 0, 1, 2... page through the raw description (900 characters each).
+// PART = -1 gives the key sentences, plus `hiring:` and `contacts:` lines when the posting names someone to reach; 0, 1, 2... page through the raw description (900 characters each).
 // applyMode company_site sends the job to the company-site flow. The apply link's URL is hidden by the
 // browser's privacy filter: click it and read the host of the tab it opens.
 (() => {
@@ -15,5 +15,11 @@
   if (PART >= 0) return `${top} part ${PART} of ${Math.ceil(desc.length / 900) - 1}\n` + desc.slice(PART * 900, PART * 900 + 900);
   const key = /java|spring|sponsor|visa|h-?1b|citizen|clearance|green card|years|yrs|remote|hybrid|on-?site|in office|relocat|resident|w-?2|c2c|contract|full.time|part.time|required|\$|salary|rate|vue|\.net|c#|python|golang|react|angular/i;
   const sents = desc.split(/(?<=[.!?])\s+|\n/).map(x => x.trim()).filter(x => x.length > 12 && key.test(x));
-  return `${top}\n${head}\n` + sents.join(' ').slice(0, 640);
+  // who to reach: any email or phone in the description, plus a recruiter named on the page
+  const em = [...new Set(desc.match(/[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g) || [])].filter(x => !/\.(png|jpg|gif)$/i.test(x)).slice(0, 2);
+  const ph = [...new Set(desc.match(/(?:\+?1[\s.-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.-])\d{3}[\s.-]\d{4}/g) || [])].slice(0, 2);
+  const rl = t.split('\n').map(x => x.trim()); const ri = rl.findIndex(x => /^(Recruiter|Contact|Hiring manager|Point of contact)\b:?/i.test(x));
+  const rn = ri >= 0 ? (rl[ri].replace(/^(Recruiter|Contact|Hiring manager|Point of contact)\b:?/i, '').replace(/^[:\s-]+/, '') || rl[ri + 1] || '').slice(0, 40) : '';
+  const who = (rn ? `hiring: ${rn} | Recruiter\n` : '') + (em.length || ph.length ? `contacts: ${em.concat(ph).join(', ')}\n` : '');
+  return `${top}\n${head}\n${who}` + sents.join(' ').slice(0, 640 - who.length);
 })()
