@@ -2,6 +2,9 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.11.1 (2026-11-12)
+- Found on a live plan: the profile's Boolean `search_queries` still went to Dice. They now go to LinkedIn only, and Dice gets the plain ones ("Java React"). The back-test check now covers a profile with Boolean queries.
+
 ## 1.11.0 (2026-11-12) **Requires new instructions**
 From a back-test of 7 runs (Nov 9–12): only 2 reached every portal, a re-run repeated the last run's window, and about 1 in 3 Ready-to-apply rows needed a second look. 15 new back-test cases (147 in all) went in first and failed before the fixes.
 - **Recent-run check:** `tracker.py since <runs>` gives the hours since a run that finished under 6 h ago; step 0 offers to search only since then. `run start --runs` picks the next free run id (no collision with `-1`); `--id` sets one.

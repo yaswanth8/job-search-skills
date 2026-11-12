@@ -194,8 +194,9 @@ def backtest_checks():
         per[s_["portal"]] = per.get(s_["portal"], 0) + 1
     out.append(("plan-all-states", "a 51-state profile gets a handful of US-wide searches, not one per state", [] if pl["total_page_loads"] <= 16 else [f"{pl['total_page_loads']} page loads: {per}"]))
     # Dice rejects Boolean queries; save runs drop LinkedIn's Easy Apply filter
-    dq = [s_["url"] for s_ in build_search_plan(fx)["job_searches"] if s_["portal"] == "Dice"]
-    out.append(("dice-plain-queries", "Dice searches carry no OR/AND", [u for u in dq if "%20OR%20" in u or "%20AND%20" in u][:1]))
+    fxq = dict(fx, search_queries=['("Full Stack Developer" OR "Full Stack Engineer") AND Java', "Java React"])
+    dq = [s_["url"] for s_ in build_search_plan(fxq)["job_searches"] if s_["portal"] == "Dice"]
+    out.append(("dice-plain-queries", "Dice searches carry no OR/AND, the profile's Boolean search_queries included", [u for u in dq if "%20OR%20" in u or "%20AND%20" in u or "%28" in u][:1]))
     sp = build_search_plan(fx, mode="save")
     out.append(("save-no-easy-apply-filter", "a save run searches LinkedIn without f_AL", [s_["url"] for s_ in sp["job_searches"] if "f_AL=true" in s_["url"]][:1]))
     # run id collision and the recent-run check

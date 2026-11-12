@@ -709,9 +709,13 @@ def build_search_plan(profile: dict, window_hours: int | None = None, post_queri
     for code in states:
         add("Dice", f"{code_to_name[code]} · {titles[0]}", f"https://www.dice.com/jobs?q={quote(titles[0])}&location={quote(code_to_name[code] + ', USA')}&filters.postedDate={posted}&pageSize=40", snippet="dice_cards.js")
 
-    for q in (profile.get("search_queries") or [])[:3]:
+    # Boolean strings go to LinkedIn only; Dice gets the plain ones (it answers Boolean with 403).
+    sq = profile.get("search_queries") or []
+    boolean = lambda q: re.search(r"\b(OR|AND|NOT)\b|[()]", q) is not None
+    for q in [q for q in sq if boolean(q)][:3]:
         add("LinkedIn", f"Remote US · {q[:40]}", li.format(k=quote(f"{q} remote"), g=geo["US"], s=hours * 3600), snippet="linkedin_cards.js")
-        add("Dice", f"Remote US · {q[:40]}", f"https://www.dice.com/jobs?q={quote(q)}&filters.postedDate={posted}&filters.workplaceTypes=Remote&pageSize=40", snippet="dice_cards.js")
+    for q in [q for q in sq if not boolean(q)][:2]:
+        add("Dice", f"Remote US · {q[:40]}", f"https://www.dice.com/jobs?q={quote(q)}&filters.postedDate={posted}" + ("" if nationwide else "&filters.workplaceTypes=Remote") + "&pageSize=40", snippet="dice_cards.js")
 
     types = [t for t in profile.get("accepted_types", []) if t.lower() in ("c2c", "w2", "contract")] or ["contract"]
     queries = post_queries or sr.get("post_queries") or [f"{primary} AND ({' OR '.join(types)}) AND (hiring OR requirement)"]
