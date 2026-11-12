@@ -5,7 +5,7 @@ description: "Automates a US job search end to end: finds fresh listings on Link
 
 # US Job Search Automation
 
-Version: 1.5.1 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 1.6.0 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **ask, search, vet, apply or save, track, report**. An application is a statement in the candidate's name: the profile and resume are the only sources of facts. Anything they don't cover is asked once or skipped, never guessed.
 
@@ -27,9 +27,10 @@ PROFILE is the `job-search-profile` skill's SKILL.md path, the `--profile` argum
 | The user chose Saryom, or asks about it | `references/saryom.md` |
 
 ## 0. Start
-1. **Tools.** `git clone --depth 1 -q https://github.com/yaswanth8/job-search-skills <scratch>/jss`. If it fails, use this skill's folder when it has `scripts/`; otherwise stop and say so. If `TOOLS/VERSION` is newer than the Version line above, say in a line what `CHANGELOG.md` changed and offer the new instructions (`propose_skills`, improvement, full text of `TOOLS/SKILL.md`; or `dist/us-job-search-automation.zip`). A release marked **Requires new instructions** means: follow `TOOLS/SKILL.md` for this run.
+1. **Tools.** `git clone --depth 1 -q https://github.com/yaswanth8/job-search-skills <scratch>/jss`. If it fails, use this skill's folder when it has `scripts/`; otherwise stop and say so. **Always run the latest:** if `TOOLS/VERSION` differs from the Version line above, read `TOOLS/SKILL.md` and follow it instead of this file for the whole run (this file may be a stale installed copy); say so in one line and offer to refresh the installed copy (`propose_skills`, improvement, full text of `TOOLS/SKILL.md`; or `dist/us-job-search-automation.zip`).
 2. **Profile.** Load `job-search-profile`. Template placeholders (`"profile_status": "TEMPLATE"`, `<...>`) mean First-time setup below. On the first run or after any edit, `run_evals.py` must pass and `vet.py` must load PROFILE.
-3. **Ask once, before anything else** (one AskUserQuestion, up to four questions). Skip any the request already answers; in an unattended run use the defaults and say so.
+3. **Ask once, before anything else** (one AskUserQuestion, up to four questions; the browser question is asked first, as its own call, when the request doesn't say).
+   - **Browser:** *Claude in Chrome* or the *built-in browser in Claude desktop*; which Chrome profile; and which accounts (LinkedIn, Indeed, Dice) are signed in there. If one isn't, ask the user to sign in before the run. Remember the answer for the session. Skip any the request already answers; in an unattended run use the defaults and say so.
    - **What to do:** *Apply to jobs* (search, then submit Easy Apply, Apply with Indeed and the Dice wizard, plus what the user queued on the dashboard) or *Search and save to the dashboard* (the default: search and vet, submit nothing). "Apply" or "submit" in the request means apply; "find", "search" or "save" means save.
    - **Job postings from the last:** 12 hours, 24 hours, **2 days**, 3 days (default: the profile's `window_hours`).
    - **Recruiter posts from the last:** **12 hours**, 24 hours, 2 days, 3 days (default: `search.post_window_hours`). "Today" is 24 hours, "last 3 days" is 72.
@@ -37,7 +38,7 @@ PROFILE is the `job-search-profile` skill's SKILL.md path, the `--profile` argum
 4. **Authorization** is the answer to "What to do", for this run only. Search-and-save submits nothing, queued rows included. Company-site jobs the user did not queue need their explicit words, per job or "the company-site ones too". Nothing authorizes contacting recruiters: outreach is always the user's.
 5. **Progress.** `tracker.py run start --out <scratch>/run.json --mode apply|save --hours <jobs> --post-hours <posts> --saryom off|token|file` prints the run's stages. Show that block as the first message, `set` the run doc it names, and mirror the stages in the task list. From here on, every time a stage starts, ends or is skipped: `tracker.py run step run.json <stage> doing|done|skipped --note "<result in a few words>"`, show the block, `set` the doc again. The user reads progress from these, in chat and on the dashboard; never go quiet for a whole portal.
 6. **Tracker state.** `ArtifactData list` on `jobs` (limit 1000, `out_dir`). Every `link` goes into `<scratch>/seen.txt`; keep each doc's `version`. Note Queued rows and Review rows. If `assets/tracker.version` is newer than `meta/tracker.template`, offer the dashboard refresh (`tracker-db.md`).
-7. **Browser.** Use the profile's browser (Chrome by default) and load its tools in one ToolSearch (`portals.md`). Probe the three portals in one `browser_batch`: a blocked domain means ask once, mark that portal `skipped` with the reason and go on; a guest view means ask the user to sign in.
+7. **Browser.** Use the browser chosen in step 3 and load its tools in one ToolSearch (`portals.md`). Probe the three portals in one `browser_batch`: a blocked domain means ask once, mark that portal `skipped` with the reason and go on; a guest view means ask the user to sign in.
 
 ## First-time setup
 1. Read the resume and fill everything it answers: contact, roles (YYYY-MM dates, skills per role), education, certifications, domains, stack lists.

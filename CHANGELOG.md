@@ -2,6 +2,14 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.6.0 (2026-11-12) **Requires new instructions**
+From the 2026-11-11 run and its back-test.
+- **Always the latest:** an installed copy now defers to `TOOLS/SKILL.md` whenever the versions differ, so a stale install can't be followed by mistake.
+- **Start-of-run browser question:** Claude in Chrome or the built-in browser in Claude desktop, which Chrome profile, and which accounts are signed in.
+- **smartapply.indeed.com** applications are documented as allowed (site permission, flow, success text).
+- `portals.md`: Indeed phantom cards and OR queries, tool output limits (URLs, `fetch`), LinkedIn card ids, Dice 403, screenshot scale, unanswerable questions stay Review.
+- Back-test no longer depends on the profile's window (the `alpha-recon` case now uses a 30 h age).
+
 ## 1.5.1 (2026-11-11)
 A check of 1.5.0 as a new user would install it: both zips unpacked and every command in the instructions run from them.
 - The skill's description now covers search-and-save runs and Saryom, so "save jobs to my dashboard" and "send my tracker to Saryom" start the skill on their own.

@@ -51,7 +51,9 @@ These are manual applies. Never email, call, message or connect with a recruiter
 - `js/indeed_cards.js` gives `indeed-<jk>|title|company|location|pay|tags` and drops ghost ids. A header starting `NO RESULTS` means Indeed found nothing and filled the page with suggestions: vet nothing from it.
 - Indeed has weak Boolean support: run stack pairings as separate queries ("Java React", "Java Angular", "Java Spring Boot").
 - Job page `https://www.indeed.com/viewjob?jk=<jk>`, read with `js/indeed_job.js`. `applyMode=company_site` sends the job to `company-sites.md`. The link's URL is hidden: click it, wait about 8 s through Indeed's "Taking you to ..." page, and read the new tab's host.
-- Apply with Indeed: resume, questions, review. Success is "Your application has been submitted".
+- Apply with Indeed continues on `smartapply.indeed.com`; applying there is allowed. It needs that domain's site permission in Claude in Chrome (ask once if refused). Flow: resume, questions (answer from the profile; free-text "messages to employer": No), review, submit. Success is "Your application has been submitted"; skip the optional demographic survey.
+- Indeed can show phantom duplicate cards (ghost ids, a title ending "Easily apply"); `indeed_cards.js` drops them.
+- Combined OR queries return suggestions: use one query per title.
 
 ## Dice
 **Search**: `https://www.dice.com/jobs?q=<q>&filters.postedDate=THREE&filters.workplaceTypes=Remote` (or the location box for the profile's states). Keywords accept Boolean.
@@ -59,3 +61,10 @@ These are manual applies. Never email, call, message or connect with a recruiter
 - Job page `https://www.dice.com/job-detail/<uuid>`, read with `js/dice_job.js`. Trust its `workplace=` (Remote, Hybrid or On-site) over the header, which says "Remote in <city>" even for on-site jobs. "Able to Sponsor" means sponsorship is Verified. `continue=true` means an application was started and not submitted.
 - Apply: find the Apply link (`/job-applications/<uuid>/wizard`) and navigate to it. Step 1 is resume and optional cover letter (leave it empty); step 2 is review (work authorization and location from the Dice profile; check both). Use `find` refs and `get_page_text`: screenshots here time out often.
 - Submit once. Success can take 5 to 10 seconds: poll `location.pathname` for `/wizard/success` ("Your application is on its way") before doing anything else.
+
+## Tool limits (all portals)
+- Strip URLs and "?" from `javascript_tool` output: the tool blocks output holding query strings. `fetch()` of job pages is blocked too; open the page instead.
+- LinkedIn's new search cards have no job-id link: click the card, read the id from the page URL, then read the job.
+- Dice "403 Forbidden": don't work around it; mark Dice skipped and tell the user to retry.
+- Screenshots at scale 0.6: click at image coordinates / 0.6.
+- A Easy Apply question the resume can't answer truthfully (a skill with no years): leave the job as Review, never guess.
