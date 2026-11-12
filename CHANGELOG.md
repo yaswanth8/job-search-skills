@@ -2,6 +2,11 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.6.1 (2026-11-12)
+- The start-of-run questions are mandatory: every search, save or apply request asks first (browser and accounts, apply or save, job window 12 h to 3 days, recruiter-post window or skip, Saryom) unless the request already answers.
+- A one-line progress update after every portal and every application, besides the run-log block.
+- Instructions shortened where steps repeated each other.
+
 ## 1.6.0 (2026-11-12) **Requires new instructions**
 From the 2026-11-11 run and its back-test.
 - **Always the latest:** an installed copy now defers to `TOOLS/SKILL.md` whenever the versions differ, so a stale install can't be followed by mistake.
