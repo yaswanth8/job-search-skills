@@ -103,7 +103,9 @@
    "without (the )?need (for|of) (current or future )?(visa )?sponsorship",
    "authorized to work .{0,40}without (current or future )?sponsorship",
    "not open to .{0,50}visa",
-   "~without (current or future |present or future )?(visa )?sponsorship"
+   "~without (current or future |present or future )?(visa )?sponsorship",
+   "(us|u\\.s\\.) citizenship (is )?(required|mandatory)",
+   "citizenship (is )?(required|mandatory)"
   ],
   "match_patterns": [
    "able to sponsor",
@@ -259,6 +261,7 @@
  "search": {
   "post_window_hours": 12,
   "include_company_site": false,
-  "max_open_per_search": 12
+  "max_open_per_search": 12,
+  "browser_by_portal": {}
  }
 }

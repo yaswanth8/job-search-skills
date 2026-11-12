@@ -138,7 +138,7 @@ tr.detail td{background:var(--sunk);padding:14px 16px}
 .s-Review{background:var(--warn-soft);color:var(--warn)} .s-Review::before{content:"!"}
 .s-Queued,.s-New{background:var(--accent-soft);color:var(--accent)} .s-Queued::before{content:"→"} .s-New::before{content:"+"}
 .s-Skipped,.s-Declined{background:var(--idle-soft);color:var(--idle)} .s-Skipped::before{content:"–"} .s-Declined::before{content:"×"}
-.f-High{color:var(--good);font-weight:600} .f-Medium{color:var(--warn);font-weight:600} .f-Low{color:var(--bad);font-weight:600}
+.f-High{color:var(--good);font-weight:600} .f-Medium{color:var(--warn);font-weight:600} .f-Stretch{color:var(--accent);font-weight:600} .f-Low{color:var(--bad);font-weight:600}
 select.stage{font-size:12.5px;padding:4px 6px}
 .runs{display:flex;flex-direction:column;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .run{background:var(--surface);padding:11px 15px;display:grid;grid-template-columns:150px 1fr;gap:4px 16px}
@@ -229,7 +229,7 @@ td .tlink{color:var(--accent)}
 
   <main id="view"></main>
 
-  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Ready to apply</b> jobs passed every check in a search-and-save run: nothing was submitted. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The type filter (Full-time, W2, C2C) reads each job's employment type; a job posted as "C2C/W2" shows under both, and any contract role counts as C2C / Contract. The job title opens the posting. The Contact column shows who to reach, or NA and why. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
+  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Ready to apply</b> jobs passed every check in a search-and-save run: nothing was submitted. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The type filter (Full-time, W2, C2C) reads each job's employment type; a job posted as "C2C/W2" shows under both, and any contract role counts as C2C / Contract. <b>Stretch</b> fit means the posting asks more years than you have, within your ceiling. The job title opens the posting. The Contact column shows who to reach, or NA and why. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
 
@@ -302,9 +302,9 @@ td .tlink{color:var(--accent)}
   // One name per portal, so older rows ("linkedin", "LinkedIn Easy Apply") group with newer ones.
   const srcName = j => { const s = String(j.source || "").toLowerCase();
     if (s.startsWith("ats-")) return "Company site (" + s.slice(4).replace(/^./, c => c.toUpperCase()) + ")";
-    return s.includes("post") ? "LinkedIn post" : s.includes("linkedin") ? "LinkedIn" : s.includes("indeed") ? "Indeed" : s.includes("dice") ? "Dice" : s.includes("company") ? "Company site" : (j.source || "Other"); };
+    return s.includes("post") ? "LinkedIn post" : s.includes("easy") ? "LinkedIn Easy Apply" : s.includes("linkedin") ? "LinkedIn" : s.includes("indeed") ? "Indeed" : s.includes("dice") ? "Dice" : s.includes("company") ? "Company site" : (j.source || "Other"); };
   // Who to reach, in one cell: name, email, phone; or the reason there is none.
-  const NO_CONTACT = { "LinkedIn post": "NA: no email or phone in the post; message the poster", LinkedIn: "NA: no hiring team shown; apply through LinkedIn", Indeed: "NA: Indeed hides the employer contact", Dice: "NA: no recruiter or email on the posting" };
+  const NO_CONTACT = { "LinkedIn post": "NA: no email or phone in the post; message the poster", LinkedIn: "NA: no hiring team shown on the posting", "LinkedIn Easy Apply": "NA: no hiring team shown; apply through LinkedIn", Indeed: "NA: Indeed hides the employer contact", Dice: "NA: no recruiter or email on the posting" };
   const contactCell = j => {
     const bits = [j.contactName && `<b>${esc(j.contactName)}</b>`, ...String(j.contactEmail || "").split(",").map(x => x.trim()).filter(Boolean).map(x => `<span class="cc" title="Click to copy" data-copy="${esc(x)}">${esc(x)}</span>`),
       ...String(j.contactPhone || "").split(",").map(x => x.trim()).filter(Boolean).map(x => `<span class="cc" title="Click to copy" data-copy="${esc(x)}">${esc(x)}</span>`)].filter(Boolean);
@@ -445,7 +445,7 @@ td .tlink{color:var(--accent)}
     const sel = (key, label, opts) => `<select data-sel="${key}" aria-label="${label}"><option value="">${label}</option>${opts.map(o => `<option ${S[key] === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
     return `<div class="sec-head"><h2>All jobs</h2><span class="small">${loaded ? `${rows.length} of ${JOBS.length}` : ""} · click a row for details</span></div>
       ${chips("status", [["", "All", all.length], ["Applied", "Applied", n("Applied")], ["Review", "Needs you", n("Review")], ["Queued", "Queued", n("Queued")], ["New", "New", n("New")], ["Skipped", "Skipped", n("Skipped")], ["Declined", "Dismissed", n("Declined")]])}
-      <div class="chips">${sel("fit", "Any fit", ["High", "Medium", "Low"])}${sel("work", "Remote, hybrid, on-site", ["Remote", "Hybrid", "On-site"])}${sel("source", "All sources", srcs)}${S.category ? `<button class="chip" type="button" data-set="category" data-val="" aria-pressed="true">Skip reason: ${esc(S.category)} ×</button>` : ""}</div>
+      <div class="chips">${sel("fit", "Any fit", ["High", "Medium", "Stretch", "Low"])}${sel("work", "Remote, hybrid, on-site", ["Remote", "Hybrid", "On-site"])}${sel("source", "All sources", srcs)}${S.category ? `<button class="chip" type="button" data-set="category" data-val="" aria-pressed="true">Skip reason: ${esc(S.category)} ×</button>` : ""}</div>
       ${!loaded ? emptyBox("Loading…") : rows.length ? `<div class="tablebox"><table><thead><tr>${COLS.map(([k, l]) => `<th><button type="button" data-sort="${k}">${l}</button></th>`).join("")}</tr></thead><tbody>${rows.map(j => `
         <tr class="row" data-open="${esc(j.id)}" tabindex="0"><td class="c"><b>${esc(j.company)}</b>${j.vendor && !/^(none|not stated)/i.test(j.vendor) ? `<small>via ${esc(j.vendor)}</small>` : ""}</td>
         <td>${titleLink(j)}<br><small>${esc(srcName(j))}</small></td><td class="contactcell">${contactCell(j)}</td><td>${esc(j.where)}</td><td>${esc(j.type)}</td><td class="mono">${esc(j.pay)}</td>

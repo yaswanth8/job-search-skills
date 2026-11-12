@@ -274,7 +274,7 @@
  ],
  "plan": {
   "max_page_loads": 16,
-  "job_searches": 13,
+  "job_searches": 14,
   "post_searches": 2,
   "linkedin_url_contains": [
    "geoId=101949407",

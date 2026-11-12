@@ -2,6 +2,16 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.11.0 (2026-11-12) **Requires new instructions**
+From a back-test of 7 runs (Nov 9–12): only 2 reached every portal, a re-run repeated the last run's window, and about 1 in 3 Ready-to-apply rows needed a second look. 15 new back-test cases (147 in all) went in first and failed before the fixes.
+- **Recent-run check:** `tracker.py since <runs>` gives the hours since a run that finished under 6 h ago; step 0 offers to search only since then. `run start --runs` picks the next free run id (no collision with `-1`); `--id` sets one.
+- **Fewer questions:** one round of at most 3; the browser comes from `search.browser_by_portal` and Saryom from the profile once saved. A 30-second preflight probes each portal in its stored browser.
+- **plan.py:** a profile accepting 40+ states gets US-wide searches, not one per state (51 Indeed searches before); Dice uses plain per-title queries (Boolean got 403); `--mode save` drops LinkedIn's Easy Apply filter.
+- **vet.py:** "US citizenship is required" excluded; Public Trust, TS/SCI and Top Secret always count as clearance; a defense-area office (Annapolis Junction, Fort Meade, Chantilly...) and "locals only" go to Your call; "authorized without sponsorship ... welcome to apply" no longer excludes; a posting asking more years than the candidate has (inside the ceiling) gets fit **Stretch**; posts asking for a passport, SSN or visa copy are flagged. Expectations for synechron, symphony and anagh change to Stretch (they ask 9–10 years of an 8-year profile).
+- **tracker.py:** a blank work type no longer crashes `new`; `--set saved=` counts as review; the criteria table says "All 50 states + DC" and warns about $0 pay floors or a years ceiling above stated years + 2.
+- **Dashboard (template 7):** LinkedIn Easy Apply and LinkedIn (company-site) jobs are separate sources in the chart and filter; Stretch fit filter and colour.
+- **Shorter:** SKILL.md from 2,520 to 1,450 words; one progress block at the start and end with one line per portal between; portals.md opens with a per-portal table (browser, query style, caps, waits) and Chrome script rules; skill-change steps moved to `CONTRIBUTING.md`.
+
 ## 1.10.0 (2026-11-12)
 From a back-test of the tracker's 65 rows: 0 of 22 Dice rows and 0 of 11 Indeed rows had a contact, and sources were split ("linkedin" vs "LinkedIn Easy Apply").
 - **Contacts on Dice and Indeed:** `dice_job.js` and `indeed_job.js` now print `hiring:` (a recruiter named on the page) and `contacts:` (every email and phone in the description, not only the key sentences), like `linkedin_job.js`.

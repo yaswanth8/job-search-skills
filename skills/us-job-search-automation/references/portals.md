@@ -2,30 +2,25 @@
 
 What worked and what broke on real runs. Read the section for the portal you are on.
 
+## Per portal
+| Portal | Browser that worked (Nov 2026) | Query style | Page cap per run | Wait between loads |
+|---|---|---|---|---|
+| LinkedIn | either, signed in | one combined OR query per bucket | ~40 loads, ≤15 applications | 3–8 s, varied |
+| Indeed | Claude in Chrome (Cloudflare blocks the built-in browser) | one plain query per title | ~40 loads, ≤15 applications | 3–8 s, varied |
+| Dice | built-in browser (Chrome was not allowed) | one plain query per title; Boolean gets 403 | ~40 loads, ≤15 applications | 3–8 s, varied |
+
+Store the user's choice in the profile as `search.browser_by_portal` (for example `{"linkedin": "built-in", "indeed": "chrome", "dice": "built-in"}`) and stop asking. If a portal blocks in its stored browser, follow the 403 rule below; don't switch browsers mid-run to get past it.
+
 ## All portals
-- Use the browser where the user is signed in (the profile names it; Chrome by default). Load every tool in one ToolSearch: tabs_context_mcp, tabs_create_mcp, tabs_close_mcp, navigate, computer, read_page, get_page_text, javascript_tool, find, form_input, browser_batch, plus file_upload for company sites.
-- Pair each navigate with its snippet in one `browser_batch` (navigate, wait 3 s, javascript_tool).
-- **Output limit.** `javascript_tool` returns about 1,000 characters, then `[TRUNCATED]`. The snippets page for you: raise `PAGE` (cards) or `PART` (job text) for more. Write any ad-hoc script the same way, with short lines and slices.
-- **Text over screenshots.** Read pages with snippets, `find` and `get_page_text`, and click by `ref` from `find`. Screenshots can time out ("renderer may be frozen"), especially in apply wizards. After two timeouts, open a fresh tab. Mid-application, first check the job's applied state.
-- Never print a full URL with a query string from `javascript_tool`; a privacy filter blocks it. Read single parameters instead.
-- Close your tabs at the end. A tab you lost track of may sit outside your tab group; mention it so the user can close it.
-
-## Fast runs
-Page loads and reading are what make a run slow. Keep both small:
-1. `plan.py --profile PROFILE` prints every search URL: one combined OR query per location bucket and portal (about 14 page loads, instead of one search per title), plus the profile's `search_queries` and the LinkedIn post searches.
-2. Run each portal's plan URLs in one `browser_batch` (navigate, wait, snippet, next URL). Page a results list only while its header says more cards remain.
-3. Append every portal's card lines to one file and vet them in a single `vet.py --mode card` call.
-4. Open only "open" cards, newest first, at most `max_open_per_search` per search, five per batch.
-5. If a combined LinkedIn query returns nothing sensible, rerun that bucket once with the plan's `fallback_keywords`.
-6. **Overlap the loading.** Open one tab per chosen portal and start each portal's first search loading in all of them at once; read LinkedIn while Indeed and Dice finish. Work stays one tab at a time: one browser, one session, one action at a time. Never run portals in parallel agents.
-
-## Pacing (don't get the account flagged)
-Portals watch for automation. Look like one careful person:
-- Wait 3 to 8 s between page loads on the same portal, varied, never a fixed beat; keep to roughly 40 page loads per portal per run, and at most about 15 applications per portal per run.
-- Overlapping tabs is fine (different sites); never hit one portal from two tabs at once.
-- Read pages, don't hammer them: no rapid reloads, no scripted scrolling loops, no `fetch()` of portal pages.
-- On any challenge (CAPTCHA, "unusual activity", "verify you're human", a 403 or 429, a sign-in prompt mid-run): stop that portal at once, tell the user, and follow the 403 rule. Never solve or work around it.
-- Spread repeat runs out: if the user asks for another run within the hour, say so and suggest waiting.
+- Load every browser tool in one ToolSearch (tabs, navigate, computer, read_page, get_page_text, javascript_tool, find, form_input, browser_batch; file_upload for company sites).
+- **Preflight**: one tab per chosen portal, load its first search, and record reachable / scripts allowed / signed in before planning the rest.
+- **Overlap, then work one at a time**: start every portal's first search loading at once, then read them in turn. Never one portal in two tabs, never parallel agents.
+- Pair each navigate with its snippet in one `browser_batch` (navigate, wait, snippet). Vet every portal's cards in one `vet.py --mode card` call; open at most `max_open_per_search` per search, newest first.
+- **Script output** (Claude in Chrome): about 1,000 characters, and an async IIFE returns `{}`. Use top-level `await`, keep results in `window.__r`, and page them 950 characters at a time. Strip URLs and "?" from output: a privacy filter blocks query strings.
+- **Scripts refused** (Indeed in Chrome on Nov 12): parse `get_page_text` for the cards and take `jk` ids from `read_page` link hrefs.
+- Text over screenshots: snippets, `find`, `get_page_text`, clicks by `ref`. After two screenshot timeouts open a fresh tab; mid-application, check the applied state first.
+- **Stop on any challenge** (CAPTCHA, "unusual activity", a 403 or 429, a sign-in prompt): never solve or work around it. If the user asks for another run within the hour, suggest waiting.
+- Close your tabs at the end.
 
 ## LinkedIn posts (recruiter requirements)
 Many contract roles only ever appear as feed posts ("Java C2C/W2, share resumes to..."). The plan's `post_searches` cover them. When the user asks for a keyword or role search ("search posts for JAVA AND CONTRACT/W2"), run `plan.py --post-query '<their words>'`.
@@ -65,7 +60,7 @@ These are manual applies. Never email, call, message or connect with a recruiter
 - Combined OR queries return suggestions: use one query per title.
 
 ## Dice
-**Search**: `https://www.dice.com/jobs?q=<q>&filters.postedDate=THREE&filters.workplaceTypes=Remote` (or the location box for the profile's states). Keywords accept Boolean.
+**Search**: `https://www.dice.com/jobs?q=<title>&filters.postedDate=THREE&filters.workplaceTypes=Remote`, one plain title per search: Boolean queries got 403 on Nov 11 and 12.
 - `js/dice_cards.js` gives `dice-<uuid>|title|company|location|pay|tags` (tags: age, employment type, applied). Locations read "Remote or Dallas, Texas"; vet them from the job page.
 - Job page `https://www.dice.com/job-detail/<uuid>`, read with `js/dice_job.js`. Trust its `workplace=` (Remote, Hybrid or On-site) over the header, which says "Remote in <city>" even for on-site jobs. "Able to Sponsor" means sponsorship is Verified. `continue=true` means an application was started and not submitted.
 - Apply: find the Apply link (`/job-applications/<uuid>/wizard`) and navigate to it. Step 1 is resume and optional cover letter (leave it empty); step 2 is review (work authorization and location from the Dice profile; check both). Use `find` refs and `get_page_text`: screenshots here time out often.
@@ -73,7 +68,6 @@ These are manual applies. Never email, call, message or connect with a recruiter
 
 ## Tool limits (all portals)
 - Strip URLs and "?" from `javascript_tool` output: the tool blocks output holding query strings. `fetch()` of job pages is blocked too; open the page instead.
-- LinkedIn's new search cards have no job-id link: click the card, read the id from the page URL, then read the job.
+- LinkedIn's new search cards have no job-id link: click the card, read the id from the page URL, then read the job. Past page 1 the id can belong to another job: confirm the job page's title matches the card before saving.
 - A 403 Forbidden on any portal: don't work around it. Stop that portal, ask the user (plain text) to open the same search in the browser Claude uses, sign in, load it once, and reply "done"; then retry once. If it still fails, mark the portal skipped with the reason and give the user its search links.
-- Screenshots at scale 0.6: click at image coordinates / 0.6.
-- A Easy Apply question the resume can't answer truthfully (a skill with no years): leave the job as Review, never guess.
+- An Easy Apply question the resume can't answer truthfully (a skill with no years): leave the job as Review, never guess.

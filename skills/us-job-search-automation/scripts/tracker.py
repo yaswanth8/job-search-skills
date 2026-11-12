@@ -40,7 +40,7 @@ from jobkit_core import CATEGORIES, STATES, classify_ats, load_profile  # noqa: 
 
 STATUSES = ["New", "Review", "Queued", "Applied", "Skipped", "Declined"]
 STAGES = ["", "Screening", "Interview", "Offer", "Rejected", "Withdrawn", "No response"]
-FITS = ["High", "Medium", "Low", None, ""]
+FITS = ["High", "Medium", "Stretch", "Low", None, ""]
 SPONS = ["Verified", "Needs Confirmation", "Excluded"]
 REVIEW_REASONS = ("company-site", "needs-call", "contact", "ready")
 
@@ -77,7 +77,8 @@ def cmd_new(a):
     postings = {(p.get("id") or p.get("link")): p for p in json.loads(Path(a.postings).read_text())}
     docs = []
     for d in decisions:
-        p = postings.get(d["id"], {})
+        p = {k: ("" if v is None and k in ("work_type", "location", "employment_type", "pay", "company", "title", "vendor") else v)
+             for k, v in postings.get(d["id"], {}).items()}
         link = p.get("link") or d["id"]
         if p.get("source") == "LinkedIn post" and d["action"] == "skip" and (d.get("category") == "Not a job post" or not p.get("title")):
             continue   # bench lists and role-less posts are noise on the dashboard
@@ -88,7 +89,7 @@ def cmd_new(a):
             "id": doc_id(link), "company": p.get("company", "") or "Not stated", "vendor": p.get("vendor", ""), "role": p.get("title", "") or "Role not stated in post",
             "where": " · ".join(x for x in [p.get("location", ""), p.get("work_type", "") if p.get("work_type", "").lower().replace("-", "") not in p.get("location", "").lower().replace("-", "") else ""] if x),
             "workType": p.get("work_type", ""), "type": p.get("employment_type") or d.get("engagement") or "Not stated",
-            "pay": p.get("pay") or "Not listed", "source": normalize_source(p.get("source", "")), "fit": d.get("fit") or "",
+            "pay": p.get("pay") or "Not listed", "source": normalize_source(p.get("source", ""), p.get("apply_type", "")), "fit": d.get("fit") or "",
             "spons": d.get("sponsorship", "Needs Confirmation"), "status": status,
             "reviewReason": {"needs_call": "needs-call", "review": "company-site", "contact": "contact", "apply": "ready" if a.save else ""}.get(d["action"], ""),
             "contactName": poster.get("name", ""), "contactTitle": poster.get("title", ""),
@@ -191,15 +192,32 @@ def criteria_table(p, run=None) -> str:
              ["Employment types", ", ".join(p.get("accepted_types", [])) + " (contract counts as C2C)"],
              ["Pay floors (minimums)", f"${f['annual'] / 1000:.0f}K full-time, ${f['w2_hourly']}/hr W2, ${f['c2c_hourly']}/hr C2C or contract; unlisted pay is kept"],
              ["Remote", "Anywhere in the US" if loc.get("remote_scope", "US") == "US" else str(loc.get("remote_scope"))],
-             ["Hybrid or on-site", ", ".join(names.get(s_, s_) for s_ in states) if states else "Not accepted"],
+             ["Hybrid or on-site", "All 50 states + DC" if len(states) >= 40 else ", ".join(names.get(s_, s_) for s_ in states) if states else "Not accepted"],
              ["Experience asked", f"Up to {p['max_years_required']} years; skips " + ", ".join(p["title_exclude"]["seniority"][:4]) + " titles"],
              ["Visa", "Skips postings that rule out sponsorship" if p["auth"]["exclude_patterns"] else "No sponsorship needed"]]
-    return "| Criterion | Searched with |\n|---|---|\n" + "\n".join(f"| {k} | {str(v).replace('|', '/')} |" for k, v in rows)
+    table = "| Criterion | Searched with |\n|---|---|\n" + "\n".join(f"| {k} | {str(v).replace('|', '/')} |" for k, v in rows)
+    warn = profile_warnings(p)
+    return table + ("\n\n" + "\n".join("Warning: " + w for w in warn) if warn else "")
 
 
-def normalize_source(src: str) -> str:
-    """One name per portal, so the dashboard's source chart and filter don't split 'linkedin' from 'LinkedIn'."""
+def profile_warnings(p) -> list:
+    """Limits that let weak matches through (seen in the Nov 2026 back-test): offer to fix them."""
+    f, out = p.get("pay_floor", {}), []
+    zero = [k for k in ("annual", "w2_hourly", "c2c_hourly", "contract_hourly") if not f.get(k)]
+    if zero:
+        out.append(f"pay floor is $0 for {', '.join(zero)}: roles at any rate pass. Ask the user for a minimum.")
+    cy, mx = p.get("candidate_years"), p.get("max_years_required")
+    if cy and mx and mx > cy + 2:
+        out.append(f"the years ceiling ({mx}) is more than {cy} years + 2: postings asking {cy + 3}+ years pass. Suggest {cy + 2}.")
+    return out
+
+
+def normalize_source(src: str, apply_type: str = "") -> str:
+    """One name per portal, so the dashboard's source chart and filter group alike rows. LinkedIn Easy Apply stays
+    separate from LinkedIn jobs that apply on the company site."""
     s = (src or "").strip().lower()
+    if "linkedin" in s and "post" not in s and ("easy" in s or apply_type == "easy_apply"):
+        return "LinkedIn Easy Apply"
     if s.startswith("ats-"):
         return f"Company site ({s[4:].title()})"
     for key, name in (("post", "LinkedIn post"), ("linkedin", "LinkedIn"), ("indeed", "Indeed"), ("dice", "Dice"), ("company", "Company site")):
@@ -222,6 +240,30 @@ def contact_note(p) -> str:
     if "linkedin" in src:
         return "NA: no hiring team shown; apply through LinkedIn"
     return "NA: no contact on the posting"
+
+
+def cmd_since(a):
+    """Print hours since the most recent finished run (rounded up) when it ended under --within hours ago,
+    then a line to offer the user; print 'none' otherwise. Step 0 uses it to avoid searching the same window twice."""
+    best = None
+    for f in Path(a.runs).glob("*.json"):
+        d = json.loads(f.read_text()); d = d.get("data", d)
+        t = d.get("finishedAt") or (d.get("updatedAt") if d.get("status") in ("done", "finished") else None)
+        if not t:
+            continue
+        try:
+            when = dt.datetime.fromisoformat(t.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        best = when if best is None or when > best else best
+    if best is None:
+        print("none"); return
+    hrs = (dt.datetime.now(dt.timezone.utc) - best).total_seconds() / 3600
+    if hrs > a.within:
+        print("none"); return
+    import math
+    local = best.astimezone().strftime("%I:%M %p").lstrip("0")
+    print(f"{max(1, math.ceil(hrs))}\nThe last run finished {hrs:.1f} h ago ({local}). Offer: search only since then, a {max(1, math.ceil(hrs))} h window.")
 
 
 def now() -> str:
@@ -262,6 +304,7 @@ def run_step(run, key, state, note=None, counters=None):
     if step["key"] == "saryom" and state != "doing":
         run["saryom"] = step["note"]
     for k, v in (counters or {}).items():
+        k = {"saved": "review", "ready": "review", "reviewed": "found"}.get(k, k)
         if k not in COUNTERS:
             raise ValueError(f"unknown counter '{k}'; counters: " + ", ".join(COUNTERS))
         run[k] = int(v)
@@ -295,7 +338,14 @@ def progress_block(run):
 def cmd_run(a):
     f = Path(a.file if a.action != "start" else a.out)
     if a.action == "start":
-        run = new_run(a.mode, a.hours, a.post_hours, [p.strip() for p in a.portals.split(",") if p.strip()], a.saryom, a.n)
+        n = a.n
+        if a.runs:   # pick the next free number for today, so a second run never collides with the first
+            used = {Path(x).stem for x in Path(a.runs).glob("*.json")}
+            while f"{today()}-{n}" in used:
+                n += 1
+        run = new_run(a.mode, a.hours, a.post_hours, [p.strip() for p in a.portals.split(",") if p.strip()], a.saryom, n)
+        if a.id:
+            run["id"] = a.id
     else:
         run = json.loads(f.read_text())
         try:
@@ -324,7 +374,10 @@ if __name__ == "__main__":
     s = run.add_parser("start"); s.add_argument("--out", required=True); s.add_argument("--mode", choices=["apply", "save"], default="apply")
     s.add_argument("--hours", type=int, default=48); s.add_argument("--post-hours", type=int, default=12)
     s.add_argument("--portals", default="LinkedIn,Indeed,Dice"); s.add_argument("--saryom", choices=["off", "token", "file"], default="off")
-    s.add_argument("--n", type=int, default=1)
+    s.add_argument("--n", type=int, default=1); s.add_argument("--id", help="use this run id")
+    s.add_argument("--runs", help="folder of saved runs docs (ArtifactData list runs, out_dir): the id skips numbers already used today")
+    s = sub.add_parser("since", help="hours since the last finished run, rounded up: the job window for a re-run")
+    s.add_argument("runs", help="folder of saved runs docs"); s.add_argument("--within", type=float, default=6)
     s = run.add_parser("step"); s.add_argument("file"); s.add_argument("key"); s.add_argument("state", choices=["doing", "done", "skipped"])
     s.add_argument("--note"); s.add_argument("--set", nargs="*", metavar="COUNTER=N")
     s = run.add_parser("finish"); s.add_argument("file"); s.add_argument("--summary")
@@ -332,4 +385,4 @@ if __name__ == "__main__":
     if a.cmd == "id":
         print(doc_id(a.link))
     else:
-        {"new": cmd_new, "writes": cmd_writes, "check": cmd_check, "criteria": cmd_criteria, "run": cmd_run}[a.cmd](a)
+        {"new": cmd_new, "writes": cmd_writes, "check": cmd_check, "criteria": cmd_criteria, "run": cmd_run, "since": cmd_since}[a.cmd](a)

@@ -726,9 +726,10 @@
    "expect": {
     "action": "apply",
     "fit": [
-     "Medium"
+     "Stretch"
     ]
-   }
+   },
+   "note": "Fit is Stretch since 1.11.0: asks more years than the candidate has, inside the ceiling."
   },
   {
    "id": "ptr",
@@ -766,9 +767,10 @@
    "expect": {
     "action": "apply",
     "fit": [
-     "Medium"
+     "Stretch"
     ]
-   }
+   },
+   "note": "Fit is Stretch since 1.11.0: asks more years than the candidate has, inside the ceiling."
   },
   {
    "id": "synechron",
@@ -786,9 +788,10 @@
    "expect": {
     "action": "apply",
     "fit": [
-     "Medium"
+     "Stretch"
     ]
-   }
+   },
+   "note": "Fit is Stretch since 1.11.0: it asks more years than the candidate has, inside the ceiling."
   },
   {
    "id": "krasan",
@@ -1271,6 +1274,162 @@
    },
    "expect": {
     "action": "open"
+   }
+  },
+  {
+   "id": "citizenship-required",
+   "mode": "full",
+   "note": "Torentify, Nov 9 2026 backtest",
+   "posting": {
+    "title": "Senior Java Full Stack Developer",
+    "company": "Torentify",
+    "location": "United States (Remote)",
+    "work_type": "Remote",
+    "employment_type": "Contract",
+    "pay": "$70/hr",
+    "age_hours": 10,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/991/",
+    "description": "Senior Java Full Stack Developer. Build microservices with Java 17, Spring Boot and REST APIs, React front ends, AWS, Kafka, PostgreSQL, CI/CD with Jenkins. 7+ years of experience. US citizenship is required. FedRAMP and ATO experience a plus."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Sponsorship / authorization",
+     "Clearance"
+    ]
+   }
+  },
+  {
+   "id": "public-trust",
+   "mode": "full",
+   "note": "Spatial Front, Nov 2026 backtest",
+   "posting": {
+    "title": "Senior Java Full Stack Developer",
+    "company": "Spatial Front",
+    "location": "United States (Remote)",
+    "work_type": "Remote",
+    "employment_type": "Contract",
+    "pay": "$70/hr",
+    "age_hours": 10,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/992/",
+    "description": "Senior Java Full Stack Developer. Build microservices with Java 17, Spring Boot and REST APIs, React front ends, AWS, Kafka, PostgreSQL, CI/CD with Jenkins. 7+ years of experience. Must be a US citizen, and able to obtain a Public Trust clearance."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Clearance",
+     "Sponsorship / authorization"
+    ]
+   }
+  },
+  {
+   "id": "defense-location",
+   "mode": "full",
+   "note": "Nyla, Nov 12 2026 backtest: no clearance line, but a defense-area office",
+   "posting": {
+    "title": "Senior Java Full Stack Developer",
+    "company": "Nyla Technology",
+    "location": "Annapolis Junction, MD (Remote)",
+    "work_type": "Remote",
+    "employment_type": "Contract",
+    "pay": "$70/hr",
+    "age_hours": 10,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/993/",
+    "description": "Senior Java Full Stack Developer. Build microservices with Java 17, Spring Boot and REST APIs, React front ends, AWS, Kafka, PostgreSQL, CI/CD with Jenkins. 7+ years of experience. Office in Annapolis Junction, MD."
+   },
+   "expect": {
+    "action": "needs_call"
+   }
+  },
+  {
+   "id": "welcome-not-exclude",
+   "mode": "full",
+   "note": "Infosys: welcomes people without sponsorship needs, does not exclude others",
+   "posting": {
+    "title": "Senior Java Full Stack Developer",
+    "company": "Infosys",
+    "location": "United States (Remote)",
+    "work_type": "Remote",
+    "employment_type": "Contract",
+    "pay": "$70/hr",
+    "age_hours": 10,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/994/",
+    "description": "Senior Java Full Stack Developer. Build microservices with Java 17, Spring Boot and REST APIs, React front ends, AWS, Kafka, PostgreSQL, CI/CD with Jenkins. 7+ years of experience. Candidates authorized to work in the US without sponsorship are welcome to apply."
+   },
+   "expect": {
+    "action": "apply",
+    "sponsorship": "Needs Confirmation"
+   }
+  },
+  {
+   "id": "years-stretch",
+   "mode": "full",
+   "note": "MoneyGram: 10+ years for an 8-year candidate, inside the 11-year ceiling",
+   "posting": {
+    "title": "Senior Java Full Stack Developer",
+    "company": "MoneyGram",
+    "location": "United States (Remote)",
+    "work_type": "Remote",
+    "employment_type": "Contract",
+    "pay": "$70/hr",
+    "age_hours": 10,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/995/",
+    "description": "Senior Java Full Stack Developer. Build microservices with Java 17, Spring Boot and REST APIs, React front ends, AWS, Kafka, PostgreSQL, CI/CD with Jenkins. 10+ years of experience."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "Stretch"
+    ]
+   }
+  },
+  {
+   "id": "locals-only",
+   "mode": "full",
+   "note": "AI Axiss: locals only with a face-to-face interview",
+   "posting": {
+    "title": "Senior Java Full Stack Developer",
+    "company": "AI Axiss",
+    "location": "Chicago, IL (Hybrid)",
+    "work_type": "Hybrid",
+    "employment_type": "Contract",
+    "pay": "$70/hr",
+    "age_hours": 10,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/996/",
+    "description": "Senior Java Full Stack Developer. Build microservices with Java 17, Spring Boot and REST APIs, React front ends, AWS, Kafka, PostgreSQL, CI/CD with Jenkins. 7+ years of experience. Chicago, Illinois - Locals Only. F2F interview."
+   },
+   "expect": {
+    "action": "needs_call"
+   }
+  },
+  {
+   "id": "scala-substring",
+   "mode": "full",
+   "note": "'scalable' must not read as Scala",
+   "posting": {
+    "title": "Senior Java Full Stack Developer",
+    "company": "Acme Corp",
+    "location": "United States (Remote)",
+    "work_type": "Remote",
+    "employment_type": "Contract",
+    "pay": "$70/hr",
+    "age_hours": 10,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/997/",
+    "description": "Senior Java Full Stack Developer. Build microservices with Java 17, Spring Boot and REST APIs, React front ends, AWS, Kafka, PostgreSQL, CI/CD with Jenkins. 7+ years of experience. Design scalable, resilient services."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "High",
+     "Medium"
+    ]
    }
   }
  ]

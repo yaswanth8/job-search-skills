@@ -30,7 +30,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import saryom  # noqa: E402
 import tracker  # noqa: E402
-from jobkit_core import build_search_plan, classify_ats, extract_contacts, load_profile, parse_post, post_prefer, skill_years, vet  # noqa: E402
+from jobkit_core import STATES, build_search_plan, classify_ats, extract_contacts, load_profile, parse_post, post_prefer, skill_years, vet  # noqa: E402
 
 
 def progress_checks():
@@ -169,6 +169,50 @@ def employer_feed_checks():
     t = tracker.criteria_table(prof_d, tracker.new_run("save", 24, 12, ["LinkedIn", "Greenhouse"]))
     need = ["| Mode | Search and save", "| Portals | LinkedIn, Greenhouse |", "| Job postings from the last | 24 hours |", "Pay floors (minimums)"]
     out.append(("criteria table", "the start/end table names mode, portals, windows and floors", [x for x in need if x not in t]))
+    return out
+
+
+def backtest_checks():
+    """Script cases from the Nov 9-12 2026 run back-test (crashes, collisions, plan size, posts)."""
+    import subprocess
+    out, d = [], Path(tempfile.mkdtemp())
+    prof = str(HERE.parent / "evals" / "fixture_profile.json")
+    fx = load_profile(prof)
+
+    def run(*args):
+        return subprocess.run([sys.executable, "-B", *map(str, args)], capture_output=True, text=True)
+    # blank work type: tracker.py new must write the row
+    (d / "p.json").write_text(json.dumps([{"id": "x1", "link": "https://www.dice.com/job-detail/x1", "title": "Java Developer", "company": "A", "location": "Remote", "work_type": None, "source": "Dice"}]))
+    (d / "dec.json").write_text(json.dumps([{"id": "x1", "action": "apply", "fit": "High", "reasons": [], "flags": [], "contacts": {}}]))
+    r = run(HERE / "tracker.py", "new", d / "dec.json", d / "p.json", "--out", d / "docs.json")
+    out.append(("blank-worktype", "tracker.py new writes a row whose work type is null", [] if r.returncode == 0 else [r.stderr.strip()[-200:]]))
+    # every state accepted: one US-wide search per portal
+    allp = dict(fx, locations=dict(fx["locations"], onsite_states=sorted(STATES.values())))
+    pl = build_search_plan(allp)
+    per = {}
+    for s_ in pl["job_searches"]:
+        per[s_["portal"]] = per.get(s_["portal"], 0) + 1
+    out.append(("plan-all-states", "a 51-state profile gets a handful of US-wide searches, not one per state", [] if pl["total_page_loads"] <= 16 else [f"{pl['total_page_loads']} page loads: {per}"]))
+    # Dice rejects Boolean queries; save runs drop LinkedIn's Easy Apply filter
+    dq = [s_["url"] for s_ in build_search_plan(fx)["job_searches"] if s_["portal"] == "Dice"]
+    out.append(("dice-plain-queries", "Dice searches carry no OR/AND", [u for u in dq if "%20OR%20" in u or "%20AND%20" in u][:1]))
+    sp = build_search_plan(fx, mode="save")
+    out.append(("save-no-easy-apply-filter", "a save run searches LinkedIn without f_AL", [s_["url"] for s_ in sp["job_searches"] if "f_AL=true" in s_["url"]][:1]))
+    # run id collision and the recent-run check
+    (d / "runs" / "runs").mkdir(parents=True)
+    today = dt.date.today().isoformat()
+    fin = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=2, minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    (d / "runs" / "runs" / f"{today}-1.json").write_text(json.dumps({"id": f"{today}-1", "data": {"date": today, "status": "finished", "finishedAt": fin, "updatedAt": fin}}))
+    r = run(HERE / "tracker.py", "run", "start", "--out", d / "run.json", "--runs", d / "runs" / "runs")
+    rid = json.loads((d / "run.json").read_text())["id"] if r.returncode == 0 else r.stderr.strip()[-120:]
+    out.append(("run-id-collision", "run start picks the next free id", [] if rid == f"{today}-2" else [str(rid)]))
+    r = run(HERE / "tracker.py", "since", d / "runs" / "runs")
+    out.append(("recent-run", "a run finished 2.5 h ago offers a 3 h window", [] if r.returncode == 0 and r.stdout.split()[:1] == ["3"] else [(r.stdout + r.stderr).strip()[:120]]))
+    r = run(HERE / "tracker.py", "run", "step", d / "run.json", "linkedin", "done", "--set", "saved=3")
+    out.append(("saved-alias", "--set saved= counts as review", [] if r.returncode == 0 and json.loads((d / "run.json").read_text())["review"] == 3 else [r.stderr.strip()[-120:]]))
+    # a recruiter post asking for a passport number is flagged
+    pp = vet(parse_post({"author": "R", "age": "2h", "text": "Hiring: Java Full Stack Developer\nLocation: Remote\nC2C. Java, Spring Boot, React, AWS. Passport Number Required for Verification. Send resume to r@x.com"}), fx, "post")
+    out.append(("passport-ask", "a post asking for a passport number is flagged, not followed", [] if any("ID" in f for f in pp["flags"]) else [f"{pp['action']} {pp['flags']}"]))
     return out
 
 
@@ -351,7 +395,8 @@ def main():
         results.append({"suite": "plan", "id": "search-plan", "passed": not probs, "got": f"{plan['total_page_loads']} page loads", "why": "", "problems": probs, "note": ""})
 
     results += progress_checks() + saryom_checks() + [
-        {"suite": "employers", "id": i, "passed": not pr, "got": "", "why": w, "problems": pr, "note": ""} for i, w, pr in employer_feed_checks()]
+        {"suite": "employers", "id": i, "passed": not pr, "got": "", "why": w, "problems": pr, "note": ""} for i, w, pr in employer_feed_checks()] + [
+        {"suite": "backtest", "id": i, "passed": not pr, "got": "", "why": w, "problems": pr, "note": ""} for i, w, pr in backtest_checks()]
 
     passed = sum(r["passed"] for r in results)
     for r in results:

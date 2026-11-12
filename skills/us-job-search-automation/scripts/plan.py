@@ -3,7 +3,7 @@
 
 Usage:
   python3 plan.py --profile PROFILE [--hours 48] [--post-hours 12] [--post-query 'java AND (c2c OR w2)' ...]
-                  [--company-site] [--urls]
+                  [--company-site] [--urls] [--mode apply|save]
 
 One combined OR query per location bucket and portal (remote US + each on-site state), built
 from the profile's `search.titles`, plus LinkedIn post searches from `search.post_queries`
@@ -29,8 +29,9 @@ if __name__ == "__main__":
     ap.add_argument("--post-query", action="append")
     ap.add_argument("--company-site", action="store_true", default=None)
     ap.add_argument("--urls", action="store_true")
+    ap.add_argument("--mode", choices=["apply", "save"], default="apply", help="save runs drop LinkedIn's Easy Apply filter")
     a = ap.parse_args()
-    plan = build_search_plan(load_profile(a.profile), a.hours, a.post_query, a.company_site, a.post_hours)
+    plan = build_search_plan(load_profile(a.profile), a.hours, a.post_query, a.company_site, a.post_hours, a.mode)
     if a.urls:
         for s in plan["job_searches"] + plan["post_searches"]:
             print(s["url"])

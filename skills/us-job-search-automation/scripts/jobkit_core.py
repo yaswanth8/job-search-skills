@@ -180,6 +180,16 @@ def _skip(res, category, reason):
     return res
 
 
+# Clearances every profile treats as clearance, whatever its own list says.
+CLEARANCE_ALWAYS = [r"\bpublic trust\b", r"\bts/sci\b", r"\btop secret\b"]
+# Offices in defense and intelligence areas: roles there often need a clearance the posting doesn't state.
+DEFENSE_LOCATIONS = r"annapolis junction|fort meade|ft\.? meade|chantilly|herndon|columbia, md|hanover, md|colorado springs|huntsville|quantico|dahlgren|aberdeen proving|fort belvoir|tampa.{0,20}macdill"
+# "Authorized to work without sponsorship ... welcome to apply" invites, it does not exclude.
+WELCOME = re.compile(r"[^.\n]*\b(welcome|encouraged)\b[^.\n]*\bapply\b[^.\n]*|[^.\n]*\bapply\b[^.\n]*\b(welcome|encouraged)\b[^.\n]*", re.I)
+LOCALS_ONLY = r"\blocals? only\b|\blocal (candidates|consultants|profiles) only\b|\bmust be local\b|\bonly locals?\b"
+ID_ASK = r"passport (number|no\.?|copy|details)|\bssn\b|social security (number|no)|date of birth|\bdob\b|driver'?s? licen[cs]e (number|copy)|(visa|i-?94|ead) copy|copy of (your )?(passport|visa|i-?94|ead)"
+
+
 def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None = None) -> dict:
     """Decide what to do with one posting.
 
@@ -209,7 +219,7 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
         return _skip(res, "Stale / duplicate", f"posted {age:.0f}h ago, outside the {profile.get('window_hours', 72)}h window")
 
     # 2. clearance in the title (cheap) or anywhere
-    hit = _any_re(profile["clearance_patterns"], title if mode == "card" else everything)
+    hit = _any_re(profile["clearance_patterns"] + CLEARANCE_ALWAYS, title if mode == "card" else everything)
     if hit:
         return _skip(res, "Clearance", f"clearance requirement: '{hit}'")
 
@@ -279,7 +289,7 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
     dl = desc.lower()
 
     # 6. authorization
-    hit = _any_re(profile["auth"]["exclude_patterns"], everything)
+    hit = _any_re(profile["auth"]["exclude_patterns"], WELCOME.sub(" ", everything))
     if hit:
         res["sponsorship"] = "Excluded"
         return _skip(res, "Sponsorship / authorization", f"posting says '{hit}'")
@@ -381,6 +391,9 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
         fit = "Medium"
     else:
         fit = "Low"
+    stretch = yrs is not None and yrs > profile.get("candidate_years", 8) and fit != "Low"
+    if stretch:
+        fit = "Stretch"   # inside the ceiling but above the candidate's own years: worth it, but a reach
     res["fit"] = fit
     res["reasons"].append(f"core match: {', '.join(core) or 'none'}" + (f"; gaps: {', '.join(gaps)}" if gaps else ""))
     if fit == "Low":
@@ -397,6 +410,18 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
 
     # 15. contacts found in the text, then how to apply
     res["contacts"] = extract_contacts(desc)
+    idask = re.search(ID_ASK, everything, re.I)
+    if idask:
+        res["flags"].append(f"asks for ID details ('{idask.group(0)}'): don't send passport, SSN or visa copies before an interview")
+    if mode != "post":
+        if re.search(DEFENSE_LOCATIONS, f"{location}\n{desc}", re.I):
+            res.update(action="needs_call", category=None)
+            res["reasons"].append("office in a defense or intelligence area: check whether a clearance is needed")
+            return res
+        if re.search(LOCALS_ONLY, everything, re.I):
+            res.update(action="needs_call", category=None)
+            res["reasons"].append("locals only: confirm you can be local (and an in-person interview) before applying")
+            return res
     if mode == "post":
         res["action"] = "contact"
         how = "email" if res["contacts"]["emails"] else "phone" if res["contacts"]["phones"] else "message the poster"
@@ -632,7 +657,8 @@ def _quote(t: str) -> str:
 
 
 def build_search_plan(profile: dict, window_hours: int | None = None, post_queries: list | None = None,
-                      include_company_site: bool | None = None, post_window_hours: int | None = None) -> dict:
+                      include_company_site: bool | None = None, post_window_hours: int | None = None,
+                      mode: str = "apply") -> dict:
     """The smallest set of searches that covers the profile's roles and locations.
 
     One combined OR query per location bucket and portal, instead of one search per title.
@@ -648,16 +674,21 @@ def build_search_plan(profile: dict, window_hours: int | None = None, post_queri
     geo.setdefault("US", "103644278")
     code_to_name = {v: k.title() for k, v in STATES.items()}
     states = [s for s in profile.get("locations", {}).get("onsite_states", []) if s in code_to_name]
+    # A profile that takes on-site work almost anywhere gets one US-wide search per portal, not one per state.
+    nationwide = len(states) >= 40
+    if nationwide:
+        states = []
     company_site = sr.get("include_company_site", False) if include_company_site is None else include_company_site
-    al = "" if company_site else "&f_AL=true"
+    # LinkedIn's Easy Apply filter only helps an apply run that applies through Easy Apply alone.
+    al = "&f_AL=true" if mode == "apply" and not company_site else ""
     searches = []
 
     def add(portal, bucket, url, **kw):
         searches.append({"portal": portal, "bucket": bucket, "url": url, **kw})
 
     li = "https://www.linkedin.com/jobs/search-results/?keywords={k}&geoId={g}&f_TPR=r{s}" + al
-    add("LinkedIn", "Remote US", li.format(k=quote(f"({combined}) remote"), g=geo["US"], s=hours * 3600), snippet="linkedin_cards.js",
-        fallback_keywords=[f"{t} remote" for t in titles[:3]])
+    add("LinkedIn", "US-wide" if nationwide else "Remote US", li.format(k=quote(f"({combined})" if nationwide else f"({combined}) remote"), g=geo["US"], s=hours * 3600),
+        snippet="linkedin_cards.js", fallback_keywords=titles[:3] if nationwide else [f"{t} remote" for t in titles[:3]])
     missing_geo = []
     for code in states:
         if code in geo:
@@ -667,15 +698,16 @@ def build_search_plan(profile: dict, window_hours: int | None = None, post_queri
             missing_geo.append(code)
     # Indeed answers a combined OR query with "did you mean" suggestions: one plain query per title instead.
     for t in titles[:2]:
-        add("Indeed", f"Remote US · {t}", f"https://www.indeed.com/jobs?q={quote(t)}&l=Remote&fromage={days}&sort=date", snippet="indeed_cards.js")
+        add("Indeed", f"{'US-wide' if nationwide else 'Remote US'} · {t}", f"https://www.indeed.com/jobs?q={quote(t)}&l={'United%20States' if nationwide else 'Remote'}&fromage={days}&sort=date", snippet="indeed_cards.js")
     for code in states:
         for t in titles[:1]:
             add("Indeed", f"{code_to_name[code]} · {t}", f"https://www.indeed.com/jobs?q={quote(t)}&l={quote(code_to_name[code])}&fromage={days}&sort=date", snippet="indeed_cards.js")
     posted = "ONE" if days <= 1 else "THREE" if days <= 3 else "SEVEN"
-    dq = quote(combined)
-    add("Dice", "Remote US", f"https://www.dice.com/jobs?q={dq}&filters.postedDate={posted}&filters.workplaceTypes=Remote&pageSize=40", snippet="dice_cards.js")
+    # Dice answers Boolean (OR) queries with 403: one plain query per title.
+    for t in titles[:2]:
+        add("Dice", f"{'US-wide' if nationwide else 'Remote US'} · {t}", f"https://www.dice.com/jobs?q={quote(t)}&filters.postedDate={posted}" + ("" if nationwide else "&filters.workplaceTypes=Remote") + "&pageSize=40", snippet="dice_cards.js")
     for code in states:
-        add("Dice", code_to_name[code], f"https://www.dice.com/jobs?q={dq}&location={quote(code_to_name[code] + ', USA')}&filters.postedDate={posted}&pageSize=40", snippet="dice_cards.js")
+        add("Dice", f"{code_to_name[code]} · {titles[0]}", f"https://www.dice.com/jobs?q={quote(titles[0])}&location={quote(code_to_name[code] + ', USA')}&filters.postedDate={posted}&pageSize=40", snippet="dice_cards.js")
 
     for q in (profile.get("search_queries") or [])[:3]:
         add("LinkedIn", f"Remote US · {q[:40]}", li.format(k=quote(f"{q} remote"), g=geo["US"], s=hours * 3600), snippet="linkedin_cards.js")
