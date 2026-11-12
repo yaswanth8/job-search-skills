@@ -5,7 +5,7 @@ description: "Automates a US job search end to end: finds fresh listings on Link
 
 # US Job Search Automation
 
-Version: 1.11.1 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 1.11.2 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **check, ask, search, vet, apply or save, track, report**. An application is a statement in the candidate's name: the profile and resume are the only sources of facts. Anything they don't cover is asked once or skipped, never guessed.
 
@@ -48,12 +48,12 @@ Step 0 clones the repo every run; `skills/us-job-search-automation/` in the clon
 Apply to every Queued row before searching (Easy Apply through the portal, company sites through `company-sites.md`). A row that can't be finished goes back to Review with the reason.
 
 ## 2. Search
-`plan.py --profile PROFILE --hours <jobs> --post-hours <posts> --mode apply|save` builds the searches (it collapses an all-states profile to US-wide searches, and uses plain per-title queries on Indeed and Dice). Then, per `portals.md`: load the portals in parallel tabs, work one at a time, paced; read cards with `*_cards.js`, `vet.py --mode card --seen seen.txt cards.txt`, open what it says, read each job with `*_job.js` and carry its `hiring:` and `contacts:` lines into the posting. On LinkedIn past page 1, confirm the job id against the job page's title before saving.
+`plan.py --profile PROFILE --hours <jobs> --post-hours <posts> --mode apply|save` builds the searches (it collapses an all-states profile to US-wide searches, and uses plain per-title queries on Indeed and Dice). Then, per `portals.md`: load the portals in parallel tabs, work one at a time, paced; read cards with `*_cards.js`, `vet.py --mode card --seen seen.txt cards.txt`, open what it says (LinkedIn with `linkedin_pane.js`, Dice with `dice_fetch.js`, others with `*_job.js`), then `vet.py --mode full --hours <jobs>`; read each job and carry its `hiring:` and `contacts:` lines into the posting. On LinkedIn past page 1, confirm the job id against the job page's title before saving.
 - Recruiter posts: the plan's `post_searches` with `linkedin_posts.js`, then `posts.py --hours <posts>`; passing posts become **Reach out** rows. They hold most C2C roles.
 - Pay floors are minimums, never search terms; `vet.py` applies each type's floor (contract counts as C2C).
 
 ## 3. Vet
-`vet.py --mode full` on the opened postings. Actions: **apply** (fit High, Medium or **Stretch**: asks more years than the candidate has, inside the ceiling), **review** (company site), **needs_call** (locals only, a defense-area office, an industry the resume lacks), **contact** (recruiter post), **skip** with a category. When you overrule it, note "overrode vet.py: <why>" (`vetting.md`).
+`vet.py --mode full --hours <jobs>` on the opened postings. Actions: **apply** (fit High, Medium or **Stretch**: asks more years than the candidate has, inside the ceiling), **review** (company site), **needs_call** (locals only, a defense-area office, an industry the resume lacks), **contact** (recruiter post), **skip** with a category. When you overrule it, note "overrode vet.py: <why>" (`vetting.md`).
 
 ## 4. Apply (apply runs only)
 Answers from `screening-answers.md`, years from `years.py --skill <x>`. A question with no sourced answer is asked once; never guess. **Applied** only after a confirmation screen; never press Submit twice (`portals.md`).

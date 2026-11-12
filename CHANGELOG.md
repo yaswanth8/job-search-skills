@@ -2,6 +2,15 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.11.2 (2026-11-12)
+From the first live run on 1.11 (search and save, 12 hours, Chrome): LinkedIn, Indeed and Dice all reachable; 76 cards, 28 jobs read, 4 Ready to apply.
+- `vet.py --hours` applies the run's window; it used the profile's 48 h, so a 24-hour-old Dice job passed a 12-hour run.
+- `tracker.py since` ignores a run that searched nothing; a failed run had shortened the next window to 1 hour.
+- New `js/linkedin_pane.js` (open a card and read the right-hand pane, with a TITLE MISMATCH check: "Java Backend Developer" had opened "Senior Java Backend Developer") and `js/dice_fetch.js` (read Dice jobs by a same-site fetch, with the posting date: Dice's "Today" filter listed jobs from Oct 30 and Nov 5).
+- Disability and accessibility mailboxes are no longer saved as recruiter contacts (United Airlines, McKesson, Ovative).
+- `dice_cards.js` no longer puts "Remote" in the company column when Dice hides the company.
+- portals.md: the fast-reading section, and Indeed's Remote searches returning local jobs. 3 new checks, 150 in all.
+
 ## 1.11.1 (2026-11-12)
 - Found on a live plan: the profile's Boolean `search_queries` still went to Dice. They now go to LinkedIn only, and Dice gets the plain ones ("Java React"). The back-test check now covers a profile with Boolean queries.
 

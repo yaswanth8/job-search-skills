@@ -20,7 +20,7 @@
     const type = L.find(l => /^(full.time|part.time|contract|third party|contract to hire)/i.test(l)) || '';
     const pay = L.find(l => /\$\s?\d|depends on experience/i.test(l)) || '';
     const tags = [age, type, L.some(l => /^applied$/i.test(l)) && 'applied'].filter(Boolean).join(',');
-    rows.push(['dice-' + m[1], cut(title, 70), cut(L[ti + 1] !== where ? L[ti + 1] : '', 30), cut(loc, 40), cut(pay, 40), cut(tags, 40)].join('|'));
+    rows.push(['dice-' + m[1], cut(title, 70), cut(L[ti + 1] !== where && !/^(Remote|Hybrid|On-?site)\b|•|, [A-Z]{2}$/.test(L[ti + 1] || '') ? L[ti + 1] : '', 30), cut(loc, 40), cut(pay, 40), cut(tags, 40)].join('|'));
   }
   const page = rows.slice(PAGE * N, PAGE * N + N);
   return `${rows.length} cards, page ${PAGE} of ${Math.max(0, Math.ceil(rows.length / N) - 1)}\n` + page.join('\n');

@@ -211,6 +211,15 @@ def backtest_checks():
     out.append(("recent-run", "a run finished 2.5 h ago offers a 3 h window", [] if r.returncode == 0 and r.stdout.split()[:1] == ["3"] else [(r.stdout + r.stderr).strip()[:120]]))
     r = run(HERE / "tracker.py", "run", "step", d / "run.json", "linkedin", "done", "--set", "saved=3")
     out.append(("saved-alias", "--set saved= counts as review", [] if r.returncode == 0 and json.loads((d / "run.json").read_text())["review"] == 3 else [r.stderr.strip()[-120:]]))
+    (d / "old.json").write_text(json.dumps([{"id": "o1", "title": "Java Developer", "company": "A", "location": "United States (Remote)", "work_type": "Remote", "age_hours": 24, "description": "Java Spring Boot React AWS microservices REST"}]))
+    r = run(HERE / "vet.py", "--profile", prof, "--mode", "full", "--hours", "12", d / "old.json")
+    got = json.loads(r.stdout)[0] if r.returncode == 0 else {}
+    out.append(("vet-run-window", "vet.py --hours 12 skips a 24-hour-old posting", [] if got.get("category") == "Stale / duplicate" else [str(got.get("action")) + " " + r.stderr[-120:]]))
+    (d / "runs" / "runs" / f"{today}-3.json").write_text(json.dumps({"id": f"{today}-3", "data": {"status": "done", "finishedAt": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "steps": [{"key": "linkedin", "portal": True, "state": "skipped"}]}}))
+    r = run(HERE / "tracker.py", "since", d / "runs" / "runs")
+    out.append(("since-ignores-empty-run", "a run that searched nothing doesn't shorten the next window", [] if r.stdout.split()[:1] == ["3"] else [(r.stdout + r.stderr).strip()[:120]]))
+    c = extract_contacts("Questions? JobAccommodations@united.com or Disability_Accommodation@McKesson.com. Recruiter: jane@acme.com")
+    out.append(("hr-mailbox-not-contact", "accommodation mailboxes are not recruiter contacts", [] if c["emails"] == ["jane@acme.com"] else [str(c["emails"])]))
     # a recruiter post asking for a passport number is flagged
     pp = vet(parse_post({"author": "R", "age": "2h", "text": "Hiring: Java Full Stack Developer\nLocation: Remote\nC2C. Java, Spring Boot, React, AWS. Passport Number Required for Verification. Send resume to r@x.com"}), fx, "post")
     out.append(("passport-ask", "a post asking for a passport number is flagged, not followed", [] if any("ID" in f for f in pp["flags"]) else [f"{pp['action']} {pp['flags']}"]))

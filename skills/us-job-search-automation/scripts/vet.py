@@ -56,9 +56,12 @@ def main():
     ap.add_argument("--mode", choices=["card", "full"], default="full")
     ap.add_argument("--seen")
     ap.add_argument("--table", action="store_true")
+    ap.add_argument("--hours", type=int, help="this run's job window (overrides the profile's window_hours)")
     a = ap.parse_args()
 
     profile = load_profile(a.profile)
+    if a.hours:
+        profile["window_hours"] = a.hours
     postings = read_postings(Path(a.postings).read_text(encoding="utf-8"))
     seen = set()
     if a.seen:

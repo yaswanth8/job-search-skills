@@ -16,7 +16,7 @@
   const key = /java|spring|sponsor|visa|h-?1b|citizen|clearance|green card|years|yrs|remote|hybrid|on-?site|in office|relocat|resident|w-?2|c2c|contract|full.time|part.time|required|\$|salary|rate|vue|\.net|c#|python|golang|react|angular/i;
   const sents = desc.split(/(?<=[.!?])\s+|\n/).map(x => x.trim()).filter(x => x.length > 12 && key.test(x));
   // who to reach: any email or phone in the description, plus a recruiter named on the page
-  const em = [...new Set(desc.match(/[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g) || [])].filter(x => !/\.(png|jpg|gif)$/i.test(x)).slice(0, 2);
+  const em = [...new Set(desc.match(/[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g) || [])].filter(x => !/\.(png|jpg|gif)$/i.test(x) && !/accomm?odation|accessib|disabilit/i.test(x)).slice(0, 2);
   const ph = [...new Set(desc.match(/(?:\+?1[\s.-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.-])\d{3}[\s.-]\d{4}/g) || [])].slice(0, 2);
   const rl = t.split('\n').map(x => x.trim()); const ri = rl.findIndex(x => /^(Recruiter|Contact|Hiring manager|Point of contact)\b:?/i.test(x));
   const rn = ri >= 0 ? (rl[ri].replace(/^(Recruiter|Contact|Hiring manager|Point of contact)\b:?/i, '').replace(/^[:\s-]+/, '') || rl[ri + 1] || '').slice(0, 40) : '';

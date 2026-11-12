@@ -50,6 +50,11 @@ These are manual applies. Never email, call, message or connect with a recruiter
 - Review page: scroll and re-read every answer (one corrected value once reverted), then untick "Follow <company>" just above Submit and zoom to confirm it is off.
 - Success is the "Application sent" dialog, and the job page then shows "Application submitted".
 
+## Reading many jobs fast (tested Nov 12)
+- **LinkedIn**: on a results page paste `js/linkedin_pane.js` once, then `await __o2('<title>', '<company>')` per card: it clicks the card and reads the right-hand pane, no page load. Trust its TITLE MISMATCH line: save the job under the title the page shows.
+- **Dice**: paste `js/dice_fetch.js` once on any dice.com page, then `await __dr('<uuid>')` per job: one same-site fetch, no page load. Take `age_hours` from its `posted` date; Dice's "Today" filter also lists jobs reposted from a week or more ago.
+- A snippet defined with `window.__x = ...` is lost on navigation: paste it again after every navigate.
+
 ## Indeed
 **Search URL**: `https://www.indeed.com/jobs?q=<q>&l=<state from the profile, or Remote>&fromage=3`
 - `js/indeed_cards.js` gives `indeed-<jk>|title|company|location|pay|tags` and drops ghost ids. A header starting `NO RESULTS` means Indeed found nothing and filled the page with suggestions: vet nothing from it.
@@ -58,6 +63,7 @@ These are manual applies. Never email, call, message or connect with a recruiter
 - Apply with Indeed continues on `smartapply.indeed.com`; applying there is allowed. It needs that domain's site permission in Claude in Chrome (ask once if refused). Flow: resume, questions (answer from the profile; free-text "messages to employer": No), review, submit. Success is "Your application has been submitted"; skip the optional demographic survey.
 - Indeed can show phantom duplicate cards (ghost ids, a title ending "Easily apply"); `indeed_cards.js` drops them.
 - Combined OR queries return suggestions: use one query per title.
+- On Nov 12 the `l=Remote` searches returned local Chicago jobs (and an HVAC role): read the location of every Indeed card, and if most cards ignore the location, mark that search as not useful in the run log rather than opening them.
 
 ## Dice
 **Search**: `https://www.dice.com/jobs?q=<title>&filters.postedDate=THREE&filters.workplaceTypes=Remote`, one plain title per search: Boolean queries got 403 on Nov 11 and 12.

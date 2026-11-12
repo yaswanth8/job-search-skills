@@ -21,7 +21,7 @@
   // who to reach: the "Meet the hiring team" person, plus any email or phone in the description
   const hi = t.indexOf('Meet the hiring team');
   const hl = hi >= 0 ? t.slice(hi + 20, hi + 300).split('\n').map(x => x.trim()).filter(x => x && !/^(•|\d|Job poster|Message)/.test(x)) : [];
-  const em = [...new Set(desc.match(/[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g) || [])].slice(0, 2);
+  const em = [...new Set(desc.match(/[A-Za-z0-9][A-Za-z0-9._%+-]*@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g) || [])].filter(x => !/accomm?odation|accessib|disabilit/i.test(x)).slice(0, 2);
   const ph = [...new Set(desc.match(/(?:\+?1[\s.-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.-])\d{3}[\s.-]\d{4}/g) || [])].slice(0, 2);
   const who = (hl.length ? `hiring: ${hl[0].replace(/\s*•.*$/, '').slice(0, 40)} | ${(hl[1] || '').slice(0, 60)}\n` : '') + (em.length || ph.length ? `contacts: ${em.concat(ph).join(', ')}\n` : '');
   return `id ${id} | ${flags}\n${head}\n${who}` + sents.join(' ').slice(0, 640 - who.length);

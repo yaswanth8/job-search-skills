@@ -248,6 +248,9 @@ def cmd_since(a):
     best = None
     for f in Path(a.runs).glob("*.json"):
         d = json.loads(f.read_text()); d = d.get("data", d)
+        portals = [x for x in d.get("steps", []) if x.get("portal")]
+        if portals and all(x.get("state") == "skipped" for x in portals):
+            continue   # a run that searched nothing (no browser, every portal blocked) doesn't shorten the next window
         t = d.get("finishedAt") or (d.get("updatedAt") if d.get("status") in ("done", "finished") else None)
         if not t:
             continue

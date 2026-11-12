@@ -540,6 +540,9 @@ def extract_contacts(text: str) -> dict:
     emails = []
     for e in EMAIL_RE.findall(t):
         e = e.rstrip(".").lower()
+        # HR mailboxes for disability or accessibility requests are not a recruiter to reach
+        if re.search(r"accomm?odation|accessib|disabilit|^eeo|^ada[._@]|^noreply|^no-reply|^careers?@|^privacy", e):
+            continue
         if e not in emails and not e.endswith((".png", ".jpg", ".gif")):
             emails.append(e)
     phones = []
