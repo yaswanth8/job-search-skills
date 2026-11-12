@@ -2,6 +2,10 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.7.1 (2026-11-12)
+- The start-of-run questions now ask **which portals to check** (LinkedIn, Indeed, Dice, company career pages such as Greenhouse, Lever and Ashby, target employers or vendors, others) and search only those; they come in rounds of at most four questions.
+- `employers.py --mode vendor` ignores note-like text in a row's vendor field and uses the company name instead.
+
 ## 1.7.0 (2026-11-12)
 - **Beyond LinkedIn, Indeed and Dice.** `employers.py` builds a target-employer list: from the Department of Labor's public H-1B data for candidates who need sponsorship, or from the tracker's own rows (vendors and staffing firms that posted C2C or contract roles) for C2C candidates, where sponsorship data does not apply.
 - `feeds.py` turns public Greenhouse, Lever and Ashby career-page feeds into postings for `vet.py`; no login to read them.

@@ -1,6 +1,6 @@
 # Target employers and ATS feeds (beyond LinkedIn, Indeed, Dice)
 
-Optional extra sources. Use them when the user asks, or after the portals when a run found little. All reads are public and need no login.
+Optional extra sources. Use them when the user picks them in the start-of-run portal question, or offer them after the portals when a run found little. All reads are public and need no login.
 
 ## Who to target: pick by the candidate's profile
 - **Needs sponsorship (W2 or full-time):** `employers.py --mode sponsor`. Source: the Department of Labor's public H-1B (LCA) disclosure spreadsheet, a free download from dol.gov (Foreign Labor > Performance data). The shell usually can't reach dol.gov: open it in the browser and download, or ask the user to attach the file. It ranks employers that filed certified LCAs for the profile's titles, optionally by state (`--states IL,MO`). USCIS's H-1B Employer Data Hub is the cross-check for approvals.

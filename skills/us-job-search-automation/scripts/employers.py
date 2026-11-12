@@ -87,7 +87,9 @@ def vendor(a, prof):
         typ = f"{r.get('type', '')} {r.get('notes', '')}".lower()
         if r.get("status") == "Skipped" or not any(k in typ for k in ("c2c", "corp", "contract", "w2")):
             continue
-        name = (r.get("vendor") or r.get("company") or "").strip()
+        name = (r.get("vendor") or "").strip()
+        if not name or len(name) > 40 or ";" in name or name.lower().startswith(("none", "not stated", "n/a", "unknown", "staffing firm", "direct")):
+            name = (r.get("company") or "").strip()  # the vendor field sometimes holds a note, not a name
         if not name:
             continue
         n[name] += 1 + (2 if r.get("status") == "Applied" else 0)
