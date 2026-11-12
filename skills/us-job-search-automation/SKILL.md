@@ -5,7 +5,7 @@ description: "Automates a US job search end to end: finds fresh listings on Link
 
 # US Job Search Automation
 
-Version: 1.6.2 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 1.6.3 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **ask, search, vet, apply or save, track, report**. An application is a statement in the candidate's name: the profile and resume are the only sources of facts. Anything they don't cover is asked once or skipped, never guessed.
 
@@ -36,7 +36,7 @@ PROFILE is the `job-search-profile` skill's SKILL.md path, the `--profile` argum
    - **LinkedIn recruiter posts from the last:** **12 hours**, 24 hours, 2 days, 3 days, or skip them (default: `search.post_window_hours`).
    - **Also send to Saryom?** *No*, *Yes, with my token*, *Yes, give me a file*. Ask only when the profile's Tracker section has no `Saryom:` line (off, file or token); afterwards offer to save the answer there (`saryom.md`).
 4. **Authorization** is the answer to "What to do", for this run only. Search-and-save submits nothing, queued rows included. Company-site jobs the user did not queue need their explicit words, per job or "the company-site ones too". Nothing authorizes contacting recruiters: outreach is always the user's.
-5. **Progress.** `tracker.py run start --out <scratch>/run.json --mode apply|save --hours <jobs> --post-hours <posts> --saryom off|token|file` prints the run's stages. Show that block as the first message, `set` the run doc it names, and mirror the stages in the task list. From here on, every time a stage starts, ends or is skipped: `tracker.py run step run.json <stage> doing|done|skipped --note "<result in a few words>"`, show the block, `set` the doc again. The user reads progress from these, in chat and on the dashboard; never go quiet for a whole portal. **After each portal's search and after each application, send one line in chat**: portal, cards read, opened, applied/saved, skipped (for example "LinkedIn: 72 cards, 9 opened, 1 applied, 3 for you").
+5. **Progress.** `tracker.py run start --out <scratch>/run.json --mode apply|save --hours <jobs> --post-hours <posts> --saryom off|token|file` prints the run's stages. **Give the user the tracker link (the profile's Tracker URL) in the first message and again in every progress message and the final report, even when nothing new is written yet, so they can read earlier postings while the search runs.** Show that block as the first message, `set` the run doc it names, and mirror the stages in the task list. From here on, every time a stage starts, ends or is skipped: `tracker.py run step run.json <stage> doing|done|skipped --note "<result in a few words>"`, show the block, `set` the doc again. The user reads progress from these, in chat and on the dashboard; never go quiet for a whole portal. **After each portal's search and after each application, send one line in chat**: portal, cards read, opened, applied/saved, skipped (for example "LinkedIn: 72 cards, 9 opened, 1 applied, 3 for you").
 6. **Tracker state.** `ArtifactData list` on `jobs` (limit 1000, `out_dir`). Every `link` goes into `<scratch>/seen.txt`; keep each doc's `version`. Note Queued rows and Review rows. If `assets/tracker.version` is newer than `meta/tracker.template`, offer the dashboard refresh (`tracker-db.md`).
 7. **Browser.** Use the browser chosen in step 3 and load its tools in one ToolSearch (`portals.md`). Probe the three portals in one `browser_batch`: a blocked domain or a 403 means ask the user once to open that portal in the browser and reply "done", retry once, otherwise mark it `skipped` with the reason and go on; a guest view means ask the user to sign in.
 
@@ -81,6 +81,7 @@ tracker.py writes new.json --dir <scratch>/docs   # ArtifactData batch `writes`,
 After the last tracker write, list `jobs` again with `out_dir`, then follow `saryom.md`: `saryom.py payload` builds the file; with a token `saryom.py upload` sends it, otherwise hand the user the file. Record the result with `run step run.json saryom done --note "<what Saryom answered>"`.
 
 ## 7. Report
+Closing the tracker is part of every run, even a short or failed one: `run step` for every stage, `run finish`, `set` the run doc, `tracker.py criteria` then `set meta/criteria`, and update every row you applied to (status Applied, `appliedAt`, `appliedBy`, clear stale notes). Before the final message, list `runs` and `jobs` to confirm the run shows finished and each applied job shows Applied.
 `tracker.py run finish run.json --summary "<one sentence>"`, `set` the doc, then one short message: the final progress block; applications (one line each) or, in a save run, how many are Ready to apply; what waits in "Needs you" and why; what was not searched; caveats (unverified sponsorship or pay, stated years a posting probed hard); and one next step. Point to the dashboard rather than repeating rows. If several strong matches were skipped by one rule (a state, a pay floor), say which change would bring them back.
 
 ## Re-runs and changes

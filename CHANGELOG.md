@@ -2,6 +2,10 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.6.3 (2026-11-12)
+- The tracker link goes in the first message, every progress message and the report, so the user can browse earlier postings during a search.
+- Closing the tracker is an explicit last step: finish the run log, set the run doc and criteria, mark applied rows, and verify by reading them back. (A run once ended with the dashboard still showing it in progress.)
+
 ## 1.6.2 (2026-11-12)
 - A 403 Forbidden on a portal (Dice) now asks the user to open the page in the run's browser, sign in and reply "done"; Claude retries once, then skips the portal and hands over the search links. It never works around the block.
 
