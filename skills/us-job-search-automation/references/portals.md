@@ -17,6 +17,15 @@ Page loads and reading are what make a run slow. Keep both small:
 3. Append every portal's card lines to one file and vet them in a single `vet.py --mode card` call.
 4. Open only "open" cards, newest first, at most `max_open_per_search` per search, five per batch.
 5. If a combined LinkedIn query returns nothing sensible, rerun that bucket once with the plan's `fallback_keywords`.
+6. **Overlap the loading.** Open one tab per chosen portal and start each portal's first search loading in all of them at once; read LinkedIn while Indeed and Dice finish. Work stays one tab at a time: one browser, one session, one action at a time. Never run portals in parallel agents.
+
+## Pacing (don't get the account flagged)
+Portals watch for automation. Look like one careful person:
+- Wait 3 to 8 s between page loads on the same portal, varied, never a fixed beat; keep to roughly 40 page loads per portal per run, and at most about 15 applications per portal per run.
+- Overlapping tabs is fine (different sites); never hit one portal from two tabs at once.
+- Read pages, don't hammer them: no rapid reloads, no scripted scrolling loops, no `fetch()` of portal pages.
+- On any challenge (CAPTCHA, "unusual activity", "verify you're human", a 403 or 429, a sign-in prompt mid-run): stop that portal at once, tell the user, and follow the 403 rule. Never solve or work around it.
+- Spread repeat runs out: if the user asks for another run within the hour, say so and suggest waiting.
 
 ## LinkedIn posts (recruiter requirements)
 Many contract roles only ever appear as feed posts ("Java C2C/W2, share resumes to..."). The plan's `post_searches` cover them. When the user asks for a keyword or role search ("search posts for JAVA AND CONTRACT/W2"), run `plan.py --post-query '<their words>'`.

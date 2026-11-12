@@ -2,6 +2,13 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 1.8.0 (2026-11-12)
+- **Dashboard (template 4):** an employment-type filter next to the time range (All types, Full-time, W2, C2C, Contract with type not stated), applied to every view. A "C2C/W2" job shows under both. Existing trackers are offered a refresh; rows are untouched.
+- **Overlapped tab loading:** each chosen portal's search loads in its own tab at once, then each is read in turn.
+- **Pacing rules** in `portals.md` so portals don't flag the account: varied waits, page-load and application caps per portal, one tab per portal, stop on any challenge.
+- Apply runs suggest Opus 5.5 or higher once at the start (no block; search-and-save says nothing).
+- SKILL.md says how "all types" searches work.
+
 ## 1.7.1 (2026-11-12)
 - The start-of-run questions now ask **which portals to check** (LinkedIn, Indeed, Dice, company career pages such as Greenhouse, Lever and Ashby, target employers or vendors, others) and search only those; they come in rounds of at most four questions.
 - `employers.py --mode vendor` ignores note-like text in a row's vendor field and uses the company name instead.

@@ -3,7 +3,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: a sticky bar with five views (Overview, Needs you, Applied, All jobs, What if) and two global filters (time, search).
+/* Layout: a sticky bar with five views (Overview, Needs you, Applied, All jobs, What if) and three global filters (time, employment type, search).
    Every count on the page is a button that opens the matching list. Tables scroll inside their own boxes.
    While Claude is running a search, Overview opens with the run's stages: done, in progress, still to come. */
 :root{
@@ -218,13 +218,14 @@ select.stage{font-size:12.5px;padding:4px 6px}
     <div class="tabs" id="tabs"></div>
     <div class="tools">
       <select id="time" aria-label="Time range"><option value="0">All time</option><option value="1">Today</option><option value="3">Last 3 days</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
+      <select id="etype" aria-label="Employment type"><option value="">All types</option><option value="ft">Full-time</option><option value="w2">W2</option><option value="c2c">C2C</option><option value="contract">Contract (type not stated)</option></select>
       <input id="q" type="search" placeholder="Search company, role, contact" aria-label="Search jobs">
     </div>
   </nav>
 
   <main id="view"></main>
 
-  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Ready to apply</b> jobs passed every check in a search-and-save run: nothing was submitted. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
+  <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Ready to apply</b> jobs passed every check in a search-and-save run: nothing was submitted. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The type filter (Full-time, W2, C2C) reads each job's employment type; a job posted as "C2C/W2" shows under both. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
 
@@ -242,9 +243,9 @@ select.stage{font-size:12.5px;padding:4px 6px}
   const KIND = { ready: "Ready to apply", contact: "Reach out", "company-site": "Company site", "needs-call": "Your call" };
 
   let JOBS = [], RUNS = [], db = null, canWrite = true, loaded = false, online = false;
-  const S = { view: "overview", days: 0, q: "", kind: "", applied: "", status: "", fit: "", work: "", source: "", category: "", sortKey: "updatedAt", sortDir: -1, open: "" };
+  const S = { view: "overview", days: 0, q: "", kind: "", applied: "", status: "", fit: "", work: "", source: "", category: "", sortKey: "updatedAt", sortDir: -1, open: "", etype: "" };
   const pending = new Set();
-  try { S.days = +(localStorage.getItem("jt-days") || 0); } catch {}
+  try { S.days = +(localStorage.getItem("jt-days") || 0); S.etype = localStorage.getItem("jt-etype") || ""; } catch {}
 
   function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 3200); }
   function setLive(on, text) { $("dot").className = "dot" + (on ? " on" : ""); $("liveText").textContent = text; }
@@ -252,9 +253,17 @@ select.stage{font-size:12.5px;padding:4px 6px}
   // ---------------------------------------------------------------- filters
   const inRange = d => !S.days || (d && daysSince(d) !== null && daysSince(d) < S.days);
   const matchQ = j => !S.q || [j.company, j.vendor, j.role, j.notes, j.where, j.contactName, j.contactEmail, j.contactPhone, j.source].join(" ").toLowerCase().includes(S.q);
-  const base = () => JOBS.filter(j => matchQ(j) && inRange(j.foundAt || j.updatedAt));
+  // Employment type, from the row's type (and role/notes as a fallback): a "C2C/W2" job counts for both.
+  const etypes = j => { const t = `${j.type || ""} ${j.role || ""}`.toLowerCase().replace(/\([^()]*not stated\)/g, " "), k = new Set();
+    if (/full[\s-]?time|permanent|\bfte\b/.test(t)) k.add("ft");
+    if (/\bw-?2\b/.test(t) && !/no w-?2/.test(t)) k.add("w2");
+    if (/\bc2c\b|corp[\s-]?to[\s-]?corp/.test(t) && !/no c2c/.test(t)) k.add("c2c");
+    if (!k.size && /contract|cth|temp/.test(t)) k.add("contract");
+    return k; };
+  const matchT = j => !S.etype || etypes(j).has(S.etype);
+  const base = () => JOBS.filter(j => matchQ(j) && matchT(j) && inRange(j.foundAt || j.updatedAt));
   const needs = () => base().filter(j => j.status === "Review" || j.status === "Queued");
-  const appliedList = () => JOBS.filter(j => j.status === "Applied" && matchQ(j) && inRange(j.appliedAt || j.updatedAt));
+  const appliedList = () => JOBS.filter(j => j.status === "Applied" && matchQ(j) && matchT(j) && inRange(j.appliedAt || j.updatedAt));
   const isReady = j => j.status === "Review" && j.reviewReason === "ready";
   const followDue = j => j.status === "Applied" && !j.stage && daysSince(j.appliedAt) >= 7;
 
@@ -541,6 +550,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
     if (S.view === "what-if") whatIf();
     if (online) { const r = liveRun(), at = r && !stale(r) && r.steps.find(s => s.state === "doing"); setLive(true, `Live · ${JOBS.length} jobs` + (r && !stale(r) ? ` · run in progress${at ? ": " + at.label : ""}` : "")); }
     $("time").value = String(S.days);
+    $("etype").value = S.etype;
     if (keep) $("q").focus();
   }
   function go(patch) {
@@ -570,6 +580,7 @@ select.stage{font-size:12.5px;padding:4px 6px}
     if (t.matches("select.stage")) { const j = JOBS.find(x => x.id === t.dataset.id); if (j) act.stage(j, t.value); }
     else if (t.dataset.sel) go({ [t.dataset.sel]: t.value });
     else if (t.id === "time") { try { localStorage.setItem("jt-days", t.value); } catch {} go({ days: +t.value }); }
+    else if (t.id === "etype") { try { localStorage.setItem("jt-etype", t.value); } catch {} go({ etype: t.value }); }
   });
   $("q").addEventListener("input", e => { S.q = e.target.value.trim().toLowerCase(); render(); });
   const fromHash = () => { const h = location.hash.slice(1); if (VIEWS.some(v => v[0] === h) && h !== S.view) { S.view = h; S.open = ""; render(); } };

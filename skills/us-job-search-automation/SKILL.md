@@ -5,7 +5,7 @@ description: "Automates a US job search end to end: finds fresh listings on Link
 
 # US Job Search Automation
 
-Version: 1.7.1 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 1.8.0 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **ask, search, vet, apply or save, track, report**. An application is a statement in the candidate's name: the profile and resume are the only sources of facts. Anything they don't cover is asked once or skipped, never guessed.
 
@@ -35,6 +35,7 @@ PROFILE is the `job-search-profile` skill's SKILL.md path, the `--profile` argum
    - **Round 2:** *What to do*: *Search and save to the dashboard* (default, submits nothing) or *Apply to jobs* ("apply"/"submit" in the request means apply). *Portals to check* (multi-select; default LinkedIn, Indeed, Dice): add *Company career pages (Greenhouse, Lever, Ashby)*, *Target employers/vendors* (`employers-and-feeds.md`), and *Others* (Google Jobs, ZipRecruiter, Glassdoor, Wellfound, Built In, Hacker News, YC). *Job postings from the last*: 12 hours, 24 hours, **2 days**, 3 days (default: `window_hours`). *LinkedIn recruiter posts from the last*: **12 hours**, 24 hours, 2 days, 3 days, or skip (default: `post_window_hours`).
    - **Round 3, only if the profile's Tracker section has no `Saryom:` line:** *Also send to Saryom?* No, Yes with my token, Yes give me a file; afterwards offer to save the answer there (`saryom.md`).
    Search only the portals chosen, and pass them to `tracker.py run start --portals` so the progress block lists them.
+   **Model:** when the answer is *Apply to jobs*, say once in the first message: "Apply runs work best on Opus 5.5 or higher; switch with /model if you can." Don't block the run, and say nothing for search-and-save.
 4. **Authorization** is the answer to "What to do", for this run only. Search-and-save submits nothing, queued rows included. Company-site jobs the user did not queue need their explicit words, per job or "the company-site ones too". Nothing authorizes contacting recruiters: outreach is always the user's.
 5. **Progress.** `tracker.py run start --out <scratch>/run.json --mode apply|save --hours <jobs> --post-hours <posts> --saryom off|token|file` prints the run's stages. **Give the user the tracker link (the profile's Tracker URL) in the first message and again in every progress message and the final report, even when nothing new is written yet, so they can read earlier postings while the search runs.** Show that block as the first message, `set` the run doc it names, and mirror the stages in the task list. From here on, every time a stage starts, ends or is skipped: `tracker.py run step run.json <stage> doing|done|skipped --note "<result in a few words>"`, show the block, `set` the doc again. The user reads progress from these, in chat and on the dashboard; never go quiet for a whole portal. **After each portal's search and after each application, send one line in chat**: portal, cards read, opened, applied/saved, skipped (for example "LinkedIn: 72 cards, 9 opened, 1 applied, 3 for you").
 6. **Tracker state.** `ArtifactData list` on `jobs` (limit 1000, `out_dir`). Every `link` goes into `<scratch>/seen.txt`; keep each doc's `version`. Note Queued rows and Review rows. If `assets/tracker.version` is newer than `meta/tracker.template`, offer the dashboard refresh (`tracker-db.md`).
@@ -52,6 +53,8 @@ Apply to every Queued row before searching: Easy Apply rows through the portal, 
 
 ## 2. Search
 `plan.py --profile PROFILE --hours <jobs> --post-hours <posts>` builds the searches: one combined query per location bucket and portal. Add `--company-site` when the user wants company-site roles listed too. Follow "Fast runs" in `portals.md`: one `browser_batch` per portal, one card-vetting call for everything.
+- **Overlapped tabs and pacing** (`portals.md`): load the chosen portals in parallel tabs, work them one at a time, and stop a portal on any challenge.
+- **All types** ("full-time, W2 and C2C"): one combined query per bucket already covers every `accepted_types`; `vet.py` applies each type's own pay floor and auth rules. Recruiter posts are where most C2C roles live, so don't skip them for a C2C user.
 - Read result pages with the `*_cards.js` snippet, page with `PAGE`, save the lines to a `.txt` file. `vet.py --mode card --seen seen.txt cards.txt` decides what to open and skips cards the portal already marks Applied.
 - An Indeed header starting `NO RESULTS` means the cards are Indeed's suggestions: vet nothing from that page.
 - Read each opened job with `linkedin_job.js`, `indeed_job.js` or `dice_job.js` (`PART = -1` for the key sentences). On LinkedIn, check the job id against `seen.txt` before reading. Carry the `hiring:` and `contacts:` lines into the posting so the row shows who to reach.
