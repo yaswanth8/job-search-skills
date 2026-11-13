@@ -1,9 +1,9 @@
 // Indeed search results: one line per card, 8 per call (javascript_tool cuts output past ~1,000 characters).
-// Line: id|title|company|location|pay|tags (id indeed-<jk>; tags: easy, new). Raise PAGE for more.
+// Line: id|title|company|location|pay|tags (id indeed-<jk>; tags: easy, new). Then __ic(1), __ic(2)... for more (same page, no re-paste).
 // Drops ghost ids (runs like 890abcdef0123456). When Indeed found nothing it fills the page with
 // "similar jobs": the header then says so, and those cards are not search results.
-(() => {
-  const PAGE = 0, N = 8, SEQ = '0123456789abcdef';
+window.__ic = (PAGE = 0) => {
+  const N = 8, SEQ = '0123456789abcdef';
   const ghost = id => [...Array(Math.max(0, id.length - 5)).keys()].some(k => SEQ.includes(id.slice(k, k + 6)));
   const cut = (s, n) => String(s || '').replace(/\|/g, '/').replace(/\s+/g, ' ').trim().slice(0, n);
   const noResults = /did not match any jobs|didn.t find any results|no results found/i.test(document.body.innerText.slice(0, 4000));
@@ -20,4 +20,5 @@
   });
   const page = rows.slice(PAGE * N, PAGE * N + N);
   return (noResults ? 'NO RESULTS: these are Indeed suggestions, not matches. ' : '') + `${rows.length} cards, page ${PAGE} of ${Math.max(0, Math.ceil(rows.length / N) - 1)}\n` + page.join('\n');
-})()
+};
+__ic(0)

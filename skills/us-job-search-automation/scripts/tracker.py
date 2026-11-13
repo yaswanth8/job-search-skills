@@ -8,6 +8,11 @@ Subcommands:
                                    --save (a search-and-save run): jobs that would be applied to are saved as
                                    "Ready to apply" for the user to act on, instead of New
   writes DOCS --dir D [--update]   write one JSON file per doc and print ArtifactData batch `writes` (<=50 each)
+  ops DOCS --out F [--seen S]      compact db_write ops (no empty fields; Skipped rows trimmed), <=50 per file
+                                   F.1.json, F.2.json...; rows whose id is in S (already in the tracker) are left out
+  seen [--doc meta_seen.json] [--add new.json ...] [--from-list jobs.json] --out meta_seen.json --txt seen.txt
+                                   the tracker's small "already seen" index (meta/seen: ids plus company|title keys),
+                                   read once per run instead of listing every job, and seen.txt for vet.py/plan.py
   check DOCS                       validate fields and enums, print counts. Run it on hand-built rows too.
   table DOCS                       the jobs to act on as a markdown table, for the chat report (and for a
                                    session that has no dashboard)
@@ -41,7 +46,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from jobkit_core import CATEGORIES, STATES, classify_ats, load_profile  # noqa: E402
+from jobkit_core import CATEGORIES, STATES, classify_ats, job_key, load_profile, pay_from_text  # noqa: E402
 
 STATUSES = ["New", "Review", "Queued", "Applied", "Skipped", "Declined"]
 STAGES = ["", "Screening", "Interview", "Offer", "Rejected", "Withdrawn", "No response"]
@@ -54,7 +59,7 @@ STAGES_BEFORE = [("setup", "Set-up"), ("queued", "Queued jobs")]
 STAGES_AFTER = [("posts", "Recruiter posts"), ("apply", "Apply"), ("saryom", "Saryom"), ("report", "Report")]
 MARK = {"done": "\u2714", "doing": "\u25b6", "todo": "\u25cb", "skipped": "\u2013"}
 COUNTERS = ("found", "opened", "applied", "skipped", "review")
-DESC_MAX = 1500   # characters of the posting kept on the row: enough to decide from the dashboard, small enough for the database
+DESC_MAX = 1200   # characters of the posting kept on the row: enough to decide from the dashboard, small enough for the database
 
 
 def clean_desc(text: str) -> str:
@@ -109,7 +114,7 @@ def cmd_new(a):
             "id": doc_id(link), "company": p.get("company", "") or "Not stated", "vendor": p.get("vendor", ""), "role": p.get("title", "") or "Role not stated in post",
             "where": " · ".join(x for x in [p.get("location", ""), p.get("work_type", "") if p.get("work_type", "").lower().replace("-", "") not in p.get("location", "").lower().replace("-", "") else ""] if x),
             "workType": p.get("work_type", ""), "type": p.get("employment_type") or d.get("engagement") or "Not stated",
-            "pay": p.get("pay") or "Not listed", "source": normalize_source(p.get("source", ""), p.get("apply_type", "")), "fit": d.get("fit") or "",
+            "pay": p.get("pay") or pay_from_text(p.get("description", "")) or "Not listed", "source": normalize_source(p.get("source", ""), p.get("apply_type", "")), "fit": d.get("fit") or "",
             "spons": d.get("sponsorship", "Needs Confirmation"), "status": status,
             "reviewReason": {"needs_call": "needs-call", "review": "company-site", "contact": "contact", "apply": "ready" if a.save else ""}.get(d["action"], ""),
             "contactName": poster.get("name", ""), "contactTitle": poster.get("title", ""),
@@ -145,6 +150,73 @@ def cmd_writes(a):
         writes.append(w)
     chunks = [writes[i:i + 50] for i in range(0, len(writes), 50)]
     print(json.dumps(chunks, indent=1))
+
+
+# Fields a Skipped row keeps: enough for the dashboard's lists, the what-if view and dedupe; nothing to act on.
+SKIPPED_KEEP = ("company", "role", "where", "workType", "type", "pay", "source", "fit", "spons", "status", "category",
+                "notes", "link", "foundAt", "updatedAt", "via", "easyApply", "postedAt", "desc")
+
+
+def compact(doc: dict) -> dict:
+    """A row as the database needs it: no empty values (the dashboard treats a missing field as empty), and a
+    Skipped row cut to SKIPPED_KEEP with short notes and text. Halves what a run sends."""
+    body = {k: v for k, v in doc.items() if k not in ("id", "_version") and v not in ("", None, [])}
+    if doc.get("status") == "Skipped":
+        body = {k: v for k, v in body.items() if k in SKIPPED_KEEP}
+        body["notes"] = str(body.get("notes", ""))[:140]
+        if body.get("desc"):
+            body["desc"] = body["desc"][:150]
+    return body
+
+
+def cmd_ops(a):
+    docs = json.loads(Path(a.docs).read_text())
+    seen = set()
+    if a.seen and Path(a.seen).exists():
+        seen = {l.strip() for l in Path(a.seen).read_text().splitlines() if l.strip()}
+    ops, left_out = [], []
+    for doc in docs:
+        if doc["id"] in seen or doc.get("link") in seen:
+            left_out.append(doc["id"])
+            continue
+        op = {"op": "update" if "_version" in doc else "set", "path": "jobs/" + doc["id"], "data": compact(doc)}
+        if "_version" in doc:
+            op["ifVersion"] = doc["_version"]
+        ops.append(op)
+    out = []
+    for n, i in enumerate(range(0, len(ops), 50), 1):
+        f = Path(f"{a.out}.{n}.json")
+        f.write_text(json.dumps(ops[i:i + 50], ensure_ascii=False, separators=(",", ":")))
+        out.append(f"{f}: {len(ops[i:i + 50])} ops, {f.stat().st_size // 1024} KB")
+    print("\n".join(out) or "nothing to write")
+    if left_out:
+        print(f"left out {len(left_out)} already in the tracker: {', '.join(left_out[:10])}{' ...' if len(left_out) > 10 else ''}")
+
+
+SEEN_MAX = 4000   # newest ids and keys kept in meta/seen (about 120 KB at the cap)
+
+
+def cmd_seen(a):
+    doc = json.loads(Path(a.doc).read_text()) if a.doc and Path(a.doc).exists() else {}
+    if isinstance(doc, dict) and "data" in doc and "seen" not in doc:
+        doc = doc["data"]
+    items = list(doc.get("seen", []))
+    rows = []
+    if a.from_list:
+        raw = json.loads(Path(a.from_list).read_text())
+        raw = raw.get("docs") or raw.get("items") or raw if isinstance(raw, dict) else raw
+        rows += [dict(r.get("data", r), id=r.get("id") or r.get("data", {}).get("id")) for r in raw]
+    for f in a.add or []:
+        rows += json.loads(Path(f).read_text())
+    for r in rows:
+        for v in (r.get("id"), job_key(r.get("company", ""), r.get("role") or r.get("title", ""))):
+            if v and v not in items:
+                items.append(v)
+    items = items[-SEEN_MAX:]
+    Path(a.out).write_text(json.dumps({"seen": items, "updatedAt": today()}, separators=(",", ":")))
+    if a.txt:
+        Path(a.txt).write_text("\n".join(items) + "\n")
+    print(f"meta/seen: {len(items)} entries -> {a.out}" + (f" and {a.txt}" if a.txt else "") + f" ({Path(a.out).stat().st_size // 1024} KB)")
 
 
 def cmd_check(a):
@@ -432,6 +504,8 @@ if __name__ == "__main__":
     s = sub.add_parser("id"); s.add_argument("link")
     s = sub.add_parser("new"); s.add_argument("decisions"); s.add_argument("postings"); s.add_argument("--out", required=True); s.add_argument("--save", action="store_true")
     s = sub.add_parser("writes"); s.add_argument("docs"); s.add_argument("--dir", required=True); s.add_argument("--update", action="store_true")
+    s = sub.add_parser("ops"); s.add_argument("docs"); s.add_argument("--out", required=True); s.add_argument("--seen")
+    s = sub.add_parser("seen"); s.add_argument("--doc"); s.add_argument("--add", nargs="*"); s.add_argument("--from-list"); s.add_argument("--out", required=True); s.add_argument("--txt")
     s = sub.add_parser("check"); s.add_argument("docs")
     s = sub.add_parser("table"); s.add_argument("docs"); s.add_argument("--limit", type=int, default=25)
     s = sub.add_parser("criteria"); s.add_argument("--profile", required=True); s.add_argument("--out")
@@ -452,4 +526,4 @@ if __name__ == "__main__":
     if a.cmd == "id":
         print(doc_id(a.link))
     else:
-        {"new": cmd_new, "writes": cmd_writes, "check": cmd_check, "table": cmd_table, "criteria": cmd_criteria, "run": cmd_run, "since": cmd_since}[a.cmd](a)
+        {"new": cmd_new, "writes": cmd_writes, "ops": cmd_ops, "seen": cmd_seen, "check": cmd_check, "table": cmd_table, "criteria": cmd_criteria, "run": cmd_run, "since": cmd_since}[a.cmd](a)

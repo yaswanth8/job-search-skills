@@ -3,8 +3,8 @@
 // (javascript_tool cuts output past ~1,000 characters). PART = -1 gives the key sentences; 0, 1, 2... the raw text.
 // PART = -1 also prints a `hiring:` line (name | title) and a `contacts:` line (emails, phones) when present:
 // put them in the posting object as poster {name, title} and inside description, so the tracker row shows who to reach.
-(() => {
-  const PART = -1;
+window.__lj = (PART = -1) => {
+;
   const fromPath = (location.pathname.match(/\/jobs\/view\/(?:[^/]*-)?(\d+)/) || [])[1];
   const id = fromPath || new URLSearchParams(location.search).get('currentJobId');
   if (!fromPath) return 'id ' + id;
@@ -25,4 +25,5 @@
   const ph = [...new Set(desc.match(/(?:\+?1[\s.-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.-])\d{3}[\s.-]\d{4}/g) || [])].slice(0, 2);
   const who = (hl.length ? `hiring: ${hl[0].replace(/\s*•.*$/, '').slice(0, 40)} | ${(hl[1] || '').slice(0, 60)}\n` : '') + (em.length || ph.length ? `contacts: ${em.concat(ph).join(', ')}\n` : '');
   return `id ${id} | ${flags}\n${head}\n${who}` + sents.join(' ').slice(0, 640 - who.length);
-})()
+};
+__lj(-1)

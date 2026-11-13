@@ -529,6 +529,63 @@ def apify_checks():
     return out
 
 
+def token_checks():
+    """2.1.0: the cheaper run (seen index instead of a full listing, compact writes, cross-site dedupe) and the
+    update ladder that keeps a run going when GitHub is unreachable (a friend's run stopped on Nov 12)."""
+    out = []
+
+    def check(name, problems, got=""):
+        out.append({"suite": "tokens", "id": name, "passed": not problems, "got": got, "why": "", "problems": problems, "note": "2.1.0"})
+
+    from jobkit_core import job_key, pay_from_text
+    from apify_jobs import build_calls
+    probs = [f"{t!r} -> {pay_from_text(t)!r}" for t, want in [
+        ("Salary Range- $90,000-$110,000 a year TCS sponsors marathons", "$90,000-$110,000 a year"),
+        ("credits ($1,200/yr) ... United States - Pay Range: $187,000 USD - $243,000", "$187,000 USD - $243,000"),
+        ("$75/hr - $85/hr", "$75/hr - $85/hr"), ("Bill Rate: $82/hour (C2C)", "$82/hour"),
+        ("on track to generate over $900M in revenue", "")] if pay_from_text(t) != want]
+    check("pay is read from the posting text when the card had none (Nov 13 rows said Not listed)", probs)
+    a, b = job_key("Office Practicum", "Software Engineer, I - Java"), job_key("Office Practicum, Inc.", "Software Engineer, I - Java")
+    check("the same job on two sites has one company|title key", [] if a == b and a.startswith("k:") else [a, b], a)
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        rows = [{"id": "li-1", "company": "Office Practicum", "role": "Software Engineer, I - Java", "link": "https://www.linkedin.com/jobs/view/1/"}]
+        (d / "new.json").write_text(json.dumps(rows))
+        with contextlib.redirect_stdout(io.StringIO()):
+            tracker.cmd_seen(types.SimpleNamespace(doc=None, add=[str(d / "new.json")], from_list=None, out=str(d / "s.json"), txt=str(d / "seen.txt")))
+        seen = set((d / "seen.txt").read_text().split())
+        prof = load_profile(str(HERE.parent / "evals" / "fixture_profile.json"))
+        p1 = {"id": "li-1", "link": "https://example.com/other", "title": "Java Developer", "company": "X", "description": "Java", "location": "Remote"}
+        p2 = {"id": "indeed-9", "link": "https://www.indeed.com/viewjob?jk=9", "title": "Software Engineer, I - Java", "company": "Office Practicum",
+              "location": "Remote", "work_type": "Remote", "description": "Java Spring Boot developer, remote."}
+        r1, r2 = vet(p1, prof, "full", seen), vet(p2, prof, "full", seen)
+        check("meta/seen ids dedupe without listing every job", [] if r1["category"] == "Stale / duplicate" else [str(r1["category"])])
+        check("a job already saved from another site is skipped as a duplicate", [] if r2["category"] == "Stale / duplicate" else [str(r2["category"])])
+        calls = build_calls(prof, 24, ["LinkedIn"], ["li-4490536594", "https://www.linkedin.com/jobs/view/4488947007/"])
+        ids = calls[0]["input"].get("skipJobId", []) if calls else []
+        check("the Apify LinkedIn call skips ids from meta/seen as well as links", [] if {"4490536594", "4488947007"} <= set(ids) else [str(ids)])
+        docs = [{"id": "li-2", "company": "A", "role": "R", "link": "https://www.linkedin.com/jobs/view/2/", "status": "Skipped", "category": "Location",
+                 "notes": "n" * 400, "desc": "d" * 1200, "contactName": "", "ats": "", "applyUrl": "", "vendor": "", "source": "LinkedIn"},
+                {"id": "li-3", "company": "B", "role": "R", "link": "https://www.linkedin.com/jobs/view/3/", "status": "Review", "reviewReason": "ready",
+                 "desc": "d" * 1200, "contactName": "", "source": "LinkedIn"},
+                {"id": "li-1", "company": "C", "role": "R", "link": "https://www.linkedin.com/jobs/view/1/", "status": "Review", "source": "LinkedIn"}]
+        (d / "docs.json").write_text(json.dumps(docs))
+        with contextlib.redirect_stdout(io.StringIO()):
+            tracker.cmd_ops(types.SimpleNamespace(docs=str(d / "docs.json"), out=str(d / "ops"), seen=str(d / "seen.txt")))
+        ops = json.loads((d / "ops.1.json").read_text())
+        sk, rv = ops[0]["data"], ops[1]["data"]
+        probs = [] if len(ops) == 2 and len(sk["desc"]) == 150 and len(sk["notes"]) == 140 and "contactName" not in sk and "contactName" not in rv \
+            and len(rv["desc"]) == 1200 and ops[0]["op"] == "set" and ops[0]["path"] == "jobs/li-2" else [json.dumps(ops)[:200]]
+        check("ops: no empty fields, Skipped rows trimmed, rows already in the tracker left out", probs, f"{len(json.dumps(ops))} bytes")
+        env = dict(os.environ, https_proxy="http://127.0.0.1:9", HTTPS_PROXY="http://127.0.0.1:9", http_proxy="http://127.0.0.1:9", HTTP_PROXY="http://127.0.0.1:9")
+        import subprocess
+        r = subprocess.run(["bash", str(HERE.parent / "bootstrap.sh"), str(d / "boot")], capture_output=True, text=True, env=env, timeout=600)
+        last = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr[-200:]
+        check("GitHub unreachable: bootstrap.sh falls back to the installed copy instead of stopping",
+              [] if r.returncode == 0 and "SOURCE=bundled" in last and f"TOOLS={HERE.parent}" in last else [last], last[-40:])
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--profile", default=str(HERE.parent / "evals" / "fixture_profile.json"))
@@ -624,7 +681,7 @@ def main():
         probs += [f"missing '{x}'" for x in e["linkedin_url_contains"] if x not in urls] + [f"24h plan missing '{x}'" for x in e["hours_24_contains"] if x not in urls24]
         results.append({"suite": "plan", "id": "search-plan", "passed": not probs, "got": f"{plan['total_page_loads']} page loads", "why": "", "problems": probs, "note": ""})
 
-    results += progress_checks() + saryom_checks() + apify_checks() + [
+    results += progress_checks() + saryom_checks() + apify_checks() + token_checks() + [
         {"suite": "employers", "id": i, "passed": not pr, "got": "", "why": w, "problems": pr, "note": ""} for i, w, pr in employer_feed_checks()] + [
         {"suite": "backtest", "id": i, "passed": not pr, "got": "", "why": w, "problems": pr, "note": ""} for i, w, pr in backtest_checks()]
 

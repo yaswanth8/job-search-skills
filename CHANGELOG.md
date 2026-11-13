@@ -2,6 +2,35 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 2.1.0 (2026-11-13) **Requires new instructions**
+From two live runs on Nov 13 (a browser run and an Apify rerun of the same 24 hours) and a friend's update that stopped on "GitHub not reachable". 7 new checks, written first: 181 in all.
+
+**Updates never stop a run**
+- New `bootstrap.sh`, shipped inside the skill: git clone, then the tarball from codeload.github.com, api.github.com and github.com/archive (curl, or Python when curl is missing), then a copy fetched earlier in the session, then the installed copy. Each try unpacks into a fresh folder, so a re-run no longer fails on the folder left by the last run (`git clone` refuses an existing folder, which read as "unreachable"). When it falls back it says so in one line with the fix (allow github.com and codeload.github.com in Claude's code-execution network settings). Exit 1 only when no copy with scripts exists anywhere.
+- The zip in `dist/` is the full skill (minus the back-test), so the installed copy can always run. `tools/build.py` and CI check that `bootstrap.sh` ships and parses.
+
+**Ask once, before any browser opens**
+- One question round of up to four: what to do, which sites, how far back, and **is the browser signed in** to the portals it will open (asked only when a browser will be used). A "yes" replaces the preflight page loads; "skip the browser" runs Apify only. After this round nothing is asked unless a site blocks or a form needs a missing fact.
+- A block or sign-in wall is no longer retried: the portal is skipped with its search links and the user is told to sign in before the next run.
+
+**Cheaper runs** (what cost the most on Nov 13)
+- `meta/seen`: a small dedupe index (ids plus company|title keys, about 6 KB per 200 jobs) read with one `get`, instead of listing every job (200 KB on this tracker). `tracker.py seen` builds and updates it; `plan.py` passes its LinkedIn ids to the Apify call.
+- `tracker.py ops`: inline `db_write` ops with no empty fields, Skipped rows cut to what the dashboard uses (150-character text, 140-character notes), rows already in the tracker left out so no write fails on a missing `ifVersion`. 28% smaller on the morning's 48 rows; `desc` is now 1,200 characters.
+- `js/linkedin_batch.js` replaces `linkedin_cards.js` and `linkedin_pane.js`: one paste per search page reads the cards and opens up to five jobs per call, with sponsorship, clearance, years, pay and location sentences first so a cut never drops them. The other snippets became `__ic(n)`, `__dc(n)`, `__ij(n)`, `__lj(n)`, `__fs(n)`: page through without pasting again.
+- New `browser_jobs.py linkedin cards.txt jobs.txt`: turns the snippet output into postings (location and Easy Apply from the card, work type, employment type and pay from the pane), so no posting is typed by hand. On the morning's 59 jobs its decisions match the hand-built ones.
+- Apify calls start together (`waitSecs: 0`) and finish in about 20 s.
+
+**Vetting**
+- A job already saved from another site (same company and title: Office Practicum, Abbott and Digitech each appeared on LinkedIn and Indeed) is skipped as a duplicate.
+- Pay is read from the posting text when the card shows none (`Salary Range- $90,000-$110,000 a year`): 28 of the morning's 52 LinkedIn jobs with no card pay now get one.
+- SKILL.md names the text checks that overruled vet.py most often: a residence radius ("within 30 miles of"), "Principal" or "Tech Lead" inside a plain title, a named product suite (HighJump/Korber), or another language as the real core.
+
+**Dashboard (template 9)**
+- Needs you and All jobs share a filter bar: fit, remote/hybrid/on-site, source, sponsorship (verified, unknown, none), found through Apify or the browser, posted in the last 24 h / 3 days / week, and Easy Apply only, with "Clear filters". Needs you sorts by best fit (default), newest posting, highest pay (hourly read as yearly) or newest found. Filters are remembered in the browser.
+
+**Removed**
+- `js/linkedin_cards.js`, `js/linkedin_pane.js` (replaced by `linkedin_batch.js`); the preflight step; the live-run history in `apify.md` (it is in the 2.0.0 entry below); the evals folder from the install zip.
+
 ## 2.0.0 (2026-11-13) **Requires new instructions**
 Apify first. A run now gets LinkedIn, Indeed and Dice jobs through the user's own free Apify account when the chat has the Apify connector, and falls back to the browser portal by portal. Built from ten live Actor runs on Nov 13 and a review of every earlier run's failures (Dice 403s, Indeed blocking the built-in browser, runs that found no browser, LinkedIn cards opening the wrong job). 24 new checks, written first: 174 in all.
 
