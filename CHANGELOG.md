@@ -2,6 +2,28 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 2.0.0 (2026-11-13) **Requires new instructions**
+Apify first. A run now gets LinkedIn, Indeed and Dice jobs through the user's own free Apify account when the chat has the Apify connector, and falls back to the browser portal by portal. Built from ten live Actor runs on Nov 13 and a review of every earlier run's failures (Dice 403s, Indeed blocking the built-in browser, runs that found no browser, LinkedIn cards opening the wrong job). 24 new checks, written first: 174 in all.
+
+**What changes for the person running it**
+- **Works without a browser.** With only the Apify connector (Claude Free, a phone), "search and save" returns vetted jobs to the dashboard and submits nothing. Applying still needs Claude in Chrome or the built-in browser.
+- **One question round**: what to do (search and save, or apply), which sites (LinkedIn, Indeed, Dice, recruiter posts), and how far back. Anything the request already says is not asked.
+- **The dashboard shows the job** (template 8): "About this job" with the posting's text, when it was posted, whether it is Easy Apply or a company site, and an "Open to apply" button on every card. The run panel says which portals came through Apify.
+- **Free stays free**: one Apify account per person with no card on it; about 6 cents of the free $5 per run.
+
+**Scripts**
+- `plan.py --apify LinkedIn,Indeed,Dice --seen seen.txt --portals ...` adds `apify_calls` (one pay-per-result Actor per portal: `valig/linkedin-jobs-scraper`, `spool/job-board-api` for Indeed, `solidcode/dice-scraper`), tags the browser searches they cover with `covered_by`, and prints the cost estimate. The browser keeps LinkedIn and Dice searches for the on-site states.
+- New `apify_jobs.py`: `convert` turns Actor rows into the postings `vet.py` reads, with the tracker's own ids and links, pay, exact age, workplace, Easy Apply, recruiter and contacts; it drops company rows, cross-posts, non-US rows and expired Dice jobs, and reads results the app saved to disk. `run` executes a plan through Apify's API where it is reachable (exit 2 token refused, 3 unreachable, 4 credit used up). Only Actors on the free-plan list run, each with a row cap and a 5-cent `maxTotalChargeUsd`.
+- `vet.py`: "Remote" in a title sets the workplace (LinkedIn lists the office city for remote jobs; "Remote Sensing" does not count), and "telecommute" / "work from home" count as remote wording. Both came from jobs the live run wrongly skipped as Location.
+- `tracker.py`: rows carry `desc`, `postedAt`, `via` and `easyApply`; `table` prints the jobs to act on for the chat report; `run start --apify ... --no-browser` and `run step --via browser` record the route; `--post-hours 0` or no browser leaves the recruiter-posts stage out.
+- `profile_defaults.json`: `search.apify` (`enabled: auto`, `max_per_portal: 25`).
+
+**Instructions**
+- SKILL.md is rebuilt around the route table (Apify and browser, Apify only, browser only, neither), with one section on blocks: the only fallback is Apify then browser, and a browser block is never answered with another route or a retry.
+- New `references/apify.md` (set-up, cost, calls, reading rows, failures, what the live runs showed). `portals.md` gains "Applying to a job found through Apify". The profile template explains the two sources.
+
+**What the live runs showed**: a multi-board Actor returned 1 LinkedIn job where LinkedIn's own Actor returned 10; `location: "Remote"` searched worldwide (15 of 20 rows abroad); dates without a time read as 26 hours old and a 24-hour run skipped everything; Indeed's Actor matches title exclusions as substrings. Each is now a check.
+
 ## 1.11.2 (2026-11-12)
 From the first live run on 1.11 (search and save, 12 hours, Chrome): LinkedIn, Indeed and Dice all reachable; 76 cards, 28 jobs read, 4 Ready to apply.
 - `vet.py --hours` applies the run's window; it used the profile's 48 h, so a 24-hour-old Dice job passed a 12-hour run.

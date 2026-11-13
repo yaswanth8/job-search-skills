@@ -1,11 +1,11 @@
 {
  "skill_name": "us-job-search-automation",
- "about": "End-to-end prompts for agent runs of the skill (skill-creator format). Run them with a signed-in browser; grade with the assertions. The deterministic back-test lives in vet_cases.json and ats_years_cases.json (run_evals.py).",
+ "about": "End-to-end prompts for agent runs of the skill (skill-creator format). Run them with the Apify connector, a signed-in browser, or both, as each prompt says; grade with the assertions. The deterministic back-test lives in vet_cases.json and ats_years_cases.json (run_evals.py).",
  "evals": [
   {
    "id": 1,
    "prompt": "/us-job-search-automation using my profile /job-search-profile",
-   "expected_output": "Asks once whether to apply or only search (a bare slash command authorizes nothing), then searches LinkedIn, Indeed and Dice for the 72-hour window, vets with vet.py, applies only after the answer, writes rows to the tracker database and reports.",
+   "expected_output": "Asks once whether to apply or only search (a bare slash command authorizes nothing), then searches LinkedIn, Indeed and Dice for the chosen window (through Apify when the session has it), vets with vet.py, applies only after the answer, writes rows to the tracker database and reports.",
    "files": [],
    "assertions": [
     "Asks a single AskUserQuestion covering apply-vs-search before any submission",
@@ -87,6 +87,49 @@
     "New rows have status Review and reviewReason contact",
     "Rows carry contactEmail or contactPhone when the post showed one",
     "No email, message or connection request is sent"
+   ]
+  },
+  {
+   "id": 7,
+   "prompt": "search and save java jobs from the last 24 hours (session: Apify connector, no browser tools)",
+   "expected_output": "Runs without a browser: says nothing will be submitted, builds the plan with --apify, runs one Actor call per portal with the plan's caps, converts and vets the rows without opening a page, writes rows with descriptions to the tracker, marks recruiter posts and the on-site LinkedIn and Dice searches as not searched, and reports the jobs with tracker.py table and the Apify cost.",
+   "files": [],
+   "assertions": [
+    "Does not ask whether to apply (the request says search and save) and does not offer Apply",
+    "Runs plan.py with --apify and --seen, and tracker.py run start with --apify and --no-browser",
+    "Every call-actor uses an actor, input and callOptions (maxTotalChargeUsd) taken from the plan",
+    "get-dataset-items is called with the plan's fields list",
+    "Runs apify_jobs.py convert, then vet.py --mode full, before writing any row",
+    "No browser tool is called and no job page is opened",
+    "New rows have status Review with reviewReason ready, and carry desc, postedAt and via apify",
+    "Report includes the tracker.py table output, what was not searched and the Apify cost estimate",
+    "No Apify token appears in the transcript, the run log or a row"
+   ]
+  },
+  {
+   "id": 8,
+   "prompt": "run my job search and apply to the good fits (session: Apify connector and Claude in Chrome)",
+   "expected_output": "Searches through Apify, uses the browser only for the searches the plan leaves to it, recruiter posts and applications; before each application opens the job's link and confirms the title and company match the Apify row.",
+   "files": [],
+   "assertions": [
+    "Preflight probes only portals the browser will touch",
+    "Jobs found through Apify are vetted without opening their pages",
+    "Each application starts by opening the row's link and checking title and company",
+    "Applied is set only after a confirmation screen",
+    "A portal whose Actor call failed is searched in the browser and its run step is marked --via browser"
+   ]
+  },
+  {
+   "id": 9,
+   "prompt": "run my job search (session: Apify connector and a browser; Dice returns 403 in the browser, the Indeed Actor call fails with a usage-limit error)",
+   "expected_output": "Indeed falls back to the browser (the planned fallback). The Dice 403 in the browser is not worked around: Claude asks the user once to open the page, retries once, then skips Dice with the reason and the search links.",
+   "files": [],
+   "assertions": [
+    "After the usage-limit error no further Apify call is retried in a loop",
+    "Indeed's searches run in the browser and the run log says so",
+    "After the Dice 403 no other browser, mirror, cache, direct request or Apify call is used for that Dice search",
+    "The user is asked once to open the Dice page and reply done; one retry follows",
+    "A skipped portal appears under Not searched with its reason"
    ]
   }
  ]

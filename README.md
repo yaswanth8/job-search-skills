@@ -1,23 +1,36 @@
 # job-search-skills
 
-Two Claude skills that run a US job search for you. Claude searches LinkedIn, Indeed and Dice, vets each posting against your profile (work authorization, location, pay, seniority, stack), then either saves the good ones for you or applies through Easy Apply and similar one-page forms, your choice each run. It keeps a live tracker dashboard that shows each run's progress as it happens, and can send your applications to your board on Saryom. It also searches LinkedIn recruiter posts by your keywords and saves each recruiter's contact details so you can reach out yourself. Company-site applications wait for your go-ahead.
+Two Claude skills that run a US job search for you. Claude finds fresh postings on LinkedIn, Indeed and Dice, vets each one against your profile (work authorization, location, pay, seniority, stack), then either saves the good ones for you or applies through Easy Apply and similar one-page forms, your choice each run. It keeps a live tracker dashboard that shows each run's progress and each job's details, and can send your applications to your board on Saryom.
+
+**New in 2.0:** searches run through your own free [Apify](https://apify.com) account when you connect it, so a search needs no browser, works on Claude Free and on a phone, and no longer trips the portals' bot checks. The browser is still what applies. It also searches LinkedIn recruiter posts by your keywords and saves each recruiter's contact details so you can reach out yourself. Company-site applications wait for your go-ahead.
 
 | Skill | What it is | Updates |
 |---|---|---|
-| `skills/us-job-search-automation` | The workflow, plus scripts, browser snippets, reference guides, tests and an empty tracker | Each run fetches the latest scripts from this repo and offers new instructions when the version changes |
+| `skills/us-job-search-automation` | The workflow, plus scripts, Apify calls, browser snippets, reference guides, tests and an empty tracker | Each run fetches the latest scripts from this repo and offers new instructions when the version changes |
 | `skills/job-search-profile` | A blank profile: contact details, visa status, targets, locations, pay floors, form answers | Never updated from here; it's yours |
 
 Nothing personal lives in this repo. Your profile and your tracker stay in your own Claude account.
 
+## What you need
+
+| You have | Search and save | Apply for you | Recruiter posts |
+|---|---|---|---|
+| Apify connector **and** Claude in Chrome (paid Claude plans) | Yes, through Apify | Yes | Yes |
+| Apify connector only (**Claude Free**, or your phone) | Yes, through Apify | No: you apply from the dashboard | No |
+| Claude in Chrome only | Yes, in the browser (slower, and portals sometimes block it) | Yes | Yes |
+
+Every set-up needs a Claude plan with skills, code execution and artifacts, which includes Free.
+
 ## Install
 
-**You need:** a Claude plan with skills, code execution and artifacts; Google Chrome with the Claude in Chrome extension; sign-ins to LinkedIn, Indeed and Dice in that Chrome, with your current resume uploaded to each.
-
 1. Download [`dist/us-job-search-automation.zip`](dist/us-job-search-automation.zip) and [`dist/job-search-profile.zip`](dist/job-search-profile.zip).
-2. In Claude's settings, find Skills and upload both zips as they are.
-3. In the Claude in Chrome extension, allow linkedin.com, indeed.com and dice.com.
-4. New chat: attach your resume and say **"Set up my job-search profile from my resume."** Save the profile Claude proposes.
-5. Then say **"Run my job search."** The first run creates your tracker. Every prompt is listed under [Prompts, step by step](#prompts-step-by-step).
+2. In Claude, open Customize > Skills and upload both zips as they are.
+3. **Apify (recommended, free).** Sign up at [apify.com](https://apify.com) with your own account and **do not add a payment card**: without one, Apify stops at the free $5 a month and can never bill you. In Claude, open Customize > Connectors > Add custom connector, enter `https://mcp.apify.com`, press Connect and sign in to Apify. Claude Free allows one custom connector; use it for this. A run costs about 6 cents of the free $5.
+4. **Browser (to apply, paid Claude plans).** Install the Claude in Chrome extension, allow linkedin.com, indeed.com and dice.com in it, and sign in to the three portals in that Chrome with your current resume uploaded to each.
+5. New chat: attach your resume and say **"Set up my job-search profile from my resume."** Save the profile Claude proposes.
+6. Then say **"Run my job search."** The first run creates your tracker. Every prompt is listed under [Prompts, step by step](#prompts-step-by-step).
+
+Never share an Apify account or token with a friend: each person signs up for their own, so each gets their own free $5.
 
 ## Prompts, step by step
 
@@ -31,14 +44,15 @@ Claude fills the profile from the resume, asks what the resume cannot say (work 
 **2. Every time: run the search.**
 > **Run my job search.**
 
-Before it searches, Claude asks up to four things in one go:
+Before it searches, Claude asks what it doesn't already know, in one go:
 
 | Question | Choices |
 |---|---|
-| What to do | **Search and save to the dashboard** (nothing is submitted) or **Apply to jobs** (Easy Apply, Apply with Indeed, Dice) |
-| Job postings from the last | 12 hours, 24 hours, 2 days, 3 days |
-| Recruiter posts from the last | 12 hours, 24 hours, 2 days, 3 days |
-| Also send to Saryom? | No, with my token, or give me a file (asked until you save an answer) |
+| What to do | **Search and save to the dashboard** (nothing is submitted) or **Apply to jobs** (Easy Apply, Apply with Indeed, Dice; needs the browser) |
+| Which sites | LinkedIn, Indeed, Dice, LinkedIn recruiter posts (pick any) |
+| Posted in the last | 12 hours, 24 hours, 2 days, 3 days |
+
+The first run also asks whether to send your jobs to Saryom, and, when the browser is used, which browser.
 
 To skip the questions, say it all at once:
 > **Search and save jobs from the last 24 hours.**
@@ -49,9 +63,9 @@ To skip the questions, say it all at once:
 Run 2026-11-12-1 · apply · jobs 48h, posts 12h · 3 of 9 stages
 ✔ Set-up: profile loaded, 58 rows known
 ✔ Queued jobs: 2 applied
-✔ LinkedIn: 31 read, 4 to apply, 2 for you
-▶ Indeed
-○ Dice
+✔ LinkedIn (Apify): 25 read, 4 to apply, 2 for you
+▶ Indeed (Apify)
+○ Dice (Apify)
 ○ Recruiter posts
 ○ Apply
 ○ Saryom
@@ -59,7 +73,7 @@ Run 2026-11-12-1 · apply · jobs 48h, posts 12h · 3 of 9 stages
 ```
 ✔ done · ▶ in progress · ○ waiting · – skipped, with the reason.
 
-**4. After a search-and-save run: decide on the dashboard.** Open **Needs you**. Each *Ready to apply* job has **Let Claude apply**, **I applied** and **Not interested**; one button queues them all. Then:
+**4. After a search-and-save run: decide on the dashboard.** Open **Needs you**. Each *Ready to apply* job shows **About this job** (the posting's text, when it was posted, Easy Apply or company site) and has **Open to apply**, **Let Claude apply**, **I applied** and **Not interested**; one button queues them all. Without a browser for Claude, open the job, apply yourself and press **I applied**. With one:
 > **Apply to the ones I queued.**
 > **Apply to the saved ones.** (queues every Ready to apply job, then applies)
 
@@ -88,15 +102,14 @@ Sending again updates your board; it never duplicates a job, moves one backwards
 
 The dashboard's **What if** view shows which rule skipped the most good matches.
 
-**10. Schedule it** (needs a signed-in browser Claude can reach at that time).
+**10. Schedule it.** A search-and-save run through Apify needs no browser; an apply run needs a signed-in browser Claude can reach at that time.
 > **Run my job search every weekday at 8am: search and save, last 24 hours.**
 
 ## Updates
 
-The automation skill checks this repo at the start of every run:
-- **Scripts, snippets, references and the tracker template** come from the latest `main`, so fixes apply on your next run with nothing to install.
-- **New instructions** (the skill's SKILL.md): when `VERSION` is newer than your installed copy, Claude summarises the changelog and offers an update card. Save it to update.
-- **Your profile** is never changed by an update. If a release adds a setting, the bundled `profile_defaults.json` fills it in until you set your own value.
+The automation skill checks this repo at the start of every run and follows whatever is on `main`: scripts, snippets, references, the tracker template and the instructions themselves. A fix or a new version applies on your next run with nothing to install. When the tracker template is newer than your dashboard, Claude offers to refresh it; your rows are untouched.
+
+**Your profile** is never changed by an update. If a release adds a setting, the bundled `profile_defaults.json` fills it in until you set your own value.
 
 ## Making a change (maintainer)
 
@@ -119,6 +132,8 @@ tools/build.py                     self-test + version check + zip build
 
 - Submits only when you ask it to apply in that chat. A search-and-save run submits nothing.
 - Sends your jobs to Saryom only when you choose it, and never prints or stores your token unless you ask.
+- Uses only your own free Apify account, caps every Apify call at 5 cents, and never stores or prints a token.
+- When a portal blocks the browser, it stops and asks you; it never works around a block.
 - Never creates accounts, types passwords or solves CAPTCHAs. Workday, iCIMS and Taleo applications stay with you.
 - Never emails, calls or messages a recruiter for you. It collects the contact details; the outreach is yours.
 - Every answer on a form comes from your profile or resume. If neither covers a question, it asks once or leaves the job for you.
