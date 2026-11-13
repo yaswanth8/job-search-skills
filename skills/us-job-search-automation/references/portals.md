@@ -1,6 +1,8 @@
-# Portal playbooks
+# Portal playbooks (browser)
 
-What worked and what broke on real runs. Read the section for the portal you are on.
+What worked and what broke on real runs in the browser. With Apify in use (`apify.md`) the browser only runs the searches the plan leaves without `covered_by`, recruiter posts and applications, so read just the section you need.
+
+Contents: Per portal · All portals · Applying to a job found through Apify · LinkedIn posts · Contacts · LinkedIn · Reading many jobs fast · Indeed · Dice · Tool limits
 
 ## Per portal
 | Portal | Browser that worked (Nov 2026) | Query style | Page cap per run | Wait between loads |
@@ -9,7 +11,7 @@ What worked and what broke on real runs. Read the section for the portal you are
 | Indeed | Claude in Chrome (Cloudflare blocks the built-in browser) | one plain query per title | ~40 loads, ≤15 applications | 3–8 s, varied |
 | Dice | built-in browser (Chrome was not allowed) | one plain query per title; Boolean gets 403 | ~40 loads, ≤15 applications | 3–8 s, varied |
 
-Store the user's choice in the profile as `search.browser_by_portal` (for example `{"linkedin": "built-in", "indeed": "chrome", "dice": "built-in"}`) and stop asking. If a portal blocks in its stored browser, follow the 403 rule below; don't switch browsers mid-run to get past it.
+Fewer page loads is the best protection against blocks: every block on record followed a burst of loads or a retry. Store the user's choice in the profile as `search.browser_by_portal` (for example `{"linkedin": "built-in", "indeed": "chrome", "dice": "built-in"}`) and stop asking. If a portal blocks in its stored browser, follow the 403 rule below; don't switch browsers mid-run to get past it.
 
 ## All portals
 - Load every browser tool in one ToolSearch (tabs, navigate, computer, read_page, get_page_text, javascript_tool, find, form_input, browser_batch; file_upload for company sites).
@@ -21,6 +23,9 @@ Store the user's choice in the profile as `search.browser_by_portal` (for exampl
 - Text over screenshots: snippets, `find`, `get_page_text`, clicks by `ref`. After two screenshot timeouts open a fresh tab; mid-application, check the applied state first.
 - **Stop on any challenge** (CAPTCHA, "unusual activity", a 403 or 429, a sign-in prompt): never solve or work around it. If the user asks for another run within the hour, suggest waiting.
 - Close your tabs at the end.
+
+## Applying to a job found through Apify
+The row has the job's link but Claude has not seen the page. Open the link (LinkedIn `/jobs/view/<id>/`, Indeed `viewjob?jk=<jk>`, Dice `/job-detail/<uuid>`), read it with the portal's `*_job.js`, and check the title and company match the row. If the page says the job is closed, already applied to, or adds a requirement the Apify text did not have (a clearance, no sponsorship), update the row and skip it. Otherwise apply as that portal's section says. The row's `easyApply` says what to expect: true means Easy Apply, Apply with Indeed or the Dice wizard; false means the company site (`company-sites.md`).
 
 ## LinkedIn posts (recruiter requirements)
 Many contract roles only ever appear as feed posts ("Java C2C/W2, share resumes to..."). The plan's `post_searches` cover them. When the user asks for a keyword or role search ("search posts for JAVA AND CONTRACT/W2"), run `plan.py --post-query '<their words>'`.

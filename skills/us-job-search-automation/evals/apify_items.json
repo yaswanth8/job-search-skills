@@ -1,0 +1,219 @@
+{
+ "note": "Dataset items in the shapes the Apify Actors return. LinkedIn: valig/linkedin-jobs-scraper; Indeed: spool/job-board-api (camelCase); Dice: solidcode/dice-scraper; plus one JobSpy-shaped row (snake_case) to keep convert tolerant. Shapes and field names are from live runs on 2026-11-13; descriptions are shortened and recruiter names changed. Ages are measured from `now`.",
+ "now": "2026-11-13T02:30:00Z",
+ "items": [
+  {
+   "id": "4489264912",
+   "url": "https://www.linkedin.com/jobs/view/sr-java-developer-at-capgemini-4489264912",
+   "title": "Sr. Java Developer",
+   "location": "Chicago, IL",
+   "postedDate": "2026-11-12T00:00:00.000Z",
+   "postedTimeAgo": "4 hours ago",
+   "companyName": "Capgemini",
+   "recruiterName": "Pat Lee",
+   "recruiterUrl": "https://www.linkedin.com/in/pat-lee-example",
+   "experienceLevel": "Mid-Senior level",
+   "contractType": "Full-time",
+   "workType": "IT Services and IT Consulting",
+   "sector": "",
+   "salary": "",
+   "applyType": "EASY_APPLY",
+   "applyUrl": "",
+   "applicationsCount": "42 applicants",
+   "description": "Job Title : Sr Java Developer Location : Riverwoods IL Type : FTE no C2C or C2H Mode : Hybrid Visa : No Sponsorship Available. Java 17, Spring Boot, microservices, REST APIs, AWS."
+  },
+  {
+   "id": "4471918596",
+   "url": "https://www.linkedin.com/jobs/view/software-engineer-at-kobie-4471918596",
+   "title": "Software Engineer",
+   "location": "Columbus, OH",
+   "postedDate": "2026-11-12T00:00:00.000Z",
+   "postedTimeAgo": "34 minutes ago",
+   "companyName": "Kobie",
+   "recruiterName": "",
+   "recruiterUrl": "",
+   "contractType": "Full-time",
+   "workType": "Marketing Services",
+   "salary": "$120,000.00/yr - $140,000.00/yr",
+   "applyType": "EASY_APPLY",
+   "applyUrl": "",
+   "description": "As a remote-first organization we hire across the US. You will build Java and Spring Boot microservices with REST APIs, React front ends, PostgreSQL and AWS. 5+ years of experience."
+  },
+  {
+   "id": "4489509129",
+   "url": "https://www.linkedin.com/jobs/view/full-stack-java-developer-at-fiserv-4489509129",
+   "title": "Full-Stack Java Developer",
+   "location": "Alpharetta, GA",
+   "postedDate": "2026-11-12T00:00:00.000Z",
+   "postedTimeAgo": "1 hour ago",
+   "companyName": "Fiserv",
+   "recruiterName": "",
+   "contractType": "Full-time",
+   "salary": "",
+   "applyType": "EXTERNAL",
+   "applyUrl": "https://www.careers.fiserv.com/job/alpharetta/full-stack-java-developer/1758/123",
+   "description": "Full-stack Java developer: Java, Spring Boot, Angular, SQL, Kubernetes. This role is based in our Alpharetta office."
+  },
+  {
+   "title": "Java Full Stack Developer",
+   "company": "Acme Corp",
+   "location": "Dallas, TX",
+   "jobUrl": "https://www.linkedin.com/jobs/view/4312345678/?trk=public_jobs",
+   "applyUrl": "https://www.linkedin.com/jobs/view/4312345678/",
+   "description": "We are hiring a Java Full Stack Developer. Java 17, Spring Boot, microservices, REST, React, AWS, PostgreSQL. Visa sponsorship is available. 5+ years of experience.",
+   "datePosted": "2026-11-12T10:00:00Z",
+   "postedDaysAgo": 0,
+   "isRemote": true,
+   "locationType": "remote",
+   "salaryMin": 130000,
+   "salaryMax": 150000,
+   "salaryCurrency": "USD",
+   "salaryInterval": "year",
+   "employmentType": "fulltime",
+   "site": "linkedin",
+   "alsoOn": [
+    "indeed"
+   ],
+   "emails": [
+    "jane.roe@acmecorp.com"
+   ],
+   "jobPosterName": "Jane Roe",
+   "jobPosterTitle": "Technical Recruiter",
+   "country": "US"
+  },
+  {
+   "title": "Java Full Stack Developer",
+   "company": "Acme Corp",
+   "location": "Dallas, TX",
+   "jobUrl": "https://www.indeed.com/viewjob?jk=a1b2c3d4e5f60708",
+   "description": "Same job, cross-posted on Indeed.",
+   "datePosted": "2026-11-12T11:00:00Z",
+   "isRemote": true,
+   "site": "indeed"
+  },
+  {
+   "title": "Senior Java Developer",
+   "company": "Globex",
+   "location": "Remote",
+   "jobUrl": "https://www.indeed.com/viewjob?jk=0f0e0d0c0b0a0908",
+   "applyUrl": "https://boards.greenhouse.io/globex/jobs/123456",
+   "description": "Java, Spring Boot, Kafka, AWS, microservices. We are unable to sponsor visas for this role.",
+   "datePosted": "2026-11-12T08:00:00Z",
+   "isRemote": true,
+   "salaryMin": 70,
+   "salaryMax": 75,
+   "salaryCurrency": "USD",
+   "salaryInterval": "hour",
+   "employmentType": "contract",
+   "site": "indeed"
+  },
+  {
+   "recordType": "company",
+   "company": "Globex",
+   "openJobs": 14
+  },
+  {
+   "id": "in-77aa88bb99cc0011",
+   "title": "Java Backend Developer",
+   "company": "Initech",
+   "location": "Austin, TX, US",
+   "job_url": "https://www.indeed.com/viewjob?jk=77aa88bb99cc0011",
+   "job_url_direct": "https://www.indeed.com/viewjob?jk=77aa88bb99cc0011",
+   "site": "indeed",
+   "date_posted": "2026-11-11",
+   "job_type": "contract",
+   "is_remote": true,
+   "salary_min": 60,
+   "salary_max": 65,
+   "salary_currency": "USD",
+   "salary_interval": "hourly",
+   "description": "Java backend developer: Java 11+, Spring Boot, REST APIs, SQL, Docker, Kubernetes, AWS. C2C or W2."
+  },
+  {
+   "title": "Java Developer",
+   "company": "Umbrella",
+   "location": "Remote",
+   "jobUrl": "https://www.linkedin.com/jobs/view/4300000001/",
+   "description": "Java, Spring Boot, React, AWS.",
+   "postedDaysAgo": 5,
+   "isRemote": true,
+   "site": "linkedin"
+  },
+  {
+   "company": "No Title Inc",
+   "jobUrl": "https://www.linkedin.com/jobs/view/4300000002/",
+   "site": "linkedin"
+  },
+  {
+   "recordType": "job",
+   "title": "Java Fullstack Developer",
+   "company": "Citi",
+   "location": "Pune Division, Maharashtra, India",
+   "isRemote": false,
+   "locationType": "onsite",
+   "jobType": "fulltime",
+   "datePosted": "2026-11-12",
+   "postedDaysAgo": 1,
+   "site": "linkedin",
+   "jobUrl": "https://www.linkedin.com/jobs/view/4471234567",
+   "description": "Java, Spring Boot, Angular, microservices.",
+   "country": "IN"
+  },
+  {
+   "jobId": "151f70fb-b4cf-4eab-aacc-4b4b40ae547c",
+   "title": "Java Full Stack Developer",
+   "company": "Codeforce 360",
+   "location": "Remote",
+   "postedDate": "2026-11-12T19:34:08Z",
+   "modifiedDate": "2026-11-12T19:34:08Z",
+   "salary": "$65 - $80",
+   "salaryMin": 65,
+   "salaryMax": 80,
+   "salaryCurrency": "USD",
+   "salaryPeriod": "hour",
+   "employmentType": "Full-time, Third Party",
+   "employmentTypes": [
+    "Full-time",
+    "Third Party"
+   ],
+   "isRemote": true,
+   "workplaceTypes": [
+    "Remote"
+   ],
+   "easyApply": true,
+   "employerType": "Recruiter",
+   "isExpired": false,
+   "description": "Employment Type: Full-Time / W-2 opportunities. Hiring a Java Full Stack Developer: Java, Spring Boot, Hibernate, REST APIs and microservices, JavaScript, React, SQL, AWS.",
+   "skills": [
+    "Java",
+    "SQL"
+   ],
+   "jobUrl": "https://www.dice.com/job-detail/151f70fb-b4cf-4eab-aacc-4b4b40ae547c",
+   "searchQuery": "Java Full Stack Developer"
+  },
+  {
+   "jobId": "60227dc7-0bea-453e-af73-1a951df9a0e3",
+   "title": "Java Backend Developer",
+   "company": "JC Corporations",
+   "location": "Remote",
+   "postedDate": "2026-11-12T14:34:02Z",
+   "salary": "70 - 100",
+   "salaryMin": 70,
+   "salaryMax": 100,
+   "salaryCurrency": "USD",
+   "salaryPeriod": "hour",
+   "employmentTypes": [
+    "Third Party",
+    "Contract"
+   ],
+   "isRemote": true,
+   "workplaceTypes": [
+    "Remote"
+   ],
+   "easyApply": true,
+   "isExpired": true,
+   "description": "Java, Spring Boot, microservices.",
+   "jobUrl": "https://www.dice.com/job-detail/60227dc7-0bea-453e-af73-1a951df9a0e3"
+  }
+ ]
+}

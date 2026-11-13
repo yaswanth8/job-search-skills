@@ -309,6 +309,226 @@ def saryom_checks():
     return out
 
 
+class _Apify(http.server.BaseHTTPRequestHandler):
+    """Stands in for api.apify.com: a good token gets the fixture items, others the errors Apify sends."""
+    items = []
+    paths = []
+
+    def do_POST(self):
+        _Apify.paths.append(self.path)
+        body = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        auth = self.headers.get("Authorization", "")
+        if auth == "Bearer apify_api_good":
+            code, out = 201, json.dumps(self.items if json.loads(body or b"{}") else [])
+        elif auth == "Bearer apify_api_broke":
+            code, out = 402, json.dumps({"error": {"type": "not-enough-usage-to-run-paid-actor", "message": "Monthly usage limit exceeded"}})
+        else:
+            code, out = 401, json.dumps({"error": {"type": "token-not-valid", "message": "Authentication token is not valid"}})
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(out.encode())
+
+    def log_message(self, *a):
+        pass
+
+
+def apify_checks():
+    """Apify search (2.0.0): the per-portal Actor calls, the conversion to postings vet.py reads, what each API
+    failure tells Claude to do next, and the job details that reach the tracker."""
+    import subprocess
+    import apify_jobs
+    out = []
+
+    def check(name, problems, got=""):
+        out.append({"suite": "apify", "id": name, "passed": not problems, "got": got, "why": "", "problems": problems, "note": ""})
+
+    ev = HERE.parent / "evals"
+    fixture = json.loads((ev / "apify_items.json").read_text())
+    fx = load_profile(ev / "fixture_profile.json")
+    now = dt.datetime.fromisoformat(fixture["now"].replace("Z", "+00:00"))
+    posts, summ = apify_jobs.convert_items(fixture["items"], now)
+    by = {p["id"]: p for p in posts}
+
+    want = ["li-4489264912", "li-4471918596", "li-4489509129", "li-4312345678", "indeed-0f0e0d0c0b0a0908", "indeed-77aa88bb99cc0011",
+            "li-4300000001", "dice-151f70fb-b4cf-4eab-aacc-4b4b40ae547c"]
+    probs = [] if sorted(by) == sorted(want) else [f"ids {sorted(by)}"]
+    probs += [] if summ["duplicates"] == 1 and summ["dropped"] == 2 and summ["not_us"] == 1 and summ["expired"] == 1 else [f"summary {summ}"]
+    check("convert keeps jobs; drops company rows, untitled rows, cross-posts, non-US rows and expired Dice jobs", probs, f"{len(posts)} postings")
+
+    c = by.get("li-4489264912", {})
+    probs = [] if c.get("link") == "https://www.linkedin.com/jobs/view/4489264912/" else [f"link {c.get('link')} (must match tracker links so seen.txt dedupes)"]
+    probs += [] if c.get("apply_type") == "easy_apply" and c.get("age_hours") == 4 and c.get("employment_type") == "Full-Time" else [f"{c.get('apply_type')} age {c.get('age_hours')} {c.get('employment_type')}"]
+    probs += [] if (c.get("poster") or {}).get("name") == "Pat Lee" and "pat-lee" in (c.get("poster") or {}).get("url", "") else [f"poster {c.get('poster')}"]
+    f_ = by.get("li-4489509129", {})
+    probs += [] if f_.get("apply_type") == "company_site" and "fiserv" in (f_.get("apply_url") or "") else [f"external apply {f_.get('apply_type')} {f_.get('apply_url')}"]
+    probs += [] if by.get("li-4471918596", {}).get("age_hours") == 0.6 and by["li-4471918596"].get("pay", "").startswith("$120,000") else [f"kobie {by.get('li-4471918596', {}).get('age_hours')} {by.get('li-4471918596', {}).get('pay')}"]
+    check("a LinkedIn Actor row: Easy Apply flag, exact age, recruiter, canonical link", probs)
+
+    a, g, i = by.get("li-4312345678", {}), by.get("indeed-0f0e0d0c0b0a0908", {}), by.get("indeed-77aa88bb99cc0011", {})
+    probs = [] if a.get("pay") == "$130,000-$150,000/yr" and a.get("age_hours") == 16.5 and a.get("work_type") == "Remote" else [f"acme {a.get('pay')} {a.get('age_hours')} {a.get('work_type')}"]
+    probs += [] if "contacts: jane.roe@acmecorp.com" in a.get("description", "") and (a.get("poster") or {}).get("name") == "Jane Roe" else ["emails and poster must reach vet.py like the js snippets' lines"]
+    probs += [] if g.get("apply_type") == "company_site" and "greenhouse" in (g.get("apply_url") or "") else [f"apply {g.get('apply_type')} {g.get('apply_url')}"]
+    # A date with no time counts from the end of that day (a live run read every job as 26 h old and a 24-hour run skipped them all).
+    probs += [] if i.get("pay") == "$60-$65/hr" and i.get("employment_type") == "Contract" and i.get("age_hours") == 26.5 else [f"jobspy: {i.get('pay')} {i.get('employment_type')} {i.get('age_hours')}"]
+    check("Indeed rows: pay, company-site apply links, date-only ages, JobSpy field names", probs)
+
+    dj = by.get("dice-151f70fb-b4cf-4eab-aacc-4b4b40ae547c", {})
+    probs = [] if dj.get("link") == "https://www.dice.com/job-detail/151f70fb-b4cf-4eab-aacc-4b4b40ae547c" and dj.get("source") == "Dice" else [f"{dj.get('link')} {dj.get('source')}"]
+    probs += [] if dj.get("work_type") == "Remote" and dj.get("pay") == "$65-$80/hr" and dj.get("age_hours") == 6.9 and dj.get("apply_type") == "dice" else [f"{dj.get('work_type')} {dj.get('pay')} {dj.get('age_hours')} {dj.get('apply_type')}"]
+    check("a Dice Actor row: workplace, hourly pay, exact age, Dice apply", probs)
+
+    seen = {"https://www.linkedin.com/jobs/view/4300000001/"}
+    dec = {p["id"]: vet(p, dict(fx, window_hours=48), "full", seen) for p in posts}
+    exp = {"li-4489264912": ("skip", "Sponsorship / authorization"), "li-4471918596": ("apply", None), "li-4489509129": ("skip", "Location"),
+           "li-4312345678": ("apply", None), "indeed-0f0e0d0c0b0a0908": ("skip", "Sponsorship / authorization"),
+           "indeed-77aa88bb99cc0011": ("apply", None), "li-4300000001": ("skip", "Stale / duplicate"),
+           "dice-151f70fb-b4cf-4eab-aacc-4b4b40ae547c": ("apply", None)}
+    probs = [f"{k}: {dec[k]['action']} {dec[k]['category']} {dec[k]['reasons'][:1]}" for k, (act_, cat) in exp.items()
+             if k in dec and (dec[k]["action"] != act_ or (cat and dec[k]["category"] != cat))]
+    check("vet.py --mode full decides from Apify data without opening pages", probs + [k for k in exp if k not in dec])
+
+    # ---- the calls
+    calls = apify_jobs.build_calls(fx, 24, ["LinkedIn", "Indeed", "Dice"], seen={"https://www.linkedin.com/jobs/view/4300000001/"})
+    cb = {c_["name"]: c_ for c_ in calls}
+    probs = [] if list(cb) == ["linkedin", "indeed", "indeed-onsite", "dice"] else [f"calls {list(cb)}"]
+    li_in = cb.get("linkedin", {}).get("input", {})
+    probs += [] if " OR " in li_in.get("keywords", "") and li_in.get("keywords", "").endswith("remote") and li_in.get("location") == "United States" else [f"linkedin keywords {li_in.get('keywords')!r}"]
+    probs += [] if li_in.get("datePosted") == "r86400" and li_in.get("limit") == 25 and li_in.get("skipJobId") == ["4300000001"] else [f"linkedin {li_in.get('datePosted')} {li_in.get('limit')} {li_in.get('skipJobId')}"]
+    in_in, on_in = cb.get("indeed", {}).get("input", {}), cb.get("indeed-onsite", {}).get("input", {})
+    # "Remote" as the location searched LinkedIn and Indeed worldwide (live run: 15 of 20 rows abroad): search the US with the remote filter.
+    probs += [] if in_in.get("location") == "United States" and in_in.get("remoteOnly") is True and in_in.get("boards") == ["indeed"] and in_in.get("searchEmployerBoards") == 0 else [f"indeed {in_in}"]
+    probs += [] if on_in.get("location") == "Illinois\nMissouri\nWisconsin" and not on_in.get("remoteOnly") and on_in.get("results", 99) <= in_in.get("results", 0) else [f"indeed-onsite {on_in}"]
+    d_in = cb.get("dice", {}).get("input", {})
+    probs += [] if d_in.get("searchQueries") == fx["search"]["titles"][:2] and d_in.get("remoteOnly") is True and d_in.get("postedWithinDays") == "ONE" and d_in.get("fetchDescription") is True else [f"dice {d_in}"]
+    probs += [] if "intern" not in in_in.get("excludeTitleKeywords", ["intern"]) and "architect" in in_in.get("excludeTitleKeywords", []) and "intern" in li_in.get("titleExclude", []) else ["Indeed's Actor matches exclusions as substrings: short words like intern or etl must not be sent to it"]
+    check("one Actor call per portal, built from the profile", probs, ", ".join(cb))
+
+    probs = [f"{c_['name']}: actor {c_['actor']} is not on the free-plan list" for c_ in calls if c_["actor"] not in apify_jobs.FREE_PLAN_ACTORS]
+    probs += [f"{c_['name']}: no dollar cap" for c_ in calls if not 0 < c_["call_options"].get("maxTotalChargeUsd", 0) <= 0.1]
+    probs += [f"{c_['name']}: no fields list (HTML and logos would flood the chat)" for c_ in calls if "description" not in c_.get("fields", "") or "Html" in c_.get("fields", "")]
+    big = apify_jobs.build_calls(fx, 24, ["LinkedIn", "Indeed", "Dice"], max_per_portal=5000)
+    probs += [] if all(apify_jobs.rows_asked(c_) <= apify_jobs.HARD_CAP for c_ in big) else ["a call must never ask for more than the hard cap"]
+    est = sum(c_["est_cost_usd"] for c_ in calls)
+    probs += [] if est <= 0.10 else [f"a default run is estimated at ${est:.3f}; keep it near 6 cents so daily runs fit in $5 a month"]
+    check("every call is capped and uses a pay-per-result Actor", probs, f"about ${est:.3f} a run")
+
+    c72 = {c_["name"]: c_["input"] for c_ in apify_jobs.build_calls(fx, 72, ["LinkedIn", "Indeed", "Dice"])}
+    probs = [] if c72["linkedin"]["datePosted"] == "r604800" and c72["indeed"]["postedWithinHours"] == 72 and c72["dice"]["postedWithinDays"] == "THREE" else [str({k: v.get("datePosted") or v.get("postedWithinHours") or v.get("postedWithinDays") for k, v in c72.items()})]
+    allp = dict(fx, locations=dict(fx["locations"], onsite_states=sorted(STATES.values())))
+    nat = {c_["name"]: c_["input"] for c_ in apify_jobs.build_calls(allp, 24, ["LinkedIn", "Indeed", "Dice"])}
+    probs += [] if list(nat) == ["linkedin", "indeed", "dice"] and "remote" not in nat["linkedin"]["keywords"] and not nat["indeed"].get("remoteOnly") and not nat["dice"].get("remoteOnly") else [f"nationwide {list(nat)} {nat['linkedin']['keywords'][-20:]}"]
+    only = [c_["name"] for c_ in apify_jobs.build_calls(fx, 24, ["Dice"])]
+    probs += [] if only == ["dice"] else [f"portals=Dice gave {only}"]
+    off = apify_jobs.build_calls(dict(fx, search=dict(fx["search"], apify={"enabled": False})), 24, ["LinkedIn", "Indeed", "Dice"])
+    probs += [] if off == [] else ["search.apify.enabled false must switch Apify off"]
+    check("windows, a nationwide profile, chosen portals and the off switch", probs)
+
+    plan = build_search_plan(fx, 24, mode="save")
+    left = apify_jobs.mark_covered(plan, calls)
+    lb = sorted({(s["portal"], s["bucket"].split(" · ")[0]) for s in left})
+    probs = [] if all(s.get("covered_by") == "apify" for s in plan["job_searches"] if s["bucket"].startswith("Remote US")) else ["remote searches on all three portals belong to Apify"]
+    probs += [] if lb == sorted((p_, n_) for p_ in ("LinkedIn", "Dice") for n_ in ("Illinois", "Missouri", "Wisconsin")) else [f"left for the browser: {lb}"]
+    check("the browser keeps only the searches Apify does not cover", probs, f"{len(left)} page loads instead of {len(plan['job_searches'])}")
+    r = subprocess.run([sys.executable, "-B", str(HERE / "plan.py"), "--profile", str(ev / "fixture_profile.json"), "--hours", "24", "--post-hours", "0", "--mode", "save",
+                        "--portals", "Indeed,Dice", "--apify", "Indeed,Dice"], capture_output=True, text=True)
+    pj = json.loads(r.stdout) if r.returncode == 0 else {}
+    probs = [] if r.returncode == 0 else [r.stderr.strip()[-200:]]
+    probs += [] if pj.get("post_searches") == [] and [c_["name"] for c_ in pj.get("apify_calls", [])] == ["indeed", "indeed-onsite", "dice"] else [f"posts {len(pj.get('post_searches', [0]))}, calls {[c_['name'] for c_ in pj.get('apify_calls', [])]}"]
+    probs += [] if {s_["portal"] for s_ in pj.get("job_searches", [])} == {"Indeed", "Dice"} and pj.get("browser_page_loads") == 3 else [f"portals {sorted({s_['portal'] for s_ in pj.get('job_searches', [])})}, browser loads {pj.get('browser_page_loads')}"]
+    check("plan.py: chosen portals only, no posts with --post-hours 0, browser load count", probs)
+
+    # ---- reading results
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        (d / "saved.json").write_text(json.dumps([{"type": "text", "text": json.dumps({"datasetId": "x", "items": fixture["items"][:3], "itemCount": 3})}]))
+        (d / "plain.json").write_text(json.dumps({"items": fixture["items"][11:12]}))
+        got = apify_jobs.load_items(d / "saved.json") + apify_jobs.load_items(d / "plain.json")
+        check("convert reads a connector result saved by the app as well as a plain list", [] if len(got) == 4 and got[0].get("id") == "4489264912" else [f"{len(got)} items"])
+
+        # ---- the tracker row carries the job's details, so a person with no browser can read and apply from the dashboard
+        (d / "p.json").write_text(json.dumps(posts)); (d / "dec.json").write_text(json.dumps([dict(v, id=k) for k, v in dec.items()]))
+        r = subprocess.run([sys.executable, "-B", str(HERE / "tracker.py"), "new", str(d / "dec.json"), str(d / "p.json"), "--out", str(d / "new.json"), "--save"], capture_output=True, text=True)
+        rows = {x["id"]: x for x in json.loads((d / "new.json").read_text())} if r.returncode == 0 else {}
+        k = rows.get("li-4471918596", {})
+        probs = [] if r.returncode == 0 else [r.stderr.strip()[-200:]]
+        probs += [] if k.get("status") == "Review" and k.get("reviewReason") == "ready" and k.get("source") == "LinkedIn Easy Apply" and k.get("easyApply") is True else [f"kobie {k.get('status')} {k.get('reviewReason')} {k.get('source')} {k.get('easyApply')}"]
+        probs += [] if "remote-first" in k.get("desc", "") and k.get("via") == "apify" and k.get("postedAt", "").startswith("2026-11-1") else [f"desc/via/postedAt {k.get('desc', '')[:30]!r} {k.get('via')} {k.get('postedAt')}"]
+        acme = rows.get("li-4312345678", {})
+        probs += [] if "contacts:" not in acme.get("desc", "x contacts:") and acme.get("contactEmail") == "jane.roe@acmecorp.com" else ["the contacts line belongs in the Contact fields, not in the description"]
+        long_ = tracker.clean_desc("Java " * 2000)
+        probs += [] if len(long_) <= tracker.DESC_MAX + 1 and long_.endswith("…") else [f"long descriptions are cut to {tracker.DESC_MAX} characters, got {len(long_)}"]
+        r2 = subprocess.run([sys.executable, "-B", str(HERE / "tracker.py"), "check", str(d / "new.json")], capture_output=True, text=True)
+        probs += [] if r2.returncode == 0 else ["tracker.py check: " + r2.stdout[-200:]]
+        check("tracker rows carry the description, posting time, source route and Easy Apply flag", probs)
+
+        r = subprocess.run([sys.executable, "-B", str(HERE / "tracker.py"), "table", str(d / "new.json")], capture_output=True, text=True)
+        probs = [] if r.returncode == 0 and "| Kobie |" in r.stdout and "linkedin.com/jobs/view/4471918596" in r.stdout and "Capgemini" not in r.stdout else [(r.stdout + r.stderr)[-200:]]
+        check("tracker.py table lists the jobs to act on for the chat report", probs)
+
+    # ---- the run log says where each portal's jobs came from
+    run_ = tracker.new_run("save", 24, 0, ("LinkedIn", "Indeed", "Dice"), "off", 1, "2026-01-05", apify=("LinkedIn", "Indeed", "Dice"), browser=False)
+    block = tracker.progress_block(run_)
+    probs = [] if [s["key"] for s in run_["steps"]] == ["setup", "linkedin", "indeed", "dice", "report"] else [f"no browser and no posts window: {[s['key'] for s in run_['steps']]}"]
+    probs += [] if "LinkedIn (Apify)" in block and "posts" not in block.splitlines()[0] else [block.splitlines()[0]]
+    table = tracker.criteria_table(fx, run_)
+    probs += [] if "Apify" in table and "no browser" in table.lower() else ["the criteria table should say the jobs come through Apify and that no browser is in use"]
+    check("the run log and criteria table name the route (Apify, browser, or both)", probs)
+
+    # ---- the API route (Claude Code, or a sandbox allowed to reach api.apify.com)
+    def run(fn, **kw):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(io.StringIO()):
+            try:
+                fn(types.SimpleNamespace(**kw))
+                code = 0
+            except SystemExit as e:
+                code = e.code if isinstance(e.code, int) else 1
+        return code, buf.getvalue()
+
+    os.environ["NO_PROXY"] = os.environ["no_proxy"] = "127.0.0.1,localhost"
+    _Apify.items = fixture["items"]
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        (d / "plan.json").write_text(json.dumps({"apify_calls": calls}))
+        for name, tok in (("good", "apify_api_good"), ("bad", "apify_api_revoked"), ("broke", "apify_api_broke")):
+            (d / name).write_text(tok + "\n")
+        srv = http.server.HTTPServer(("127.0.0.1", 0), _Apify)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        base = f"http://127.0.0.1:{srv.server_address[1]}"
+        kw = dict(plan=str(d / "plan.json"), out_dir=str(d / "items"), url=base, only=None)
+        try:
+            _Apify.paths.clear()
+            code, text = run(apify_jobs.cmd_run, token_file=str(d / "good"), **kw)
+            files = sorted(f.name for f in (d / "items").glob("*.json"))
+            probs = [] if code == 0 and text.count("FETCHED") == 4 and files == ["apify-dice.json", "apify-indeed-onsite.json", "apify-indeed.json", "apify-linkedin.json"] else [f"exit {code}: {text.strip()[:120]} {files}"]
+            probs += [] if "apify_api_good" not in text and all("apify_api_good" not in f.read_text() for f in (d / "items").glob("*.json")) else ["the token must never be printed or saved"]
+            check("run fetches every call with a good token", probs, f"{len(files)} files")
+            q = [p_ for p_ in _Apify.paths if "valig~linkedin-jobs-scraper" in p_]
+            check("every API run carries a hard item and dollar cap",
+                  [] if q and "maxItems=25" in q[0] and "maxTotalChargeUsd=0.05" in q[0] else [str(_Apify.paths[:1])[-100:]])
+            n = len(_Apify.paths)
+            (d / "bad-plan.json").write_text(json.dumps({"apify_calls": [dict(calls[0], actor="someone/rental-linkedin-scraper")]}))
+            code, text = run(apify_jobs.cmd_run, token_file=str(d / "good"), **dict(kw, plan=str(d / "bad-plan.json")))
+            check("an Actor outside the free-plan list is refused before anything is sent",
+                  [] if code != 0 and "NOT ALLOWED" in text and len(_Apify.paths) == n else [f"exit {code}: {text.strip()[:90]}"], f"exit {code}")
+            code, text = run(apify_jobs.cmd_run, token_file=str(d / "bad"), **kw)
+            check("a refused token says to ask for a new one", [] if code == 2 and "REFUSED" in text and "apify_api_revoked" not in text and text.count("REFUSED") == 1 else [f"exit {code}: {text.strip()[:90]}"], f"exit {code}")
+            code, text = run(apify_jobs.cmd_run, token_file=str(d / "broke"), **kw)
+            check("used-up monthly credit means use the browser", [] if code == 4 and "OUT OF CREDIT" in text and "browser" in text else [f"exit {code}: {text.strip()[:90]}"], f"exit {code}")
+        finally:
+            srv.shutdown()
+            srv.server_close()
+        code, text = run(apify_jobs.cmd_run, token_file=str(d / "good"), **kw)   # nothing is listening now
+        check("unreachable means use the connector or the browser", [] if code == 3 and "UNREACHABLE" in text and "another route" in text else [f"exit {code}: {text.strip()[:90]}"], f"exit {code}")
+        old = os.environ.pop("APIFY_TOKEN", None)
+        code, _ = run(apify_jobs.cmd_run, token_file=None, **kw)
+        if old is not None:
+            os.environ["APIFY_TOKEN"] = old
+        check("no token is an error before anything is sent", [] if code == 1 else [f"exit {code}"])
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--profile", default=str(HERE.parent / "evals" / "fixture_profile.json"))
@@ -404,7 +624,7 @@ def main():
         probs += [f"missing '{x}'" for x in e["linkedin_url_contains"] if x not in urls] + [f"24h plan missing '{x}'" for x in e["hours_24_contains"] if x not in urls24]
         results.append({"suite": "plan", "id": "search-plan", "passed": not probs, "got": f"{plan['total_page_loads']} page loads", "why": "", "problems": probs, "note": ""})
 
-    results += progress_checks() + saryom_checks() + [
+    results += progress_checks() + saryom_checks() + apify_checks() + [
         {"suite": "employers", "id": i, "passed": not pr, "got": "", "why": w, "problems": pr, "note": ""} for i, w, pr in employer_feed_checks()] + [
         {"suite": "backtest", "id": i, "passed": not pr, "got": "", "why": w, "problems": pr, "note": ""} for i, w, pr in backtest_checks()]
 

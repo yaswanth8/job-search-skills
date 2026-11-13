@@ -243,6 +243,11 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
 
     # 4. location
     wt = parse_work_type(posting)
+    # LinkedIn lists the office city even for remote jobs: "- US Remote" in the title is the workplace then
+    # (but "Remote Sensing" is a field).
+    if wt is None and re.search(r"\bremote\b(?!\s+(sensing|control|access|support|monitoring|desktop|operations))", title, re.I) \
+            and not re.search(r"hybrid|on-?site", title, re.I):
+        wt = "Remote"
     states = parse_states(location)
     res_m = re.search(r"\b([A-Z]{2})\s+[Rr]esident", title + " " + desc) or re.search(
         r"(?:must be|candidates must be)\s+(?:a\s+)?([A-Za-z]+)\s+residents?", title + " " + desc, re.I)
@@ -259,7 +264,7 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
             res["flags"].append("work location state unclear")
     if wt is None:
         res["flags"].append("work type not stated")
-        if states and not (set(states) & set(profile["locations"]["onsite_states"])) and mode in ("full", "post") and not re.search(r"\bremote\b", desc, re.I):
+        if states and not (set(states) & set(profile["locations"]["onsite_states"])) and mode in ("full", "post") and not re.search(r"\bremote\b|telecommut|work from home|\bwfh\b", desc, re.I):
             return _skip(res, "Location", f"office in {', '.join(states)} and remote not mentioned")
 
     # 5. pay floor (from the card or posting pay field)

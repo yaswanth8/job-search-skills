@@ -78,7 +78,7 @@
    "informatica",
    "electrical",
    "mechanical",
-   "café",
+   "caf\u00e9",
    "cafe",
    "merchandising"
   ]
@@ -262,6 +262,12 @@
   "post_window_hours": 12,
   "include_company_site": false,
   "max_open_per_search": 12,
-  "browser_by_portal": {}
+  "browser_by_portal": {},
+  "apify": {
+   "enabled": "auto",
+   "max_per_portal": 25,
+   "max_charge_usd_per_call": 0.05,
+   "allowed_actors": []
+  }
  }
 }

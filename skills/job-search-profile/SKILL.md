@@ -5,6 +5,8 @@ description: "Personal job-search profile: resume facts, work authorization, tar
 
 # Job Search Profile: <Your name>
 
+Template 2.0 (for `us-job-search-automation` 2.x). A profile saved from an older template keeps working: new settings take their defaults until you set them.
+
 The single source of candidate data for `us-job-search-automation`. Every fact that goes on an application comes from here or from the resume, so a gap becomes a question or a skipped job, never a guess.
 
 **Quickest way to fill this in:** in a new chat, attach your resume and say "set up my job-search profile". Claude reads the resume, asks what it can't tell (visa status, locations, pay, standard answers), and proposes the filled version for you to save. To edit by hand instead, replace every `<...>` and `TODO`, then set `"profile_status"` to `"READY"`.
@@ -31,14 +33,17 @@ Sponsorship counts as Verified only when a posting says so. A posting that says 
 ## Locations
 Remote: <anywhere in the US, or your state only>. Hybrid or on-site only in: <states>. Willing to relocate: <Yes/No>.
 
-## Portals
-Browser: Chrome, signed in to LinkedIn, Indeed and Dice. Default windows: job postings from the last 48 hours (`window_hours`), recruiter posts from the last 12 hours (`search.post_window_hours`). Each run asks before searching; these are what it uses when you don't say. Extra search strings beyond the target titles go in `search_queries`; Boolean ("Full Stack" AND Java AND (React OR Angular)) works on LinkedIn and Dice.
+## Search sources
+Jobs come from LinkedIn, Indeed and Dice. Claude searches them through **Apify** when your chat has the Apify connector (your own free account at apify.com, no payment card; about 6 cents of the free $5 a month per run), and in the **browser** otherwise. Applying always needs the browser: Chrome with the Claude in Chrome extension (paid Claude plans), signed in to the three portals. With Apify alone, Claude saves the jobs and you apply from the dashboard.
+Default windows: job postings from the last 48 hours (`window_hours`), recruiter posts from the last 12 hours (`search.post_window_hours`). Each run asks before searching; these are what it uses when you don't say. Extra search strings beyond the target titles go in `search_queries`; Boolean ("Full Stack" AND Java AND (React OR Angular)) works on LinkedIn in the browser.
 LinkedIn geoIds (Claude looks these up on the first run): United States 103644278; <your states>.
 The JSON `search` block drives each run's searches:
 - `titles`: your role titles. One combined search per location covers them all.
 - `post_queries`: keywords for LinkedIn recruiter posts, for example `Java AND (C2C OR W2 OR contract) AND (hiring OR requirement)`. Matches go to the tracker as "Reach out" with the recruiter's contact details.
 - `linkedin_geo_ids`: LinkedIn's location ids keyed by state code. Claude looks up your states on the first run.
 - `include_company_site`: true to also list LinkedIn jobs that apply on company sites.
+- `browser_by_portal`: which browser Claude uses for each portal, saved after the first run that asks.
+- `apify`: `"enabled": "auto"` uses Apify whenever the chat can reach it; `false` switches it off. `max_per_portal` (default 25, at most 100) is how many jobs each portal returns per run. Never put an Apify token in this file.
 
 ## Years of experience
 The years you state for forms go in `verified_years`, for example `{"java": 8, "react": 5}`. Any skill not listed there is computed from the resume's role dates, rounded down. Claude flags any stated figure that runs well ahead of the resume, because interviewers check.
@@ -93,7 +98,7 @@ The `stack` section is set up for a Java developer. For another language, change
   "missing": ["golang", "camunda", "jbpm", "bpm", "informatica", "ibm ace", "iib", "itx", "jsf", "primefaces", "intapp", "boomi", "langgraph", "langchain", "llm", "llms", "rag", "generative ai", "genai", "agentic", "spark", "pyspark", "data engineering", "airflow", "snowflake", "databricks", ".net", "c#", "salesforce", "apex", "identity-proofing", "identity proofing", "nist 800-63", "data architecture", "data modeling", "data pipelines"],
   "missing_regex_cs": ["~Go~(?! (to|through|live|ahead|beyond|above|back|out|over|forward)~)"]
  },
- "search": {"titles": ["<Role title 1, e.g. Java Full Stack Developer>", "<Role title 2>", "<Role title 3>"], "post_queries": ["<keywords for recruiter posts, e.g. Java AND (C2C OR W2 OR contract) AND (hiring OR requirement)>"], "linkedin_geo_ids": {"US": "103644278"}, "post_window_hours": 12, "include_company_site": false, "max_open_per_search": 12},
+ "search": {"titles": ["<Role title 1, e.g. Java Full Stack Developer>", "<Role title 2>", "<Role title 3>"], "post_queries": ["<keywords for recruiter posts, e.g. Java AND (C2C OR W2 OR contract) AND (hiring OR requirement)>"], "linkedin_geo_ids": {"US": "103644278"}, "post_window_hours": 12, "include_company_site": false, "max_open_per_search": 12, "browser_by_portal": {}, "apify": {"enabled": "auto", "max_per_portal": 25}},
  "domains_have": ["<industries you have worked in, e.g. banking>"],
  "industries": ["entertainment", "legal", "law firm", "retail", "healthcare", "health care", "insurance", "government", "public sector", "media", "gaming", "pharma", "pharmaceutical", "energy", "utilities", "e-commerce", "ecommerce", "hospitality", "education", "manufacturing", "logistics", "aviation", "defense"],
  "barrier_patterns": ["desired (hourly )?(compensation|rate|salary|pay)", "hours per week", "create an account", "identity verification", "video (introduction|interview) required", "coding (assessment|test) required before"],

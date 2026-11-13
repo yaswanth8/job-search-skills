@@ -8,7 +8,7 @@
 3. **Title**:
    - Seniority words (lead, principal, staff, architect, manager, junior, entry level, associate), or a years figure above `max_years_required` ("15+ years", "15+Year EXP"). → Seniority
    - Off-target role words (.NET, Salesforce, ServiceNow, data engineer, mobile, QA...), or none of the target words. → Role mismatch
-4. **Location**: hybrid or on-site outside `onsite_states`, or a residency requirement for another state. Dice's "Remote in <city>" header is a search label: the workplace field decides. → Location
+4. **Location**: hybrid or on-site outside `onsite_states`, or a residency requirement for another state. Dice's "Remote in <city>" header is a search label: the workplace field decides. LinkedIn lists the office city even for remote jobs, so "Remote" in the title counts as the workplace ("Remote Sensing" does not), and "telecommute" or "work from home" in the text counts as remote wording. → Location
 5. **Listed pay** below the floor. The top of the range counts; a range that only starts below it is flagged. Monthly pay is multiplied by 12. → Pay below floor
 6. *(card mode stops here: "open")*
 7. **Authorization**: `auth.exclude_patterns` → Sponsorship / authorization (Excluded). A profile with any exclusions also inherits new default wordings on update ("not open to … visa", "without current or future visa sponsorship"). A citizen or green-card holder empties the list. Match phrases (Able to Sponsor, H-1B transfer) set Verified. "H-1B lottery" is a flag, not an exclusion: the lottery is about new visas, not transfers.

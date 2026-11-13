@@ -156,7 +156,7 @@
    "id": "card-cafe",
    "mode": "card",
    "posting": {
-    "title": "Café Manager – Double Rainbow @ Autistry Studios",
+    "title": "Caf\u00e9 Manager \u2013 Double Rainbow @ Autistry Studios",
     "company": "Autistry Studios Incorporated",
     "location": "San Rafael, CA (Hybrid)"
    },
@@ -487,7 +487,7 @@
    "id": "blackstraw",
    "mode": "full",
    "posting": {
-    "title": "Technical Lead – Java",
+    "title": "Technical Lead \u2013 Java",
     "company": "Blackstraw LLC",
     "location": "United States",
     "work_type": "Remote",
@@ -528,7 +528,7 @@
    "id": "resourcesoft",
    "mode": "full",
    "posting": {
-    "title": "Software Developer (Java) – Consultant",
+    "title": "Software Developer (Java) \u2013 Consultant",
     "company": "Resourcesoft, Inc.",
     "location": "United States",
     "work_type": "Remote",
@@ -917,7 +917,7 @@
    "mode": "full",
    "note": "The earlier run applied to this one; the profile rule 'skip Lead titles' says it should have been skipped.",
    "posting": {
-    "title": "Full Stack Engineer – Pod Lead (Java + React)",
+    "title": "Full Stack Engineer \u2013 Pod Lead (Java + React)",
     "company": "AGS",
     "location": "United States",
     "work_type": "Remote",
@@ -1423,6 +1423,74 @@
     "apply_type": "easy_apply",
     "link": "https://www.linkedin.com/jobs/view/997/",
     "description": "Senior Java Full Stack Developer. Build microservices with Java 17, Spring Boot and REST APIs, React front ends, AWS, Kafka, PostgreSQL, CI/CD with Jenkins. 7+ years of experience. Design scalable, resilient services."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "High",
+     "Medium"
+    ]
+   }
+  },
+  {
+   "id": "remote-in-title",
+   "mode": "full",
+   "note": "2026-11-13 live Apify run: LinkedIn lists the office city for a remote job; 'US Remote' in the title was ignored and the job skipped as Location (2.0.0)",
+   "posting": {
+    "title": "Senior Software Engineer (Java) - US Remote",
+    "company": "ZoomInfo",
+    "location": "Bethesda, MD",
+    "work_type": null,
+    "employment_type": "Full-Time",
+    "age_hours": 5,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/4482170753/",
+    "description": "Design and build Java and Spring Boot microservices with REST APIs, React, Kubernetes, SQL and AWS. 5+ years of experience."
+   },
+   "expect": {
+    "action": "apply",
+    "fit": [
+     "High",
+     "Medium"
+    ]
+   }
+  },
+  {
+   "id": "remote-sensing-title",
+   "mode": "full",
+   "note": "'Remote Sensing' in a title is a field, not a workplace (2.0.0)",
+   "posting": {
+    "title": "Remote Sensing Software Engineer",
+    "company": "Acme Geo",
+    "location": "Boulder, CO",
+    "work_type": null,
+    "employment_type": "Full-Time",
+    "age_hours": 5,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/4482170999/",
+    "description": "Design and build Java and Spring Boot microservices with REST APIs, React, Kubernetes, SQL and AWS. 5+ years of experience."
+   },
+   "expect": {
+    "action": "skip",
+    "category": [
+     "Location"
+    ]
+   }
+  },
+  {
+   "id": "telecommute-wording",
+   "mode": "full",
+   "note": "2026-11-13 live Apify run (Optum): 'telecommute' is how some employers say remote (2.0.0)",
+   "posting": {
+    "title": "Senior Software Engineer",
+    "company": "Optum",
+    "location": "Eden Prairie, MN",
+    "work_type": null,
+    "employment_type": "Full-Time",
+    "age_hours": 5,
+    "apply_type": "easy_apply",
+    "link": "https://www.linkedin.com/jobs/view/4490316816/",
+    "description": "Design and build Java and Spring Boot microservices with REST APIs, React, Kubernetes, SQL and AWS. 5+ years of experience. You'll enjoy the flexibility to telecommute from anywhere within the U.S."
    },
    "expect": {
     "action": "apply",

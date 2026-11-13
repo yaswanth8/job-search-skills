@@ -9,9 +9,13 @@ Subcommands:
                                    "Ready to apply" for the user to act on, instead of New
   writes DOCS --dir D [--update]   write one JSON file per doc and print ArtifactData batch `writes` (<=50 each)
   check DOCS                       validate fields and enums, print counts. Run it on hand-built rows too.
+  table DOCS                       the jobs to act on as a markdown table, for the chat report (and for a
+                                   session that has no dashboard)
   criteria --profile P --out F     the meta/criteria doc for the dashboard's what-if panel
-  run start --out F [--mode apply|save] [--hours N] [--post-hours N] [--portals A,B] [--saryom off|token|file] [--n N]
-  run step F KEY STATE [--note T] [--set found=12 ...]     KEY: a stage key or a portal name; STATE: doing|done|skipped
+  run start --out F [--mode apply|save] [--hours N] [--post-hours N] [--portals A,B] [--apify A,B] [--no-browser]
+            [--saryom off|token|file] [--n N]            --apify: portals searched through Apify; --post-hours 0: no posts
+  run step F KEY STATE [--note T] [--set found=12 ...] [--via apify|browser]
+                                   KEY: a stage key or a portal name; STATE: doing|done|skipped
   run finish F [--summary T]
                                    the run doc (runs/<date>-<n>) and the progress block to show the user.
                                    Each call rewrites F and prints the block; `set` the doc from F after each one.
@@ -19,7 +23,8 @@ Subcommands:
 A doc: {id, company, vendor, role, where, workType, type, pay, source, fit, spons, status,
         reviewReason, ats, applyUrl, link, category, notes, foundAt, appliedAt, appliedBy,
         stage, followUpAt, updatedAt,
-        contactName, contactTitle, contactEmail, contactPhone, contactUrl, contactNote (why there is none)}
+        contactName, contactTitle, contactEmail, contactPhone, contactUrl, contactNote (why there is none),
+        desc (the posting's text, cut to DESC_MAX), postedAt, via (apify | browser), easyApply}
 status: New | Review | Queued | Applied | Skipped | Declined
   Review = waiting on the user: reviewReason company-site | needs-call | contact | ready
            (contact = manual apply: email, call or message the recruiter; from a LinkedIn post)
@@ -49,6 +54,21 @@ STAGES_BEFORE = [("setup", "Set-up"), ("queued", "Queued jobs")]
 STAGES_AFTER = [("posts", "Recruiter posts"), ("apply", "Apply"), ("saryom", "Saryom"), ("report", "Report")]
 MARK = {"done": "\u2714", "doing": "\u25b6", "todo": "\u25cb", "skipped": "\u2013"}
 COUNTERS = ("found", "opened", "applied", "skipped", "review")
+DESC_MAX = 1500   # characters of the posting kept on the row: enough to decide from the dashboard, small enough for the database
+
+
+def clean_desc(text: str) -> str:
+    """The posting's text for the dashboard: no snippet lines (hiring:, contacts:), no markdown marks, one paragraph."""
+    lines = [l for l in str(text or "").splitlines() if not re.match(r"\s*(contacts|hiring)\s*:", l, re.I)]
+    t = re.sub(r"\s+", " ", re.sub(r"[*_#`]{1,3}|\\([-*_.()\[\]])", r"\1", " ".join(lines))).strip()
+    return t if len(t) <= DESC_MAX else t[:DESC_MAX].rsplit(" ", 1)[0] + "…"
+
+
+def posted_at(p) -> str:
+    if p.get("posted_at"):
+        return p["posted_at"]
+    age = p.get("age_hours")
+    return (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=age)).strftime("%Y-%m-%dT%H:%MZ") if isinstance(age, (int, float)) else ""
 
 
 def doc_id(link: str) -> str:
@@ -100,6 +120,9 @@ def cmd_new(a):
             "applyUrl": p.get("apply_url", ""), "link": link, "category": d.get("category") or "",
             "notes": "; ".join(d.get("reasons", []) + d.get("flags", [])),
             "foundAt": today(), "updatedAt": today(),
+            "desc": clean_desc(p.get("description", "")), "postedAt": posted_at(p), "via": p.get("via") or "browser",
+            "easyApply": p["easy_apply"] if isinstance(p.get("easy_apply"), bool) else
+            True if p.get("apply_type") in ("easy_apply", "dice", "indeed_apply") else False if p.get("apply_type") == "company_site" else None,
         }
         docs.append(doc)
     Path(a.out).write_text(json.dumps(docs, indent=1))
@@ -154,6 +177,26 @@ def cmd_check(a):
     sys.exit(1 if errors else 0)
 
 
+def cmd_table(a):
+    """The rows a person acts on (everything but Skipped), best fit first, as a markdown table."""
+    docs = [d for d in json.loads(Path(a.docs).read_text()) if d.get("status") not in ("Skipped", "Declined")]
+    rank = {"High": 0, "Medium": 1, "Stretch": 2}
+    docs.sort(key=lambda d: (d.get("status") != "Applied", rank.get(d.get("fit"), 3), d.get("company", "")))
+    how = lambda d: ("Applied" if d.get("status") == "Applied" else "Reach out" if d.get("reviewReason") == "contact" else  # noqa: E731
+                     "Your call" if d.get("reviewReason") == "needs-call" else "Company site" if d.get("reviewReason") == "company-site" else
+                     "Easy Apply" if d.get("easyApply") else "Ready to apply")
+    cell = lambda v: str(v or "").replace("|", "/")  # noqa: E731
+    print("| Company | Role | Where | Pay | Fit | Posted | Next step |\n|---|---|---|---|---|---|---|")
+    for d in docs[: a.limit]:
+        url = d.get("applyUrl") or d.get("link") or ""
+        role = f"[{cell(d.get('role'))}]({url})" if url.startswith("http") else cell(d.get("role"))
+        print(f"| {cell(d.get('company'))} | {role} | {cell(d.get('where'))} | {cell(d.get('pay'))} | {cell(d.get('fit'))} | {cell(d.get('postedAt', '')[:10])} | {how(d)} |")
+    if len(docs) > a.limit:
+        print(f"\n{len(docs) - a.limit} more on the dashboard.")
+    if not docs:
+        print("\nNothing passed the checks in this run.")
+
+
 def cmd_criteria(a):
     """The dashboard's meta/criteria doc: the rules in force, for its "What if we widen the criteria" panel."""
     p = load_profile(a.profile)
@@ -186,6 +229,7 @@ def criteria_table(p, run=None) -> str:
     if run:
         rows += [["Mode", "Apply to jobs" if run.get("mode") == "apply" else "Search and save (nothing submitted)"],
                  ["Portals", ", ".join(run.get("portals", []))],
+                 ["Found through", found_through(run)],
                  ["Job postings from the last", f"{run.get('hours')} hours"],
                  ["Recruiter posts from the last", f"{run.get('postHours')} hours" if run.get("postHours") else "skipped"]]
     rows += [["Titles", ", ".join(sr.get("titles", []) or p.get("search_queries", [])[:4])],
@@ -198,6 +242,15 @@ def criteria_table(p, run=None) -> str:
     table = "| Criterion | Searched with |\n|---|---|\n" + "\n".join(f"| {k} | {str(v).replace('|', '/')} |" for k, v in rows)
     warn = profile_warnings(p)
     return table + ("\n\n" + "\n".join("Warning: " + w for w in warn) if warn else "")
+
+
+def found_through(run) -> str:
+    ap, browser = run.get("apify") or [], run.get("browser", True)
+    rest = [x for x in run.get("portals", []) if x not in ap]
+    bits = ([f"Apify ({', '.join(ap)})"] if ap else []) + ([f"browser ({', '.join(rest)})"] if rest and browser else [])
+    if not browser:
+        bits.append("no browser in this session: nothing is submitted and recruiter posts are not searched")
+    return "; ".join(bits) or "browser"
 
 
 def profile_warnings(p) -> list:
@@ -273,20 +326,25 @@ def now() -> str:
     return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def new_run(mode="apply", hours=48, post_hours=12, portals=("LinkedIn", "Indeed", "Dice"), saryom="off", n=1, date=None):
+def new_run(mode="apply", hours=48, post_hours=12, portals=("LinkedIn", "Indeed", "Dice"), saryom="off", n=1, date=None,
+            apify=(), browser=True):
     """A run doc with every stage still to do. Stages that cannot happen in this run are left out,
-    so the user never watches a step that was never going to start."""
+    so the user never watches a step that was never going to start: no recruiter posts without a browser
+    or with a posts window of 0, no apply stages in a save run."""
+    ap = {a.lower() for a in apify}
+    posts = bool(post_hours) and browser
     steps = [dict(key=k, label=l, state="todo", note="") for k, l in STAGES_BEFORE if mode == "apply" or k != "queued"]
-    steps += [dict(key=p.lower(), label=p, state="todo", note="", portal=True) for p in portals]
+    steps += [dict(key=p.lower(), label=p, state="todo", note="", portal=True, via="apify" if p.lower() in ap else "browser") for p in portals]
     steps += [dict(key=k, label=l, state="todo", note="") for k, l in STAGES_AFTER
-              if (k != "apply" or mode == "apply") and (k != "saryom" or saryom != "off")]
+              if (k != "apply" or mode == "apply") and (k != "saryom" or saryom != "off") and (k != "posts" or posts)]
     date = date or today()
     return {"id": f"{date}-{n}", "date": date, "mode": mode, "status": "running", "startedAt": now(), "updatedAt": now(),
-            "hours": hours, "postHours": post_hours, "portals": list(portals), "notSearched": [], "steps": steps,
+            "hours": hours, "postHours": post_hours if posts else 0, "portals": list(portals), "apify": [p for p in portals if p.lower() in ap],
+            "browser": bool(browser), "notSearched": [], "steps": steps,
             "found": 0, "opened": 0, "applied": 0, "skipped": 0, "review": 0, "saryom": "", "summary": ""}
 
 
-def run_step(run, key, state, note=None, counters=None):
+def run_step(run, key, state, note=None, counters=None, via=None):
     """Move one stage. Starting a stage closes the one before it, so "doing" never piles up."""
     if state not in ("doing", "done", "skipped"):
         raise ValueError(f"state must be doing, done or skipped, not {state}")
@@ -300,6 +358,9 @@ def run_step(run, key, state, note=None, counters=None):
     step["state"] = state
     if note is not None:
         step["note"] = note
+    if via and step.get("portal"):   # a portal that fell back from Apify to the browser says so
+        step["via"] = via
+        run["apify"] = [s["label"] for s in run["steps"] if s.get("via") == "apify"]
     if step.get("portal"):  # a portal that could not be searched is the run log's "not searched" line
         run["notSearched"] = [x for x in run["notSearched"] if x["portal"] != step["label"]]
         if state == "skipped":
@@ -330,11 +391,11 @@ def finish_run(run, summary=""):
 
 def progress_block(run):
     """What the user sees in chat after every stage: one line per stage, done ones with their result."""
-    window = f"jobs {run['hours']}h, posts {run['postHours']}h"
+    window = f"jobs {run['hours']}h" + (f", posts {run['postHours']}h" if run.get("postHours") else "")
     mode = "apply" if run["mode"] == "apply" else "search and save (nothing is submitted)"
     done = sum(s["state"] in ("done", "skipped") for s in run["steps"])
     head = f"Run {run['id']} \u00b7 {mode} \u00b7 {window} \u00b7 {done} of {len(run['steps'])} stages" + (" \u00b7 finished" if run["status"] == "done" else "")
-    lines = [f"{MARK[s['state']]} {s['label']}" + (f": {s['note']}" if s["note"] else "") for s in run["steps"]]
+    lines = [f"{MARK[s['state']]} {s['label']}" + (" (Apify)" if s.get("via") == "apify" else "") + (f": {s['note']}" if s["note"] else "") for s in run["steps"]]
     return "\n".join([head] + lines)
 
 
@@ -346,14 +407,15 @@ def cmd_run(a):
             used = {Path(x).stem for x in Path(a.runs).glob("*.json")}
             while f"{today()}-{n}" in used:
                 n += 1
-        run = new_run(a.mode, a.hours, a.post_hours, [p.strip() for p in a.portals.split(",") if p.strip()], a.saryom, n)
+        run = new_run(a.mode, a.hours, a.post_hours, [p.strip() for p in a.portals.split(",") if p.strip()], a.saryom, n,
+                      apify=[p.strip() for p in (a.apify or "").split(",") if p.strip()], browser=not a.no_browser)
         if a.id:
             run["id"] = a.id
     else:
         run = json.loads(f.read_text())
         try:
             if a.action == "step":
-                run_step(run, a.key, a.state, a.note, dict(x.split("=", 1) for x in a.set or []))
+                run_step(run, a.key, a.state, a.note, dict(x.split("=", 1) for x in a.set or []), a.via)
             else:
                 finish_run(run, a.summary or "")
         except ValueError as e:
@@ -371,6 +433,7 @@ if __name__ == "__main__":
     s = sub.add_parser("new"); s.add_argument("decisions"); s.add_argument("postings"); s.add_argument("--out", required=True); s.add_argument("--save", action="store_true")
     s = sub.add_parser("writes"); s.add_argument("docs"); s.add_argument("--dir", required=True); s.add_argument("--update", action="store_true")
     s = sub.add_parser("check"); s.add_argument("docs")
+    s = sub.add_parser("table"); s.add_argument("docs"); s.add_argument("--limit", type=int, default=25)
     s = sub.add_parser("criteria"); s.add_argument("--profile", required=True); s.add_argument("--out")
     s.add_argument("--table", metavar="RUN_JSON", nargs="?", const="", help="print the criteria table for chat (with the run's mode, portals and windows when given)")
     run = sub.add_parser("run").add_subparsers(dest="action", required=True)
@@ -378,14 +441,15 @@ if __name__ == "__main__":
     s.add_argument("--hours", type=int, default=48); s.add_argument("--post-hours", type=int, default=12)
     s.add_argument("--portals", default="LinkedIn,Indeed,Dice"); s.add_argument("--saryom", choices=["off", "token", "file"], default="off")
     s.add_argument("--n", type=int, default=1); s.add_argument("--id", help="use this run id")
+    s.add_argument("--apify", help="portals searched through Apify, e.g. LinkedIn,Indeed,Dice"); s.add_argument("--no-browser", action="store_true", help="the session has no browser: no recruiter posts, nothing submitted")
     s.add_argument("--runs", help="folder of saved runs docs (ArtifactData list runs, out_dir): the id skips numbers already used today")
     s = sub.add_parser("since", help="hours since the last finished run, rounded up: the job window for a re-run")
     s.add_argument("runs", help="folder of saved runs docs"); s.add_argument("--within", type=float, default=6)
     s = run.add_parser("step"); s.add_argument("file"); s.add_argument("key"); s.add_argument("state", choices=["doing", "done", "skipped"])
-    s.add_argument("--note"); s.add_argument("--set", nargs="*", metavar="COUNTER=N")
+    s.add_argument("--note"); s.add_argument("--set", nargs="*", metavar="COUNTER=N"); s.add_argument("--via", choices=["apify", "browser"])
     s = run.add_parser("finish"); s.add_argument("file"); s.add_argument("--summary")
     a = ap.parse_args()
     if a.cmd == "id":
         print(doc_id(a.link))
     else:
-        {"new": cmd_new, "writes": cmd_writes, "check": cmd_check, "criteria": cmd_criteria, "run": cmd_run, "since": cmd_since}[a.cmd](a)
+        {"new": cmd_new, "writes": cmd_writes, "check": cmd_check, "table": cmd_table, "criteria": cmd_criteria, "run": cmd_run, "since": cmd_since}[a.cmd](a)
