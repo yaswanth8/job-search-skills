@@ -15,3 +15,5 @@ jobs:
         run: python3 tools/build.py --check
       - name: Browser snippets parse
         run: for f in skills/us-job-search-automation/js/*.js; do node --check "$f"; done
+      - name: Update ladder parses
+        run: bash -n skills/us-job-search-automation/bootstrap.sh

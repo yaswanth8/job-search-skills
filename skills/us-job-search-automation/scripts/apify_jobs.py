@@ -119,7 +119,7 @@ def build_calls(profile: dict, hours: int | None, portals, seen=None, max_per_po
 
     if "linkedin" in want:
         # LinkedIn's own remote filter mislabels too much to trust (live run): "remote" goes in the keywords, as in the browser.
-        ids = sorted({m.group(1) for s in (seen or []) for m in [re.search(r"linkedin\.com/jobs/view/(?:[^/?]*-)?(\d{6,})", s)] if m})[-300:]
+        ids = sorted({m.group(1) or m.group(2) for s in (seen or []) for m in [re.search(r"linkedin\.com/jobs/view/(?:[^/?]*-)?(\d{6,})|^li-(\d{6,})$", s)] if m})[-300:]
         inp = {"keywords": "(" + " OR ".join(quote(t) for t in titles[:5]) + ")" + ("" if nationwide else " remote"),
                "location": "United States", "datePosted": "r86400" if hours <= 24 else "r604800" if hours <= 168 else "r2592000",
                "limit": n, "titleExclude": exclude}

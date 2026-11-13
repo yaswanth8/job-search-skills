@@ -1,9 +1,9 @@
 // Company-site application form scanner (Greenhouse, Lever, Ashby, Workable, SmartRecruiters...). Read-only.
 // First line: host, sign-in wall, CAPTCHA, submit buttons. Then one line per visible field, 12 per call
-// (javascript_tool cuts output past ~1,000 characters; raise PAGE for more):
+// (javascript_tool cuts output past ~1,000 characters; then __fs(1), __fs(2)... for more):
 // index|type|required|label|current value|options. Map every field to a sourced answer before typing.
-(() => {
-  const PAGE = 0, N = 12;
+window.__fs = (PAGE = 0) => {
+  const N = 12;
   const vis = el => { const r = el.getBoundingClientRect(), s = getComputedStyle(el); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none'; };
   const cut = (s, n) => String(s ?? '').replace(/\|/g, '/').replace(/\s+/g, ' ').trim().slice(0, n);
   const labelFor = el => {
@@ -24,4 +24,5 @@
   const captcha = !!document.querySelector('iframe[src*="recaptcha"], iframe[src*="hcaptcha"], [class*="captcha"]');
   const submits = [...document.querySelectorAll('button, input[type=submit]')].filter(vis).map(b => cut(b.innerText || b.value, 20)).filter(t => /submit|apply|send|next|continue|review/i.test(t));
   return `host=${location.hostname} signInWall=${wall} captcha=${captcha} submit=${submits.join(';')} fields=${fields.length} page ${PAGE}\n` + fields.slice(PAGE * N, PAGE * N + N).join('\n');
-})()
+};
+__fs(0)

@@ -2,7 +2,9 @@
 
 The tracker page reads its rows from its shared database, so rows change through `ArtifactData`, never by republishing. Republish the page only when its design changes, from `assets/tracker.html` (read the live page first; the publish needs it). Only the owner and editors can write (`write: admin`).
 
-Collections: `jobs` (one doc per posting), `runs` (one per run), `meta` (docs `criteria` and `tracker`).
+Collections: `jobs` (one doc per posting), `runs` (one per run), `meta` (docs `seen`, `criteria` and `tracker`).
+
+Two kinds of database tool exist. **ArtifactData** takes a `file_path` per write (`tracker.py writes`). **db_get / db_list / db_query / db_write** take the data inline (`tracker.py ops`), every op on an existing doc needs `ifVersion`, and a call of many ops commits all or none.
 
 ## jobs/<id>
 `tracker.py id <link>` gives the id: `li-<n>`, `dice-<uuid>`, `indeed-<jk>` or `web-<hash>`.
@@ -20,8 +22,10 @@ Collections: `jobs` (one doc per posting), `runs` (one per run), `meta` (docs `c
 | appliedVia | "outreach" when the user pressed *I reached out* |
 | ats, claudeCanApply, applyUrl | company-site jobs |
 | category | Skipped only, exactly one of: Stale / duplicate, Clearance, Sponsorship / authorization, Employment type, Location, Seniority, Role mismatch, Stack mismatch, Pay below floor, Application barrier, Spam / duplicate |
+
+A missing field reads as empty on the dashboard, so `tracker.py ops` leaves empty values out.
 | foundAt, appliedAt, updatedAt, followUpAt | YYYY-MM-DD |
-| desc | the posting's text, cut to 1,500 characters by `tracker.py new`: the dashboard's "About this job" |
+| desc | the posting's text, cut to 1,200 characters by `tracker.py new` (150 on Skipped rows): the dashboard's "About this job" |
 | postedAt | when the posting went up, UTC (`2026-11-12T20:32Z`), exact from Apify and estimated from the card's age in the browser |
 | via | apify or browser: how the job was found |
 | easyApply | true (Easy Apply, Apply with Indeed, Dice wizard), false (company site), or empty when unknown |
@@ -43,6 +47,9 @@ Each call prints the progress block for the chat and names the write: `set`, col
 
 The doc: `{date, mode, status: running|done, startedAt, updatedAt, hours, postHours, portals, apify: [portals], browser: true|false, steps: [{key, label, state, note, via}], notSearched: [{portal, why}], found, opened, applied, skipped, review, saryom, summary}`. While `status` is `running` the dashboard opens with the stages (done, in progress, waiting); a run that stops reporting for 90 minutes is shown as stopped. It lists the latest five runs. A second pass the same day is `--n 2`.
 
+## meta/seen
+`{seen: [ids and company|title keys], updatedAt}`, from `tracker.py seen`: the run's dedupe memory, about 6 KB per 200 jobs (capped at 4,000 entries), read with one `get` instead of listing every job. Each run: `get` it, `tracker.py seen --doc <it> --out meta_seen.json --txt seen.txt`; after writing rows, `tracker.py seen --doc meta_seen.json --add new.json --out meta_seen.json --txt seen.txt`; at the end `set meta/seen` (with `ifVersion` from the get). Missing (first run on 2.1): list `jobs` once and pass the listing as `--from-list`.
+
 ## meta/criteria
 `{onsiteStates: ["IL", ...], rules: [{label, text}], updatedAt}` from `tracker.py criteria --profile PROFILE --out crit.json`. The what-if panel shows these rules and leaves already-allowed states out of its picker. Set it once per run (`set`, collection `meta`, doc `criteria`, with `if_version` once it exists).
 
@@ -50,8 +57,8 @@ The doc: `{date, mode, status: running|done, startedAt, updatedAt, hours, postHo
 `{template: 8, name, ownerLine, scope}`: which dashboard template the page was published from, and the three header texts. `assets/tracker.version` holds the newest template number. When it is higher than `meta/tracker.template` (or the doc is missing), offer to refresh the dashboard: fill the placeholders in `assets/tracker.html` from this doc (or from the live page's title, eyebrow and first sentence), publish to the same tracker URL with the same capabilities, then `set meta/tracker`. Rows are untouched; they live in the database.
 
 ## Recipes
-- **Read state**: `list` on `jobs` with `out_dir` and `limit` 1000; links → `seen.txt`, versions kept for writes.
-- **New rows**: `tracker.py new decisions.json postings.json --out new.json [--save]`, then `check`, then `writes`. `tracker.py table new.json` prints the jobs to act on as a markdown table for the chat report. Send each chunk as one `ArtifactData batch`. Rows built by hand (one-off skips, quick notes) go through `check` too: it catches categories outside the list and ids that don't match links.
+- **Read state**: `get meta/seen` (above). List `jobs` only to build it the first time, or when the user asks about old rows.
+- **New rows**: `tracker.py new decisions.json postings.json --out new.json [--save]`, then `check`, then `writes` (ArtifactData: one batch per chunk) or `ops --seen seen.txt` (db_write: one call per `ops.N.json`, at most 50 ops). `tracker.py table new.json` prints the jobs to act on as a markdown table for the chat report. Rows built by hand (one-off skips, quick notes) go through `check` too: it catches categories outside the list and ids that don't match links.
 - **Change a row**: `update` with `if_version`, for example `{status: "Applied", appliedAt, appliedBy: "claude", updatedAt}`. A version mismatch means the user acted on the dashboard: re-read and redo the write without losing their change.
 - **When**: after each portal and right after each application. The user may be watching.
 

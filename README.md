@@ -2,6 +2,8 @@
 
 Two Claude skills that run a US job search for you. Claude finds fresh postings on LinkedIn, Indeed and Dice, vets each one against your profile (work authorization, location, pay, seniority, stack), then either saves the good ones for you or applies through Easy Apply and similar one-page forms, your choice each run. It keeps a live tracker dashboard that shows each run's progress and each job's details, and can send your applications to your board on Saryom.
 
+**New in 2.1:** runs never stop on "GitHub not reachable", every question (including whether your browser is signed in) is asked once before anything opens, runs use far fewer tokens, and the dashboard filters by fit, sponsorship, source, posting age and Easy Apply.
+
 **New in 2.0:** searches run through your own free [Apify](https://apify.com) account when you connect it, so a search needs no browser, works on Claude Free and on a phone, and no longer trips the portals' bot checks. The browser is still what applies. It also searches LinkedIn recruiter posts by your keywords and saves each recruiter's contact details so you can reach out yourself. Company-site applications wait for your go-ahead.
 
 | Skill | What it is | Updates |
@@ -52,7 +54,7 @@ Before it searches, Claude asks what it doesn't already know, in one go:
 | Which sites | LinkedIn, Indeed, Dice, LinkedIn recruiter posts (pick any) |
 | Posted in the last | 12 hours, 24 hours, 2 days, 3 days |
 
-The first run also asks whether to send your jobs to Saryom, and, when the browser is used, which browser.
+When the run will use a browser (a site Apify doesn't cover, recruiter posts, or applying), the same round asks whether that browser is signed in to those sites. Say yes only if it is: Claude then opens no test pages, and a site that turns out to be signed out is skipped with its links rather than retried. The first run also asks whether to send your jobs to Saryom.
 
 To skip the questions, say it all at once:
 > **Search and save jobs from the last 24 hours.**
@@ -107,7 +109,9 @@ The dashboard's **What if** view shows which rule skipped the most good matches.
 
 ## Updates
 
-The automation skill checks this repo at the start of every run and follows whatever is on `main`: scripts, snippets, references, the tracker template and the instructions themselves. A fix or a new version applies on your next run with nothing to install. When the tracker template is newer than your dashboard, Claude offers to refresh it; your rows are untouched.
+The automation skill fetches this repo at the start of every run (`bootstrap.sh`) and follows whatever is on `main`: scripts, snippets, references, the tracker template and the instructions themselves. A fix or a new version applies on your next run with nothing to install. When the tracker template is newer than your dashboard, Claude offers to refresh it; your rows are untouched.
+
+**If GitHub can't be reached** the run doesn't stop. `bootstrap.sh` tries git, then three tarball downloads, then a copy from earlier in the session, then the copy you installed, and says in one line which one it used. To get updates again, allow `github.com` and `codeload.github.com` in Claude's code-execution network settings. This only works if you installed the full zip from `dist/` (it carries every script). A hand-made skill that only says "clone the repo" has nothing to fall back to: replace it with the zip once.
 
 **Your profile** is never changed by an update. If a release adds a setting, the bundled `profile_defaults.json` fills it in until you set your own value.
 
@@ -126,6 +130,7 @@ skills/us-job-search-automation/   SKILL.md, VERSION, scripts/, js/, references/
 skills/job-search-profile/         SKILL.md (template)
 dist/                              zips for installing
 tools/build.py                     self-test + version check + zip build
+skills/us-job-search-automation/bootstrap.sh   gets the newest tools each run, with fallbacks
 ```
 
 ## Ground rules the skill follows

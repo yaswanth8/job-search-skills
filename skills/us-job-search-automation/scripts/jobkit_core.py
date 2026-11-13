@@ -126,6 +126,25 @@ def parse_states(location: str) -> list[str]:
     return found
 
 
+def job_key(company: str, title: str) -> str:
+    """'k:<company>|<title>', normalized, so the same job posted on two sites dedupes ("Office Practicum" on LinkedIn and Indeed)."""
+    co = re.sub(r"\b(inc|llc|ltd|limited|corp|corporation|co|company|technologies|technology|solutions|group|the)\b", " ", (company or "").lower())
+    co = re.sub(r"[^a-z0-9]+", "", co)[:24]
+    ti = re.sub(r"\(.*?\)|-\s*(remote|us remote|hybrid|onsite|on-site).*$", " ", (title or "").lower())
+    ti = re.sub(r"[^a-z0-9]+", "", ti)[:40]
+    return f"k:{co}|{ti}" if co and ti else ""
+
+
+def pay_from_text(text: str) -> str:
+    """The first pay figure written in a posting ("Salary Range- $90,000-$110,000 a year"), or ''. For rows whose card had none."""
+    for m in re.finditer(r"\$\s?\d[\d,]*(?:\.\d+)?\s?[kK]?(?:\s*/\s*(?:hr|hour|yr|year))?(?:\s*(?:USD)?\s*(?:-|\u2013|\u2014|to)\s*\$?\s?\d[\d,]*(?:\.\d+)?\s?[kK]?)?(?:\s*(?:/\s*(?:hr|hour|yr|year)|an hour|per hour|a year|per year|annually|/hour))?", text or ""):
+        s = m.group(0).strip()
+        p = parse_pay(s)
+        if p and ((p["unit"] == "hour" and 20 <= p["high"] <= 400) or (p["unit"] == "year" and 30000 <= p["high"] <= 900000)):
+            return s
+    return ""
+
+
 def parse_pay(text: str) -> dict | None:
     """Return {'low','high','unit'} with unit 'year' or 'hour', or None. Monthly pay is annualised."""
     if not text:
@@ -212,8 +231,10 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
 
     # 1. duplicates and age
     link = posting.get("link")
-    if seen_links and link and link in seen_links:
+    if seen_links and ((link and link in seen_links) or (posting.get("id") and posting.get("id") in seen_links)):
         return _skip(res, "Stale / duplicate", "already in the tracker")
+    if seen_links and mode == "full" and job_key(company, title) in seen_links:
+        return _skip(res, "Stale / duplicate", "same company and title already in the tracker (often the same job on another site)")
     age = posting.get("age_hours")
     if age is not None and age > profile.get("window_hours", 72):
         return _skip(res, "Stale / duplicate", f"posted {age:.0f}h ago, outside the {profile.get('window_hours', 72)}h window")
@@ -696,11 +717,11 @@ def build_search_plan(profile: dict, window_hours: int | None = None, post_queri
 
     li = "https://www.linkedin.com/jobs/search-results/?keywords={k}&geoId={g}&f_TPR=r{s}" + al
     add("LinkedIn", "US-wide" if nationwide else "Remote US", li.format(k=quote(f"({combined})" if nationwide else f"({combined}) remote"), g=geo["US"], s=hours * 3600),
-        snippet="linkedin_cards.js", fallback_keywords=titles[:3] if nationwide else [f"{t} remote" for t in titles[:3]])
+        snippet="linkedin_batch.js", fallback_keywords=titles[:3] if nationwide else [f"{t} remote" for t in titles[:3]])
     missing_geo = []
     for code in states:
         if code in geo:
-            add("LinkedIn", code_to_name[code], li.format(k=quote(combined), g=geo[code], s=hours * 3600), snippet="linkedin_cards.js",
+            add("LinkedIn", code_to_name[code], li.format(k=quote(combined), g=geo[code], s=hours * 3600), snippet="linkedin_batch.js",
                 fallback_keywords=titles[:3])
         else:
             missing_geo.append(code)
@@ -721,7 +742,7 @@ def build_search_plan(profile: dict, window_hours: int | None = None, post_queri
     sq = profile.get("search_queries") or []
     boolean = lambda q: re.search(r"\b(OR|AND|NOT)\b|[()]", q) is not None
     for q in [q for q in sq if boolean(q)][:3]:
-        add("LinkedIn", f"Remote US · {q[:40]}", li.format(k=quote(f"{q} remote"), g=geo["US"], s=hours * 3600), snippet="linkedin_cards.js")
+        add("LinkedIn", f"Remote US · {q[:40]}", li.format(k=quote(f"{q} remote"), g=geo["US"], s=hours * 3600), snippet="linkedin_batch.js")
     for q in [q for q in sq if not boolean(q)][:2]:
         add("Dice", f"Remote US · {q[:40]}", f"https://www.dice.com/jobs?q={quote(q)}&filters.postedDate={posted}" + ("" if nationwide else "&filters.workplaceTypes=Remote") + "&pageSize=40", snippet="dice_cards.js")
 

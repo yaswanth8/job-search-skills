@@ -3,7 +3,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: a sticky bar with five views (Overview, Needs you, Applied, All jobs, What if) and three global filters (time, employment type, search).
+/* Layout: a sticky bar with five views (Overview, Needs you, Applied, All jobs, What if) and three global filters (time, employment type, search); Needs you and All jobs share a filter bar (fit, workplace, source, sponsorship, route, posting age, Easy Apply; remembered per browser) and Needs you sorts by fit, posting age or pay.
    Every count on the page is a button that opens the matching list. Tables scroll inside their own boxes.
    While Claude is running a search, Overview opens with the run's stages: done, in progress, still to come. */
 :root{
@@ -253,9 +253,13 @@ td .tlink{color:var(--accent)}
   const KIND = { ready: "Ready to apply", contact: "Reach out", "company-site": "Company site", "needs-call": "Your call" };
 
   let JOBS = [], RUNS = [], db = null, canWrite = true, loaded = false, online = false;
-  const S = { view: "overview", days: 0, q: "", kind: "", applied: "", status: "", fit: "", work: "", source: "", category: "", sortKey: "updatedAt", sortDir: -1, open: "", etype: "" };
+  const S = { view: "overview", days: 0, q: "", kind: "", applied: "", status: "", fit: "", work: "", source: "", category: "", sortKey: "updatedAt", sortDir: -1, open: "", etype: "",
+    spons: "", via: "", posted: "", easy: "", nsort: "fit" };
+  const FKEYS = ["fit", "work", "source", "spons", "via", "posted", "easy", "nsort"];  // filters kept between visits
   const pending = new Set();
-  try { S.days = +(localStorage.getItem("jt-days") || 0); S.etype = localStorage.getItem("jt-etype") || ""; } catch {}
+  try { S.days = +(localStorage.getItem("jt-days") || 0); S.etype = localStorage.getItem("jt-etype") || "";
+    Object.assign(S, JSON.parse(localStorage.getItem("jt-f") || "{}")); } catch {}
+  const keepF = () => { try { localStorage.setItem("jt-f", JSON.stringify(Object.fromEntries(FKEYS.map(k => [k, S[k]])))); } catch {} };
 
   function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 3200); }
   function setLive(on, text) { $("dot").className = "dot" + (on ? " on" : ""); $("liveText").textContent = text; }
@@ -276,6 +280,19 @@ td .tlink{color:var(--accent)}
   const appliedList = () => JOBS.filter(j => j.status === "Applied" && matchQ(j) && matchT(j) && inRange(j.appliedAt || j.updatedAt));
   const isReady = j => j.status === "Review" && j.reviewReason === "ready";
   const followDue = j => j.status === "Applied" && !j.stage && daysSince(j.appliedAt) >= 7;
+  // The filter bar shared by Needs you and All jobs (fit, workplace, source, sponsorship, route, posting age, Easy Apply).
+  const hoursOld = j => { const t = new Date(j.postedAt || "").getTime(); return isNaN(t) ? null : (Date.now() - t) / 36e5; };
+  const matchF = j => (!S.fit || j.fit === S.fit) && (!S.work || j.workType === S.work) && (!S.source || srcName(j) === S.source)
+    && (!S.spons || (j.spons || "Needs Confirmation") === S.spons) && (!S.via || (j.via || "browser") === S.via)
+    && (!S.posted || (hoursOld(j) !== null && hoursOld(j) <= +S.posted)) && (!S.easy || j.easyApply === true);
+  // Pay as a yearly figure for sorting: hourly x 2080, "$120K" = 120000; unlisted pay sorts last.
+  const payYear = j => { const t = String(j.pay || "").replace(/,/g, ""), n = [...t.matchAll(/\$\s*(\d+(?:\.\d+)?)\s*(k)?/gi)].map(m => +m[1] * (m[2] ? 1000 : 1));
+    if (!n.length) return -1; const v = Math.max(...n); return v < 400 ? v * 2080 : v; };
+  const FIT_RANK = { High: 0, Medium: 1, Stretch: 2, Low: 3 };
+  const NSORT = { fit: (a, b) => (FIT_RANK[a.fit] ?? 4) - (FIT_RANK[b.fit] ?? 4) || (b.foundAt || "").localeCompare(a.foundAt || ""),
+    posted: (a, b) => (hoursOld(a) ?? 1e9) - (hoursOld(b) ?? 1e9), pay: (a, b) => payYear(b) - payYear(a),
+    found: (a, b) => (b.foundAt || "").localeCompare(a.foundAt || "") };
+  const activeF = () => ["fit", "work", "source", "spons", "via", "posted", "easy"].filter(k => S[k]).length;
 
   // ---------------------------------------------------------------- writes
   async function save(id, patch, okMsg) {
@@ -417,15 +434,30 @@ td .tlink{color:var(--accent)}
       ${old ? `<p class="note">Rows written before it stopped are saved. Ask Claude to run the search again; it picks up only what is new.</p>` : ""}</section>`;
   }
 
+  // Selects take [value, label] pairs; a plain string is both.
+  const sel = (key, label, opts) => `<select data-sel="${key}" aria-label="${label}"><option value="">${label}</option>${opts.map(o => { const [v, l] = Array.isArray(o) ? o : [o, o];
+    return `<option value="${esc(v)}" ${String(S[key]) === String(v) ? "selected" : ""}>${esc(l)}</option>`; }).join("")}</select>`;
+  function filterBar(withSort) {
+    const srcs = [...new Set(JOBS.map(srcName))].sort();
+    return `<div class="chips fbar">${sel("fit", "Any fit", ["High", "Medium", "Stretch", "Low"])}${sel("work", "Remote, hybrid, on-site", ["Remote", "Hybrid", "On-site"])}${sel("source", "All sources", srcs)}
+      ${sel("spons", "Any sponsorship", [["Verified", "Sponsorship verified"], ["Needs Confirmation", "Sponsorship unknown"], ["Excluded", "No sponsorship"]])}
+      ${sel("via", "Found by any route", [["apify", "Found through Apify"], ["browser", "Found in the browser"]])}
+      ${sel("posted", "Posted any time", [["24", "Posted in the last 24h"], ["72", "Posted in the last 3 days"], ["168", "Posted in the last week"]])}
+      <button class="chip" type="button" data-set="easy" data-val="${S.easy ? "" : "1"}" aria-pressed="${!!S.easy}">Easy Apply only</button>
+      ${withSort ? sel("nsort", "Sort: best fit", [["posted", "Sort: newest posting"], ["pay", "Sort: highest pay"], ["found", "Sort: newest found"]]) : ""}
+      ${activeF() ? `<button class="linkbtn" type="button" data-a="clearF">Clear filters (${activeF()})</button>` : ""}</div>`;
+  }
+
   function needsView() {
-    const nd = needs(), c = k => nd.filter(j => k === "Queued" ? j.status === "Queued" : j.status === "Review" && j.reviewReason === k).length;
+    const nd = needs().filter(matchF), c = k => nd.filter(j => k === "Queued" ? j.status === "Queued" : j.status === "Review" && j.reviewReason === k).length;
     const list = nd.filter(j => !S.kind || (S.kind === "Queued" ? j.status === "Queued" : j.status === "Review" && j.reviewReason === S.kind))
-      .sort((a, b) => (a.status === "Queued") - (b.status === "Queued") || (b.foundAt || "").localeCompare(a.foundAt || ""));
+      .sort((a, b) => (a.status === "Queued") - (b.status === "Queued") || (NSORT[S.nsort] || NSORT.fit)(a, b));
     const rd = c("ready");
     return `<div class="sec-head"><h2>Needs you</h2><p>Open <b>About this job</b> to read the posting here, then <b>Open to apply</b> and press <b>I applied</b>, or <b>Let Claude apply</b> to queue it for the next apply run (that needs Claude's browser). <b>Reach out</b> jobs are recruiter posts: copy the contact and email or call them yourself, then press <b>I reached out</b>.</p></div>
+      ${filterBar(true)}
       ${chips("kind", [["", "All", nd.length], ...(rd ? [["ready", "Ready to apply", rd]] : []), ["contact", "Reach out", c("contact")], ["company-site", "Company site", c("company-site")], ["needs-call", "Your call", c("needs-call")], ["Queued", "Queued for Claude", c("Queued")]])}
       ${rd && (!S.kind || S.kind === "ready") ? `<div class="chips"><button class="btn primary" type="button" data-a="queueAll" ${canWrite && !pending.size ? "" : "disabled"}>Let Claude apply to all ${rd} ready jobs</button></div>` : ""}
-      ${!loaded ? emptyBox("Loading…") : list.length ? `<div class="queue">${list.map(card).join("")}</div>` : emptyBox(nd.length ? "Nothing in this group." : "Nothing waiting on you. Company-site jobs, recruiter posts and judgment calls appear here after each run.")}`;
+      ${!loaded ? emptyBox("Loading…") : list.length ? `<div class="queue">${list.map(card).join("")}</div>` : emptyBox(activeF() ? "No jobs match these filters. Clear them to see everything." : nd.length ? "Nothing in this group." : "Nothing waiting on you. Company-site jobs, recruiter posts and judgment calls appear here after each run.")}`;
   }
 
   function appliedView() {
@@ -450,13 +482,11 @@ td .tlink{color:var(--accent)}
   const COLS = [["company", "Company"], ["role", "Role"], ["contactName", "Contact"], ["where", "Location"], ["type", "Type"], ["pay", "Pay"], ["fit", "Fit"], ["status", "Status"], ["foundAt", "Found"]];
   function allView() {
     const all = base(), n = s => all.filter(j => j.status === s).length, open = j => ["Applied", "Review", "Queued", "New"].includes(j.status);
-    const srcs = [...new Set(JOBS.map(srcName))].sort();
-    let rows = all.filter(j => (!S.status || (S.status === "open" ? open(j) : j.status === S.status)) && (!S.fit || j.fit === S.fit) && (!S.work || j.workType === S.work) && (!S.source || srcName(j) === S.source) && (!S.category || j.category === S.category));
+    let rows = all.filter(j => (!S.status || (S.status === "open" ? open(j) : j.status === S.status)) && matchF(j) && (!S.category || j.category === S.category));
     rows = rows.slice().sort((a, b) => String(a[S.sortKey] ?? "").localeCompare(String(b[S.sortKey] ?? "")) * S.sortDir);
-    const sel = (key, label, opts) => `<select data-sel="${key}" aria-label="${label}"><option value="">${label}</option>${opts.map(o => `<option ${S[key] === o ? "selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
     return `<div class="sec-head"><h2>All jobs</h2><span class="small">${loaded ? `${rows.length} of ${JOBS.length}` : ""} · click a row for details</span></div>
       ${chips("status", [["", "All", all.length], ["Applied", "Applied", n("Applied")], ["Review", "Needs you", n("Review")], ["Queued", "Queued", n("Queued")], ["New", "New", n("New")], ["Skipped", "Skipped", n("Skipped")], ["Declined", "Dismissed", n("Declined")]])}
-      <div class="chips">${sel("fit", "Any fit", ["High", "Medium", "Stretch", "Low"])}${sel("work", "Remote, hybrid, on-site", ["Remote", "Hybrid", "On-site"])}${sel("source", "All sources", srcs)}${S.category ? `<button class="chip" type="button" data-set="category" data-val="" aria-pressed="true">Skip reason: ${esc(S.category)} ×</button>` : ""}</div>
+      ${filterBar(false)}${S.category ? `<div class="chips"><button class="chip" type="button" data-set="category" data-val="" aria-pressed="true">Skip reason: ${esc(S.category)} ×</button></div>` : ""}
       ${!loaded ? emptyBox("Loading…") : rows.length ? `<div class="tablebox"><table><thead><tr>${COLS.map(([k, l]) => `<th><button type="button" data-sort="${k}">${l}</button></th>`).join("")}</tr></thead><tbody>${rows.map(j => `
         <tr class="row" data-open="${esc(j.id)}" tabindex="0"><td class="c"><b>${esc(j.company)}</b>${j.vendor && !/^(none|not stated)/i.test(j.vendor) ? `<small>via ${esc(j.vendor)}</small>` : ""}</td>
         <td>${titleLink(j)}<br><small>${esc(srcName(j))}</small></td><td class="contactcell">${contactCell(j)}</td><td>${esc(j.where)}</td><td>${esc(j.type)}</td><td class="mono">${esc(j.pay)}</td>
@@ -586,6 +616,7 @@ td .tlink{color:var(--accent)}
   function go(patch) {
     if (patch.view && patch.view !== S.view) { S.open = ""; if (!("category" in patch)) S.category = ""; }
     Object.assign(S, patch);
+    if (FKEYS.some(k => k in patch)) keepF();
     if (patch.view) { try { history.replaceState(null, "", "#" + S.view); } catch { location.hash = S.view; } window.scrollTo({ top: 0 }); }
     render();
   }
@@ -596,7 +627,7 @@ td .tlink{color:var(--accent)}
     const cp = t.closest("[data-copy]");
     if (cp) { e.stopPropagation(); try { await navigator.clipboard.writeText(cp.dataset.copy); toast("Copied " + cp.dataset.copy); } catch { const c = cp.previousElementSibling, r = document.createRange(); r.selectNodeContents(c); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected. Press copy."); } return; }
     const a = t.closest("button[data-a]");
-    if (a) { if (!a.disabled) { if (a.dataset.a === "queueAll") return act.queueAll(); const j = JOBS.find(x => x.id === a.dataset.id); if (j) act[a.dataset.a](j); } return; }
+    if (a) { if (!a.disabled) { if (a.dataset.a === "queueAll") return act.queueAll(); if (a.dataset.a === "clearF") return go({ fit: "", work: "", source: "", spons: "", via: "", posted: "", easy: "" }); const j = JOBS.find(x => x.id === a.dataset.id); if (j) act[a.dataset.a](j); } return; }
     const tab = t.closest("[data-view]"); if (tab) return go({ view: tab.dataset.view });
     const g = t.closest("[data-go]"); if (g) return go(JSON.parse(g.dataset.go));
     const set = t.closest("[data-set]"); if (set) return go({ [set.dataset.set]: set.dataset.val });

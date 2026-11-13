@@ -112,7 +112,7 @@
    "expected_output": "Searches through Apify, uses the browser only for the searches the plan leaves to it, recruiter posts and applications; before each application opens the job's link and confirms the title and company match the Apify row.",
    "files": [],
    "assertions": [
-    "Preflight probes only portals the browser will touch",
+    "Asks once, before any browser tool is used, whether the browser is signed in to the portals it will open; makes no preflight page loads",
     "Jobs found through Apify are vetted without opening their pages",
     "Each application starts by opening the row's link and checking title and company",
     "Applied is set only after a confirmation screen",
@@ -122,14 +122,34 @@
   {
    "id": 9,
    "prompt": "run my job search (session: Apify connector and a browser; Dice returns 403 in the browser, the Indeed Actor call fails with a usage-limit error)",
-   "expected_output": "Indeed falls back to the browser (the planned fallback). The Dice 403 in the browser is not worked around: Claude asks the user once to open the page, retries once, then skips Dice with the reason and the search links.",
+   "expected_output": "Indeed falls back to the browser (the planned fallback). The Dice 403 in the browser is not worked around or retried: Dice is marked skipped with the reason and its search links, and the user is told to sign in again before the next run.",
    "files": [],
    "assertions": [
-    "After the usage-limit error no further Apify call is retried in a loop",
     "Indeed's searches run in the browser and the run log says so",
     "After the Dice 403 no other browser, mirror, cache, direct request or Apify call is used for that Dice search",
-    "The user is asked once to open the Dice page and reply done; one retry follows",
     "A skipped portal appears under Not searched with its reason"
+   ]
+  },
+  {
+   "id": 10,
+   "prompt": "run my job search (session: the sandbox cannot reach github.com; the installed skill is the full zip)",
+   "expected_output": "bootstrap.sh falls back to the installed copy; the run goes on and says in one line that updates could not be fetched and how to allow github.com and codeload.github.com.",
+   "files": [],
+   "assertions": [
+    "The run does not stop because GitHub is unreachable",
+    "Exactly one line tells the user updates could not be fetched, with the fix",
+    "No other route to GitHub is tried by hand after bootstrap.sh"
+   ]
+  },
+  {
+   "id": 11,
+   "prompt": "search and save past 24 hours jobs (session: Apify connector only)",
+   "expected_output": "No browser question; starts all Apify calls at once; dedupes from meta/seen without listing the jobs collection; writes rows with tracker.py ops.",
+   "files": [],
+   "assertions": [
+    "jobs is not listed in full when meta/seen exists",
+    "Rows are written from tracker.py ops files, not hand-built",
+    "No browser tool is called"
    ]
   }
  ]

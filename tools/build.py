@@ -44,6 +44,10 @@ def main():
     if f"## {version}" not in (ROOT / "CHANGELOG.md").read_text():
         fail(f"CHANGELOG.md has no '## {version}' entry")
     print(f"version {version} consistent")
+    boot = AUTO / "bootstrap.sh"
+    if not boot.exists() or subprocess.run(["bash", "-n", str(boot)]).returncode:
+        fail("bootstrap.sh is missing or does not parse: installs would stop when GitHub is unreachable")
+    print("bootstrap.sh parses")
 
     if check_only:
         return
@@ -52,8 +56,14 @@ def main():
         out = ROOT / "dist" / f"{skill.name}.zip"
         with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
             for f in sorted(skill.rglob("*")):
-                if f.is_file() and "__pycache__" not in f.parts and f.suffix != ".pyc":
-                    z.write(f, f"{skill.name}/{f.relative_to(skill)}")
+                rel = f.relative_to(skill)
+                # The installed copy is what bootstrap.sh falls back to when GitHub is unreachable, so it carries every
+                # script, snippet and reference; the back-test (evals/, run_evals.py) stays in the repo.
+                if f.is_file() and "__pycache__" not in f.parts and f.suffix != ".pyc" and rel.parts[0] != "evals" and f.name != "run_evals.py":
+                    info = zipfile.ZipInfo.from_file(f, f"{skill.name}/{rel}")
+                    if f.suffix == ".sh":
+                        info.external_attr = 0o100755 << 16
+                    z.writestr(info, f.read_bytes(), zipfile.ZIP_DEFLATED)
         print(f"built {out.relative_to(ROOT)} ({out.stat().st_size // 1024} KB)")
 
 

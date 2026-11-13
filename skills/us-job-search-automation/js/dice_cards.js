@@ -1,9 +1,9 @@
 // Dice search results: one line per card, 6 per call (javascript_tool cuts output past ~1,000 characters).
 // Line: id|title|company|location|pay|tags (id dice-<uuid>; tags: posted age, employment type, applied).
-// A card ([data-testid="job-card"]) reads: title, company, "Remote • Today", type, pay. Raise PAGE for more.
+// A card ([data-testid="job-card"]) reads: title, company, "Remote • Today", type, pay. Then __dc(1), __dc(2)... for more (same page, no re-paste).
 // If this returns 0 cards, Dice changed its markup: fall back to get_page_text and read the cards by eye.
-(() => {
-  const PAGE = 0, N = 6;
+window.__dc = (PAGE = 0) => {
+  const N = 6;
   const cut = (s, n) => String(s || '').replace(/\|/g, '/').replace(/\s+/g, ' ').trim().slice(0, n);
   const rows = [], seen = new Set();
   for (const a of document.querySelectorAll('a[href*="/job-detail/"]')) {
@@ -24,4 +24,5 @@
   }
   const page = rows.slice(PAGE * N, PAGE * N + N);
   return `${rows.length} cards, page ${PAGE} of ${Math.max(0, Math.ceil(rows.length / N) - 1)}\n` + page.join('\n');
-})()
+};
+__dc(0)
