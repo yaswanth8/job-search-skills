@@ -4,6 +4,7 @@ Saryom (saryom.com) has a Jobs section: a private board of the user's own applic
 
 ## What goes, and what Saryom does with it
 - Every tracker row goes in the file. Saryom leaves **Skipped** rows off the board, files New, Review and Queued rows as *Saved*, and Applied rows by their stage.
+- The posting goes with each row: its text (`desc`), when it was posted, Easy Apply or company site (and the system), the apply link, sponsorship, whether it came through Apify or the browser, why there is no contact, and the review reason. Saryom's **To apply** tab shows saved jobs the way the dashboard's Needs you does, and its filters match the dashboard's. A field missing from a later upload keeps what Saryom already has.
 - It matches rows on the tracker id, so sending again updates and never duplicates. It never moves an application backwards and never touches notes the user wrote on Saryom.
 - Recruiter contacts on the rows (name, email, phone, profile link) also go to the shared directory, where signed-in users can see them. That includes contacts on Skipped rows, since a job that did not suit this user says nothing against its recruiter; rows skipped as `Spam / duplicate` share nobody. To keep them on the user's own board only: with a token, add `--private-contacts`; with a file, the user unticks *Share the recruiters it found in the public directory* in the upload dialog (the file's own setting is not used there). Say which it was in the report.
 

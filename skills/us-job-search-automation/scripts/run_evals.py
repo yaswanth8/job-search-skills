@@ -258,9 +258,21 @@ def saryom_checks():
         first = next((j for j in up["jobs"] if j.get("id") == "li-1"), {})
         probs = [] if sorted(j["id"] for j in up["jobs"]) == ["li-1", "li-2", "li-3"] else ["ids should come from the file names"]
         probs += [] if up.get("shareContacts") is True else ["contacts are shared unless the user says otherwise"]
-        probs += [] if "notes" not in first and "ats" not in first and first.get("contactEmail") == "pat@example.com" else ["empty and tracker-only fields should be left out"]
+        # Since 2.1.1 `ats` goes too: Saryom shows how a job takes applications. claudeCanApply stays behind.
+        probs += [] if "notes" not in first and "claudeCanApply" not in first and first.get("ats") == "Greenhouse" and first.get("contactEmail") == "pat@example.com" else ["empty and tracker-only fields should be left out"]
         probs += [] if '"skipped_left_off_the_board": 1' in text and '"for_the_board": 2' in text else ["the summary should say what Saryom will leave out"]
         check("payload from a tracker folder", probs, f"{len(up['jobs'])} rows")
+
+        # 2026-11-13: Saryom's To apply view shows the posting as the dashboard does; the upload used to drop these.
+        details = {"desc": "We build payments software.", "postedAt": "2026-11-13T08:00:00Z", "via": "apify", "easyApply": False,
+                   "applyUrl": "https://acme.example/apply", "spons": "Verified", "reviewReason": "ready",
+                   "contactNote": "NA: no hiring team shown on the posting"}
+        (d / "detail").mkdir()
+        (d / "detail" / "li-5.json").write_text(json.dumps(dict(details, company="Acme", role="Java Developer", status="Review")))
+        code, _ = run(saryom.cmd_payload, docs=str(d / "detail"), out=str(d / "up5.json"), private_contacts=False)
+        row5 = json.loads((d / "up5.json").read_text())["jobs"][0] if code == 0 else {}
+        missing = [k for k, v in details.items() if row5.get(k) != v]
+        check("posting details go to Saryom (easyApply false included)", [f"missing {missing}"] if missing else [])
 
         (d / "list.json").write_text(json.dumps({"docs": [{"id": "dice-9", "version": 4, "data": rows["li-1"]}]}))
         code, _ = run(saryom.cmd_payload, docs=str(d / "list.json"), out=str(d / "up2.json"), private_contacts=True)
