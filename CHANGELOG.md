@@ -2,6 +2,9 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 2.1.1 (2026-11-13)
+- **Saryom gets the whole posting.** `saryom.py payload` now sends the job's text, posting time, route (Apify or browser), Easy Apply, apply link, application system, sponsorship, review reason and contact note. Saryom's new To apply tab shows saved jobs as the dashboard's Needs you does (why each is waiting, About this job, Open to apply), with the same filter bar, and its recruiter directory is now a sortable table. Before, these fields were dropped and Saryom showed only the basics. 1 new check and 1 changed (`ats` now goes; `claudeCanApply` still stays behind): 182 in all.
+
 ## 2.1.0 (2026-11-13) **Requires new instructions**
 From two live runs on Nov 13 (a browser run and an Apify rerun of the same 24 hours) and a friend's update that stopped on "GitHub not reachable". 7 new checks, written first: 181 in all.
 

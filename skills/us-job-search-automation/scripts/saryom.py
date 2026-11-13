@@ -30,7 +30,10 @@ DEFAULT_URL = "https://saryom-api-gateway.onrender.com/api/jobs/import"
 MAX_ROWS = 1000  # Saryom's limit per upload
 FIELDS = ["company", "vendor", "role", "where", "pay", "source", "link", "notes", "workType", "type", "fit",
           "status", "stage", "category", "contactName", "contactTitle", "contactEmail", "contactPhone", "contactUrl",
-          "foundAt", "appliedAt", "followUpAt", "appliedBy", "userNote"]
+          "foundAt", "appliedAt", "followUpAt", "appliedBy", "userNote",
+          # The posting itself, for Saryom's To apply view (2.1.1): its text, age, how it takes applications,
+          # sponsorship, how it was found, why there is no contact, and what it is waiting for.
+          "desc", "postedAt", "via", "easyApply", "applyUrl", "ats", "spons", "reviewReason", "contactNote"]
 
 
 def load_rows(src):
