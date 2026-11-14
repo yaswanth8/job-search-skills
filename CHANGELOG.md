@@ -2,6 +2,9 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 2.1.2 (2026-11-13)
+- **Recruiter posts sorted by Latest.** New `js/linkedin_sort_latest.js` runs after each LinkedIn post search loads: it checks the sort dropdown and, if it reads Top Match or "Sort by" (a typed search, or LinkedIn dropping the URL's `sortBy`), opens it, picks **Latest** and presses Show results. Tested live on 2026-11-13 in Chrome: a search without the parameter showed "Sort by"; the snippet printed `switched to Latest` and posts then ran newest first (1h, 2h, 3h...); on the plan's own URL it printed `already Latest`. In this layout the pill is a `div` with `aria-label="Filter by ..."`, the options are text beside unlabelled radios, and Show results is a link. 1 new check (every planned post search carries `sortBy=date_posted`).
+
 ## 2.1.1 (2026-11-13)
 - **Saryom gets the whole posting.** `saryom.py payload` now sends the job's text, posting time, route (Apify or browser), Easy Apply, apply link, application system, sponsorship, review reason and contact note. Saryom's new To apply tab shows saved jobs as the dashboard's Needs you does (why each is waiting, About this job, Open to apply), with the same filter bar, and its recruiter directory is now a sortable table. Before, these fields were dropped and Saryom showed only the basics. 1 new check and 1 changed (`ats` now goes; `claudeCanApply` still stays behind): 182 in all.
 

@@ -5,7 +5,7 @@ description: "Runs a US job search end to end: finds fresh postings on LinkedIn,
 
 # US Job Search Automation
 
-Version: 2.1.1 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 2.1.2 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **get tools, ask once, search, vet, save or apply, track, report**. An application is a statement in the candidate's name, so the profile and resume are the only sources of facts: anything they don't cover is asked once or skipped, never guessed.
 
@@ -65,7 +65,7 @@ Apply to every Queued row before searching (Easy Apply through the portal, compa
 
 **Browser** (`portals.md`), searches without `covered_by`: one portal at a time. LinkedIn: per search page, one `browser_batch` of navigate, wait, paste `js/linkedin_batch.js`, `__lc(0..n)`; vet all cards with one `vet.py --mode card`; then per page one batch of `await __run([...5 pairs])` and `__get(0..4)`; save outputs to `cards.txt` and `jobs.txt` and run `browser_jobs.py linkedin cards.txt jobs.txt --out postings.json`. Dice: `dice_fetch.js`. Indeed: `indeed_cards.js` / `indeed_job.js`.
 
-**Recruiter posts** (browser): `post_searches` with `linkedin_posts.js`, then `posts.py --hours <posts>`. Passing posts become **Reach out** rows.
+**Recruiter posts** (browser): open each `post_searches` URL, run `linkedin_sort_latest.js` (sort must read Latest, newest posts first), then `linkedin_posts.js`, then `posts.py --hours <posts>`. Passing posts become **Reach out** rows.
 
 Pay floors are minimums, never search terms.
 

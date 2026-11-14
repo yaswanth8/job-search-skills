@@ -679,6 +679,8 @@ def main():
         plan, plan24 = build_search_plan(fx), build_search_plan(fx, 24)
         urls, urls24 = " ".join(s["url"] for s in plan["job_searches"] + plan["post_searches"]), " ".join(s["url"] for s in plan24["job_searches"] + plan24["post_searches"])
         probs = []
+        if any("sortBy=%22date_posted%22" not in ps["url"] for ps in plan["post_searches"]):
+            probs.append("a post search is not sorted by Latest (sortBy date_posted)")
         if plan["post_window_hours"] != 12 or "past-24h" not in plan["post_searches"][0]["url"]:
             probs.append("recruiter posts should default to the last 12 hours")
         if "past-week" not in build_search_plan(fx, None, None, None, 72)["post_searches"][0]["url"]:
