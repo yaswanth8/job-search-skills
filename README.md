@@ -23,6 +23,111 @@ Nothing personal lives in this repo. Your profile and your tracker stay in your 
 
 Every set-up needs a Claude plan with skills, code execution and artifacts, which includes Free.
 
+## How it works
+
+Four pictures: what talks to what, how every run starts, and the two paths a run can take after that (search and save, or apply). Each box names the file that does the work, so you can open it in `skills/us-job-search-automation/`.
+
+### The pieces
+
+```mermaid
+flowchart LR
+    you(["<b>You</b><br/>in a Claude chat"]) -->|"Run my job search"| skill["<b>us-job-search-automation</b><br/>SKILL.md · scripts/ · js/ · references/<br/><i>installed in your Claude account</i>"]
+    skill -->|"version check;<br/>download only when newer"| repo[("<b>GitHub</b><br/>job-search-skills")]
+    skill -->|reads| profile["<b>job-search-profile</b><br/>your facts, targets,<br/>pay floors, answers"]
+    skill -->|"search calls"| apify["<b>Apify connector</b><br/>your own free account"]
+    skill -->|"pages, snippets,<br/>Easy Apply forms"| browser["<b>Browser</b><br/>Claude in Chrome<br/>or the built-in one"]
+    apify -->|"job rows with full text"| portals["<b>LinkedIn · Indeed · Dice</b><br/>and recruiter posts"]
+    browser --> portals
+    skill -->|"rows, run log,<br/>dedupe index"| tracker[("<b>Tracker dashboard</b><br/>jobs · runs · meta<br/><i>you open it: Needs you,<br/>Applied, Let Claude apply</i>")]
+    skill -.->|"optional upload"| saryom["<b>Saryom</b> board"]
+```
+
+### Every run starts the same way (step 0)
+
+Nothing opens in a browser until this is done, and every question is asked once, here.
+
+```mermaid
+flowchart TD
+    start(["Run my job search"]) --> boot{"bootstrap.sh:<br/>installed version = GitHub version?"}
+    boot -->|"same"| inst["use the installed copy<br/>(nothing downloaded)"]
+    boot -->|"GitHub newer"| dl["download it for this run<br/>+ one UPDATE line"]
+    boot -->|"GitHub unreachable"| inst
+    inst --> prof["load job-search-profile"]
+    dl --> prof
+    prof --> seen["tracker: meta/seen (dedupe index)<br/>tracker.py since: last run under 6 h ago?<br/>then offer 'only since then'"]
+    seen --> routes{"Which tools does<br/>this chat have?"}
+    routes -->|"Apify + browser"| ask
+    routes -->|"Apify only<br/>(Free plan, phone)"| ask
+    routes -->|"browser only"| ask
+    routes -->|"neither"| stop(["stop: Apify set-up steps"])
+    ask["one round of questions:<br/>save or apply · which sites · posted in the last<br/>browser signed in? · Saryom (first run only)"]
+    ask --> plan["plan.py: Apify calls with cost,<br/>browser searches, recruiter-post searches"]
+    plan --> log["tracker.py run start<br/>criteria table + progress + tracker link"]
+    log --> mode{"What to do?"}
+    mode -->|"Search and save"| S(["Search and save"])
+    mode -->|"Apply to jobs"| A(["Apply"])
+```
+
+### Search and save
+
+Nothing is submitted. Good matches wait in the dashboard's **Needs you** with their full text, until you apply yourself or press **Let Claude apply**.
+
+```mermaid
+flowchart TD
+    S(["Search and save"]) --> src{"Route per portal"}
+    src -->|"Apify"| ap["start every call (waitSecs 0)<br/>get-dataset-items<br/>apify_jobs.py convert"]
+    src -->|"browser"| br["one portal at a time, paced<br/>linkedin_batch.js · dice_fetch.js<br/>indeed_cards.js / indeed_job.js<br/>browser_jobs.py"]
+    src -->|"recruiter posts"| po["linkedin_sort_latest.js (Latest first)<br/>linkedin_posts.js<br/>posts.py"]
+    ap -->|"a call fails"| br
+    br -->|"403, CAPTCHA, sign-in wall"| blk["stop that portal,<br/>list it under Not searched"]
+    ap --> post[("postings.json")]
+    br --> post
+    po --> post
+    post --> vet["vet.py --mode full --hours<br/>visa · location · pay floor · years · stack · duplicates"]
+    vet --> dec{"decision"}
+    dec -->|"apply"| r1["Ready to apply<br/>fit High, Medium or Stretch"]
+    dec -->|"review"| r2["Company site"]
+    dec -->|"needs_call"| r3["Your call<br/>(locals only, defense area...)"]
+    dec -->|"contact"| r4["Reach out<br/>recruiter's email, phone"]
+    dec -->|"skip"| r5["Skipped, with the reason"]
+    r1 --> rows["tracker.py new · check · writes/ops<br/>rows saved after every portal"]
+    r2 --> rows
+    r3 --> rows
+    r4 --> rows
+    r5 --> rows
+    rows --> rep["run finish: criteria table, progress,<br/>one row per Ready job, what was not searched"]
+    rep -.-> sar["Saryom upload (if chosen)"]
+```
+
+### Apply
+
+Needs a browser. Claude submits only one-page forms it can fill from your profile, and marks a job **Applied** only after the site's confirmation screen.
+
+```mermaid
+flowchart TD
+    A(["Apply to jobs"]) --> q["1. Queued rows first<br/>(jobs you pressed Let Claude apply on)"]
+    q --> srch["2. Search and vet<br/>(same as Search and save)"]
+    srch --> each{"each job vet.py passed"}
+    each -->|"Easy Apply, Apply with Indeed,<br/>Dice wizard"| open["open the job's link<br/>same title and company?"]
+    each -->|"company site you didn't queue"| keep["save to Needs you"]
+    open -->|"no"| keep
+    open -->|"yes"| form["fill the form:<br/>screening-answers.md · years.py<br/>resume on file"]
+    form --> gap{"a question the profile<br/>can't answer?"}
+    gap -->|"yes"| askq["ask you once;<br/>never guess"]
+    askq -->|"answered"| sub
+    askq -->|"no answer"| keep
+    gap -->|"no"| sub["submit once"]
+    sub --> conf{"confirmation screen?"}
+    conf -->|"yes"| done["Applied<br/>appliedAt, appliedBy claude"]
+    conf -->|"no"| keep
+    keep --> rows["tracker rows"]
+    done --> rows
+    rows --> rep["report and close the run"]
+    wall["Workday, iCIMS, Taleo<br/>(need your account)"] -.->|"answer sheet only"| keep
+```
+
+What it never does, in any mode: type passwords, create accounts, solve CAPTCHAs, contact recruiters, or go around a site that blocked it.
+
 ## Install
 
 1. Download [`dist/us-job-search-automation.zip`](dist/us-job-search-automation.zip) and [`dist/job-search-profile.zip`](dist/job-search-profile.zip).
