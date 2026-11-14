@@ -2,6 +2,9 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 2.1.3 (2026-11-13)
+- **No download when you're already up to date.** `bootstrap.sh` first reads only the repo's VERSION file. When the installed copy has that version, the run uses it with nothing downloaded (`SOURCE=installed`, about 0.3 s); a copy fetched earlier in the same chat is reused (`SOURCE=cached`). When the installed copy is older, the run downloads and uses the newest version and prints one `UPDATE:` line with the zip link to reinstall. When GitHub is unreachable it still runs the installed copy. Tested on 2026-11-13 against the live repo: same version (no download), an older 2.0.0 install (downloaded 2.1.2, UPDATE shown, second run cached), and GitHub blocked (installed copy). README: an Updating section, and how to replace the old stub. 1 new check, 183 in all.
+
 ## 2.1.2 (2026-11-13)
 - **Recruiter posts sorted by Latest.** New `js/linkedin_sort_latest.js` runs after each LinkedIn post search loads: it checks the sort dropdown and, if it reads Top Match or "Sort by" (a typed search, or LinkedIn dropping the URL's `sortBy`), opens it, picks **Latest** and presses Show results. Tested live on 2026-11-13 in Chrome: a search without the parameter showed "Sort by"; the snippet printed `switched to Latest` and posts then ran newest first (1h, 2h, 3h...); on the plan's own URL it printed `already Latest`. In this layout the pill is a `div` with `aria-label="Filter by ..."`, the options are text beside unlabelled radios, and Show results is a link. 1 new check (every planned post search carries `sortBy=date_posted`).
 

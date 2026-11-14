@@ -5,7 +5,7 @@ description: "Runs a US job search end to end: finds fresh postings on LinkedIn,
 
 # US Job Search Automation
 
-Version: 2.1.2 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 2.1.3 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **get tools, ask once, search, vet, save or apply, track, report**. An application is a statement in the candidate's name, so the profile and resume are the only sources of facts: anything they don't cover is asked once or skipped, never guessed.
 
@@ -36,7 +36,7 @@ TOOLS is the folder `bootstrap.sh` prints; run `python3 -B TOOLS/scripts/<name>.
 | Sponsoring employers, C2C vendors, career-page feeds (only when asked) | `references/employers-and-feeds.md` |
 
 ## 0. Start (no browser is opened until step 5 is done)
-1. **Tools.** `bash <this skill's folder>/bootstrap.sh <scratch>`; its last line is `TOOLS=... VERSION=... SOURCE=...`. It tries git, then tarball downloads, then an earlier copy, then this installed copy, so it does not fail when GitHub is unreachable. If VERSION differs from the Version line above, follow `TOOLS/SKILL.md` for the whole run. On `SOURCE=bundled`, say in one line that updates could not be fetched and give the fix it printed. Never stop the run over an update.
+1. **Tools.** `bash <this skill's folder>/bootstrap.sh <scratch>`; its last line is `TOOLS=... VERSION=... SOURCE=...`. It first reads only the repo's VERSION: when this installed copy is already the latest it is used with nothing downloaded (`SOURCE=installed`); otherwise it downloads, and falls back to this copy when GitHub is unreachable (`SOURCE=bundled`), so a run never stops over updates. If VERSION differs from the Version line above, follow `TOOLS/SKILL.md` for the whole run. Pass on, once, any `UPDATE:` or `NOTE:` line it prints (how to install the newer zip, or how to allow GitHub).
 2. **Profile.** Load `job-search-profile`. Template placeholders mean First-time setup.
 3. **What is already known**, cheaply: `get meta/seen` and `tracker.py seen --doc <it> --out meta_seen.json --txt <scratch>/seen.txt`. Only when meta/seen does not exist yet: list `jobs` once and `tracker.py seen --from-list <listing> ...`. Never list every job on later runs. `get` the newest `runs` doc only for `tracker.py since` (offer "search only since then" when a run finished under 6 h ago).
 4. **Routes.** Settle the table above (Apify only: say this run saves and submits nothing).

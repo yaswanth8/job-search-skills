@@ -595,6 +595,12 @@ def token_checks():
         last = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr[-200:]
         check("GitHub unreachable: bootstrap.sh falls back to the installed copy instead of stopping",
               [] if r.returncode == 0 and "SOURCE=bundled" in last and f"TOOLS={HERE.parent}" in last else [last], last[-40:])
+        (d / "latest_v").write_text((HERE.parent / "VERSION").read_text())
+        r = subprocess.run(["bash", str(HERE.parent / "bootstrap.sh"), str(d / "boot2")], capture_output=True, text=True,
+                           env=dict(env, JSS_VERSION_URL=f"file://{d / 'latest_v'}"), timeout=120)
+        last = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr[-200:]
+        check("installed copy already the latest: bootstrap.sh downloads nothing and uses it",
+              [] if r.returncode == 0 and "SOURCE=installed" in last and not (d / "boot2" / "jss").exists() else [last], last[-40:])
     return out
 
 

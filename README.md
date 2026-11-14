@@ -8,7 +8,7 @@ Two Claude skills that run a US job search for you. Claude finds fresh postings 
 
 | Skill | What it is | Updates |
 |---|---|---|
-| `skills/us-job-search-automation` | The workflow, plus scripts, Apify calls, browser snippets, reference guides, tests and an empty tracker | Each run fetches the latest scripts from this repo and offers new instructions when the version changes |
+| `skills/us-job-search-automation` | The workflow, plus scripts, Apify calls, browser snippets, reference guides, tests and an empty tracker | Each run checks this repo's version first (a few bytes). Already the latest: it runs your installed copy, nothing downloaded. Newer here: that run downloads and uses it, and tells you once to reinstall the zip. GitHub unreachable: it runs your installed copy. |
 | `skills/job-search-profile` | A blank profile: contact details, visa status, targets, locations, pay floors, form answers | Never updated from here; it's yours |
 
 Nothing personal lives in this repo. Your profile and your tracker stay in your own Claude account.
@@ -31,6 +31,12 @@ Every set-up needs a Claude plan with skills, code execution and artifacts, whic
 4. **Browser (to apply, paid Claude plans).** Install the Claude in Chrome extension, allow linkedin.com, indeed.com and dice.com in it, and sign in to the three portals in that Chrome with your current resume uploaded to each.
 5. New chat: attach your resume and say **"Set up my job-search profile from my resume."** Save the profile Claude proposes.
 6. Then say **"Run my job search."** The first run creates your tracker. Every prompt is listed under [Prompts, step by step](#prompts-step-by-step).
+
+### Updating
+
+You don't have to: every run uses the newest version whenever GitHub is reachable. When your installed copy is behind, the run says so once (`UPDATE: the installed skill is X and the latest is Y`). To catch up, download [`dist/us-job-search-automation.zip`](dist/us-job-search-automation.zip) again and upload it in Customize > Skills, replacing the old one; later runs then start without a download and also work when GitHub is blocked. Your profile skill is never replaced, so your details stay.
+
+**Installed an earlier short "stub" version** (its Version line says "stub")? Replace it with the zip above once: the stub has no scripts, so it must download every run and stops when GitHub is unreachable.
 
 Never share an Apify account or token with a friend: each person signs up for their own, so each gets their own free $5.
 
