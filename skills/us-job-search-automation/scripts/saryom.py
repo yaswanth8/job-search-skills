@@ -96,13 +96,13 @@ def cmd_upload(a):
         detail = e.read().decode(errors="replace")[:300]
         if e.code == 401:
             print("REFUSED: Saryom did not accept the token. It may have been revoked; ask the user for a new one "
-                  "(saryom.com > Jobs > My applications > Bring in from the skill).")
+                  "(saryom.com > Jobs > My job search > Bring in from the skill).")
             sys.exit(2)
         print(f"FAILED: Saryom answered {e.code}. {detail}")
         sys.exit(1)
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         print(f"UNREACHABLE: could not reach Saryom from here ({e}). Do not look for another route: give the user "
-              f"the file {Path(a.file).resolve()} to upload at saryom.com > Jobs > My applications > Bring in from the skill.")
+              f"the file {Path(a.file).resolve()} to upload at saryom.com > Jobs > My job search > Bring in from the skill.")
         sys.exit(3)
     print(f"UPLOADED: {totals.get('created', 0)} added, {totals.get('updated', 0)} updated, "
           f"{totals.get('ignored', 0)} skipped rows left off the board, {totals.get('recruitersShared', 0)} recruiters shared, "

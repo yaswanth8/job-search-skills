@@ -2,6 +2,9 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 2.1.4 (2026-11-14)
+- Saryom renamed its page from "My applications" to "My job search": the upload path in `saryom.py`'s messages, `references/saryom.md` and the README now says Jobs > My job search > **Bring in from the skill**. The README links Saryom's new page about this skill, saryom.com/jobs/skill. No behaviour change.
+
 ## 2.1.3 (2026-11-13)
 - **No download when you're already up to date.** `bootstrap.sh` first reads only the repo's VERSION file. When the installed copy has that version, the run uses it with nothing downloaded (`SOURCE=installed`, about 0.3 s); a copy fetched earlier in the same chat is reused (`SOURCE=cached`). When the installed copy is older, the run downloads and uses the newest version and prints one `UPDATE:` line with the zip link to reinstall. When GitHub is unreachable it still runs the installed copy. Tested on 2026-11-13 against the live repo: same version (no download), an older 2.0.0 install (downloaded 2.1.2, UPDATE shown, second run cached), and GitHub blocked (installed copy). README: an Updating section, and how to replace the old stub. 1 new check, 183 in all.
 

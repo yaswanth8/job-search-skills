@@ -13,7 +13,7 @@ Ask at the start unless the profile's Tracker section already has a line `Saryom
 
 | Choice | What Claude does |
 |---|---|
-| File | Builds the file and gives it to the user to upload at saryom.com > Jobs > My applications > **Bring in from the skill**. Works everywhere; needs a few clicks each time. |
+| File | Builds the file and gives it to the user to upload at saryom.com > Jobs > My job search > **Bring in from the skill**. Works everywhere; needs a few clicks each time. |
 | Token | Sends the rows itself. The user creates a token once in that same dialog (**Create a token**) and pastes it when asked. A token can only add jobs: it cannot read the board, and the user can revoke it there. |
 
 No Saryom account yet: the user signs up at saryom.com first (Google sign-in). Never create the account or sign in for them.

@@ -203,8 +203,8 @@ Matches appear under **Reach out** with the recruiter's name, email and phone. Y
 **7. Follow-ups and replies.** Set the stage (Screening, Interview, Offer...) on the dashboard's Applied view when you hear back, or say:
 > **What follow-ups are due?**
 
-**8. Saryom** ([saryom.com](https://saryom.com) > Jobs). Optional: your applications on a private board, and the recruiters you found added to a directory shared with other job seekers.
-- **With a file:** say **Send my tracker to Saryom as a file.** Claude gives you `saryom-upload.json`; on Saryom open Jobs > My applications > **Bring in from the skill** and choose the file.
+**8. Saryom** ([saryom.com](https://saryom.com) > Jobs). Optional: your applications on a private board, and the recruiters you found added to a directory shared with other job seekers. Saryom has a page that explains this skill to someone new: [saryom.com/jobs/skill](https://saryom.com/jobs/skill).
+- **With a file:** say **Send my tracker to Saryom as a file.** Claude gives you `saryom-upload.json`; on Saryom open Jobs > My job search > **Bring in from the skill** and choose the file.
 - **With a token:** in that same dialog press **Create a token**, copy it, and say **Send my tracker to Saryom**; paste the token when Claude asks. A token can only add jobs, cannot read your board, and you can revoke it there.
 - To stop being asked each run, let Claude save your answer in your profile, or say **Don't send to Saryom.**
 
