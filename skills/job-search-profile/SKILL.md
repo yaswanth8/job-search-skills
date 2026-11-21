@@ -5,7 +5,7 @@ description: "Personal job-search profile: resume facts, work authorization, tar
 
 # Job Search Profile: <Your name>
 
-Template 2.0 (for `us-job-search-automation` 2.x). A profile saved from an older template keeps working: new settings take their defaults until you set them.
+Template 3.0 (for `us-job-search-automation` 3.x). A profile saved from an older template keeps working: new settings take their defaults until you set them.
 
 The single source of candidate data for `us-job-search-automation`. Every fact that goes on an application comes from here or from the resume, so a gap becomes a question or a skipped job, never a guess.
 
@@ -106,6 +106,7 @@ The `stack` section is set up for a Java developer. For another language, change
  "parttime_patterns": ["part-time", "part time"],
  "anonymous_employers": ["confidential", "financial sector", "our client", "stealth", "undisclosed", "a client of ours"],
  "verified_years": {},
+ "followup_days": 7,
  "roles": [
   {"employer": "<Most recent employer (client)>", "start": "2023-01", "end": "present", "skills": ["<skill>", "<skill>"]},
   {"employer": "<Previous employer (client)>", "start": "2019-06", "end": "2022-12", "skills": ["<skill>"]}

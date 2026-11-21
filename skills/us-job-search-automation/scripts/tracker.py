@@ -47,6 +47,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from jobkit_core import CATEGORIES, STATES, classify_ats, job_key, load_profile, pay_from_text  # noqa: E402
+from jobkit_extra import desc_fingerprint, find_duplicates, followups as _followups  # noqa: E402
 
 STATUSES = ["New", "Review", "Queued", "Applied", "Skipped", "Declined"]
 STAGES = ["", "Screening", "Interview", "Offer", "Rejected", "Withdrawn", "No response"]
@@ -124,15 +125,46 @@ def cmd_new(a):
             "ats": (ats or {}).get("ats", ""), "claudeCanApply": (ats or {}).get("claude_can_apply"),
             "applyUrl": p.get("apply_url", ""), "link": link, "category": d.get("category") or "",
             "notes": "; ".join(d.get("reasons", []) + d.get("flags", [])),
-            "foundAt": today(), "updatedAt": today(),
+            "foundAt": today(), "updatedAt": today(), "runId": getattr(a, "run_id", "") or "",
+            "score": d.get("score") if isinstance(d.get("score"), int) else None, "gaps": ", ".join(d.get("gaps") or [])[:120],
             "desc": clean_desc(p.get("description", "")), "postedAt": posted_at(p), "via": p.get("via") or "browser",
             "easyApply": p["easy_apply"] if isinstance(p.get("easy_apply"), bool) else
             True if p.get("apply_type") in ("easy_apply", "dice", "indeed_apply") else False if p.get("apply_type") == "company_site" else None,
         }
         docs.append(doc)
+    mark_duplicates(docs)
     Path(a.out).write_text(json.dumps(docs, indent=1))
     print(f"{len(docs)} docs -> {a.out}  " + ("(search-and-save: passing jobs are Ready to apply; nothing is submitted)" if a.save
           else "(status New = apply next; set Applied only after seeing confirmation)"))
+
+
+def mark_duplicates(docs: list) -> int:
+    """The same job posted by several vendors (or on several sites under another title) becomes one row: the best copy
+    stays (pay shown, Easy Apply, most text) with `alsoBy` naming the others; the rest are Skipped as duplicates."""
+    live = [d for d in docs if d["status"] != "Skipped"]
+    dups = find_duplicates(live)
+    by = {d["id"]: d for d in docs}
+    n = 0
+    for dup_id, keep_id in dups.items():
+        d, k = by[dup_id], by[keep_id]
+        names = [x for x in (k.get("alsoBy", "").split(", ") + [d["company"]]) if x and x != k["company"]]
+        k["alsoBy"] = ", ".join(dict.fromkeys(names))[:120]
+        d.update(status="Skipped", category="Stale / duplicate", reviewReason="", notes=f"same job as {keep_id} ({k['company']}); also posted by {d['company']}")
+        n += 1
+    return n
+
+
+def cmd_followups(a):
+    raw = json.loads(Path(a.rows).read_text())
+    rows = raw if isinstance(raw, list) else raw.get("docs") or raw.get("items") or []
+    rows = [dict(r.get("data", r), id=r.get("id") or r.get("data", {}).get("id")) for r in rows]
+    out = _followups(rows, a.today or today(), a.days, a.close_after)
+    if not out:
+        print("no applications are waiting for a follow-up")
+        return
+    print(f"| Days | Company | Role | Next |\n|---|---|---|---|")
+    for r in out[:a.limit]:
+        print(f"| {r['days']} | {r['company']} | {r['role']} | {r['advice']} |")
 
 
 def cmd_writes(a):
@@ -154,7 +186,7 @@ def cmd_writes(a):
 
 # Fields a Skipped row keeps: enough for the dashboard's lists, the what-if view and dedupe; nothing to act on.
 SKIPPED_KEEP = ("company", "role", "where", "workType", "type", "pay", "source", "fit", "spons", "status", "category",
-                "notes", "link", "foundAt", "updatedAt", "via", "easyApply", "postedAt", "desc")
+                "notes", "link", "foundAt", "updatedAt", "via", "easyApply", "postedAt", "desc", "runId")
 
 
 def compact(doc: dict) -> dict:
@@ -209,7 +241,7 @@ def cmd_seen(a):
     for f in a.add or []:
         rows += json.loads(Path(f).read_text())
     for r in rows:
-        for v in (r.get("id"), job_key(r.get("company", ""), r.get("role") or r.get("title", ""))):
+        for v in (r.get("id"), job_key(r.get("company", ""), r.get("role") or r.get("title", "")), desc_fingerprint(r.get("role") or r.get("title", ""), r.get("desc", ""))):
             if v and v not in items:
                 items.append(v)
     items = items[-SEEN_MAX:]
@@ -253,7 +285,7 @@ def cmd_table(a):
     """The rows a person acts on (everything but Skipped), best fit first, as a markdown table."""
     docs = [d for d in json.loads(Path(a.docs).read_text()) if d.get("status") not in ("Skipped", "Declined")]
     rank = {"High": 0, "Medium": 1, "Stretch": 2}
-    docs.sort(key=lambda d: (d.get("status") != "Applied", rank.get(d.get("fit"), 3), d.get("company", "")))
+    docs.sort(key=lambda d: (d.get("status") != "Applied", -(d.get("score") or 0), rank.get(d.get("fit"), 3), d.get("company", "")))
     how = lambda d: ("Applied" if d.get("status") == "Applied" else "Reach out" if d.get("reviewReason") == "contact" else  # noqa: E731
                      "Your call" if d.get("reviewReason") == "needs-call" else "Company site" if d.get("reviewReason") == "company-site" else
                      "Easy Apply" if d.get("easyApply") else "Ready to apply")
@@ -262,7 +294,7 @@ def cmd_table(a):
     for d in docs[: a.limit]:
         url = d.get("applyUrl") or d.get("link") or ""
         role = f"[{cell(d.get('role'))}]({url})" if url.startswith("http") else cell(d.get("role"))
-        print(f"| {cell(d.get('company'))} | {role} | {cell(d.get('where'))} | {cell(d.get('pay'))} | {cell(d.get('fit'))} | {cell(d.get('postedAt', '')[:10])} | {how(d)} |")
+        print(f"| {cell(d.get('company'))} | {role} | {cell(d.get('where'))} | {cell(d.get('pay'))} | {cell(d.get('fit'))}{' ' + str(d['score']) if d.get('score') is not None else ''} | {cell(d.get('postedAt', '')[:10])} | {how(d)} |")
     if len(docs) > a.limit:
         print(f"\n{len(docs) - a.limit} more on the dashboard.")
     if not docs:
@@ -341,6 +373,8 @@ def normalize_source(src: str, apply_type: str = "") -> str:
     """One name per portal, so the dashboard's source chart and filter group alike rows. LinkedIn Easy Apply stays
     separate from LinkedIn jobs that apply on the company site."""
     s = (src or "").strip().lower()
+    if s.startswith("google"):
+        return "Google Jobs"
     if "linkedin" in s and "post" not in s and ("easy" in s or apply_type == "easy_apply"):
         return "LinkedIn Easy Apply"
     if s.startswith("ats-"):
@@ -502,7 +536,8 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("id"); s.add_argument("link")
-    s = sub.add_parser("new"); s.add_argument("decisions"); s.add_argument("postings"); s.add_argument("--out", required=True); s.add_argument("--save", action="store_true")
+    s = sub.add_parser("new"); s.add_argument("decisions"); s.add_argument("postings"); s.add_argument("--out", required=True); s.add_argument("--save", action="store_true"); s.add_argument("--run-id", default="", help="the run doc's id: rows carry it so the dashboard's Last run filter works")
+    s = sub.add_parser("followups"); s.add_argument("rows"); s.add_argument("--days", type=int, default=7); s.add_argument("--close-after", type=int, default=21); s.add_argument("--today"); s.add_argument("--limit", type=int, default=15)
     s = sub.add_parser("writes"); s.add_argument("docs"); s.add_argument("--dir", required=True); s.add_argument("--update", action="store_true")
     s = sub.add_parser("ops"); s.add_argument("docs"); s.add_argument("--out", required=True); s.add_argument("--seen")
     s = sub.add_parser("seen"); s.add_argument("--doc"); s.add_argument("--add", nargs="*"); s.add_argument("--from-list"); s.add_argument("--out", required=True); s.add_argument("--txt")
@@ -526,4 +561,4 @@ if __name__ == "__main__":
     if a.cmd == "id":
         print(doc_id(a.link))
     else:
-        {"new": cmd_new, "writes": cmd_writes, "ops": cmd_ops, "seen": cmd_seen, "check": cmd_check, "table": cmd_table, "criteria": cmd_criteria, "run": cmd_run, "since": cmd_since}[a.cmd](a)
+        {"new": cmd_new, "writes": cmd_writes, "ops": cmd_ops, "seen": cmd_seen, "check": cmd_check, "table": cmd_table, "criteria": cmd_criteria, "run": cmd_run, "since": cmd_since, "followups": cmd_followups}[a.cmd](a)

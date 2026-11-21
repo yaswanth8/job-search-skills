@@ -266,8 +266,34 @@
   "apify": {
    "enabled": "auto",
    "max_per_portal": 25,
-   "max_charge_usd_per_call": 0.05,
+   "budget_usd": 0.1,
+   "monthly_cap_usd": 5.0,
+   "google_rows": 12,
    "allowed_actors": []
+  },
+  "presets": {
+   "scheduled": {
+    "hours": 25,
+    "post_hours": 0,
+    "mode": "save",
+    "scope": "all",
+    "deep": false
+   },
+   "remote-contract": {
+    "hours": 24,
+    "post_hours": 12,
+    "mode": "save",
+    "scope": "remote",
+    "deep": true
+   },
+   "onsite": {
+    "hours": 48,
+    "post_hours": 0,
+    "mode": "save",
+    "scope": "onsite",
+    "deep": false
+   }
   }
- }
+ },
+ "followup_days": 7
 }

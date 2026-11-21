@@ -27,6 +27,10 @@ def expand_pattern(p: str) -> str:
     return p.replace("~", r"\b").replace(" ", r"\s+").replace("_", r"\s*")
 
 
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parent))
+from jobkit_extra import desc_fingerprint, ghost_flags, match_score  # noqa: E402
+
 DEFAULTS_FILE = Path(__file__).resolve().parent.parent / "assets" / "profile_defaults.json"
 
 
@@ -235,6 +239,10 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
         return _skip(res, "Stale / duplicate", "already in the tracker")
     if seen_links and mode == "full" and job_key(company, title) in seen_links:
         return _skip(res, "Stale / duplicate", "same company and title already in the tracker (often the same job on another site)")
+    if seen_links and mode == "full":
+        fp = desc_fingerprint(title, posting.get("description") or "")
+        if fp and fp in seen_links:
+            return _skip(res, "Stale / duplicate", "same text as a job already in the tracker (another vendor's repost)")
     age = posting.get("age_hours")
     if age is not None and age > profile.get("window_hours", 72):
         return _skip(res, "Stale / duplicate", f"posted {age:.0f}h ago, outside the {profile.get('window_hours', 72)}h window")
@@ -421,6 +429,11 @@ def vet(posting: dict, profile: dict, mode: str = "full", seen_links: set | None
     if stretch:
         fit = "Stretch"   # inside the ceiling but above the candidate's own years: worth it, but a reach
     res["fit"] = fit
+    low_start = any("range starts below" in f for f in res["flags"])
+    res["score"] = match_score(core=core, primary=java_present, frontend=bool(frontend), gaps=gaps, years=yrs, candidate_years=profile.get("candidate_years", 8),
+                               work_type=wt, pay_state=("low-start" if low_start else "ok") if pay else "unknown", stretch=stretch)
+    res["gaps"] = gaps
+    res["flags"] += ghost_flags(desc, age)
     res["reasons"].append(f"core match: {', '.join(core) or 'none'}" + (f"; gaps: {', '.join(gaps)}" if gaps else ""))
     if fit == "Low":
         return _skip(res, "Stack mismatch", "low fit")
@@ -687,7 +700,7 @@ def _quote(t: str) -> str:
 
 def build_search_plan(profile: dict, window_hours: int | None = None, post_queries: list | None = None,
                       include_company_site: bool | None = None, post_window_hours: int | None = None,
-                      mode: str = "apply") -> dict:
+                      mode: str = "apply", deep: bool = False) -> dict:
     """The smallest set of searches that covers the profile's roles and locations.
 
     One combined OR query per location bucket and portal, instead of one search per title.
@@ -725,6 +738,22 @@ def build_search_plan(profile: dict, window_hours: int | None = None, post_queri
                 fallback_keywords=titles[:3])
         else:
             missing_geo.append(code)
+    if deep:
+        # LinkedIn URL filters worth a second look (not run by default: each is one more page load). f_JT contract and
+        # f_E mid-senior narrow what the combined query returns; f_SB2 keeps pay at or above the floor (1 = $40K+ ... 9 = $200K+);
+        # sortBy=DD puts the newest first; the recommended collection is LinkedIn's own picks for the signed-in profile.
+        # f_WT is not listed: the current search layout ignores it. Bucket "Deep" keeps Apify from covering them.
+        floor_k = int(profile.get("pay_floor", {}).get("annual") or 0) // 20000 - 1
+        sb = max(1, min(9, floor_k)) if floor_k >= 1 else 0
+        base = li.format(k=quote(f"({combined}) remote" if not nationwide else f"({combined})"), g=geo["US"], s=hours * 3600)
+        variants = [("Deep · contract only (f_JT=C)", f"{base}&f_JT=C&sortBy=DD"),
+                    ("Deep · full-time only (f_JT=F)", f"{base}&f_JT=F&sortBy=DD"),
+                    ("Deep · mid-senior level (f_E=3,4)", f"{base}&f_E=3%2C4&sortBy=DD")]
+        if sb:
+            variants.append((f"Deep · pay at or above the floor (f_SB2={sb})", f"{base}&f_SB2={sb}&sortBy=DD"))
+        variants.append(("Deep · LinkedIn's recommended jobs", "https://www.linkedin.com/jobs/collections/recommended/"))
+        for bucket, url in variants:
+            add("LinkedIn", bucket, url, snippet="linkedin_batch.js", variant=True)
     # Indeed answers a combined OR query with "did you mean" suggestions: one plain query per title instead.
     for t in titles[:2]:
         add("Indeed", f"{'US-wide' if nationwide else 'Remote US'} · {t}", f"https://www.indeed.com/jobs?q={quote(t)}&l={'United%20States' if nationwide else 'Remote'}&fromage={days}&sort=date", snippet="indeed_cards.js")

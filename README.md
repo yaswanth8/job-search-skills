@@ -1,5 +1,7 @@
 # job-search-skills
 
+**3.0:** dashboard Resume tailor, Last run / Latest filters, Schedule (12h / 24h), match scores, Google Jobs, smarter dedupe, and about 60% fewer instruction tokens per run. See CHANGELOG.md.
+
 Two Claude skills that run a US job search for you. Claude finds fresh postings on LinkedIn, Indeed and Dice, vets each one against your profile (work authorization, location, pay, seniority, stack), then either saves the good ones for you or applies through Easy Apply and similar one-page forms, your choice each run. It keeps a live tracker dashboard that shows each run's progress and each job's details, and can send your applications to your board on Saryom.
 
 **New in 2.1:** runs never stop on "GitHub not reachable", every question (including whether your browser is signed in) is asked once before anything opens, runs use far fewer tokens, and the dashboard filters by fit, sponsorship, source, posting age and Easy Apply.

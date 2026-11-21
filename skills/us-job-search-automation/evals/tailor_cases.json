@@ -1,0 +1,13 @@
+{
+ "_about": "Resume tailor fact guard, run by scripts/tailor.py and by the dashboard's logic block (node). A tailored resume may reorder and reword; it may not add a skill, a years figure or a date the resume lacks.",
+ "resume": "Senior Java developer. 8 years of Java and Spring Boot. Built microservices on AWS with Docker. React front ends and JUnit tests. Acme Corp 2019-2023: payments APIs. Beta Systems 2015-2019: batch processing, Oracle and SQL.",
+ "verified_years": {"java": 8},
+ "cases": [
+  {"id": "reorder-only", "tailored": "Java and Spring Boot microservices on AWS with Docker. 8 years of Java. React front ends. Acme Corp 2019-2023: payments APIs.", "expect": {"ok": true, "skills": [], "years": [], "dates": []}},
+  {"id": "new-skills", "tailored": "Java microservices on AWS with Kubernetes and Kafka. 8 years of Java. Acme Corp 2019-2023.", "expect": {"ok": false, "skills": ["kafka", "kubernetes"], "years": [], "dates": []}},
+  {"id": "inflated-years", "tailored": "10 years of Java and Spring Boot on AWS. Acme Corp 2019-2023.", "expect": {"ok": false, "skills": [], "years": [10], "dates": []}},
+  {"id": "moved-date", "tailored": "Java developer at Acme Corp 2018-2023, 8 years of Java.", "expect": {"ok": false, "skills": [], "years": [], "dates": ["2018"]}},
+  {"id": "javascript-is-not-java", "tailored": "Java and JavaScript front ends with React.", "expect": {"ok": false, "skills": ["javascript"], "years": [], "dates": []}},
+  {"id": "plain-words-are-not-skills", "tailored": "The rest of the team went live on time; a go-to engineer for Spring Boot and Java. 8 years of Java.", "expect": {"ok": true, "skills": [], "years": [], "dates": []}}
+ ]
+}

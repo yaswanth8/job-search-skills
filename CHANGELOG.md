@@ -2,6 +2,23 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 3.0.0 (2026-11-21) **Requires new instructions**
+Everything approved from the feature list, tests first: 233 checks (183 before) and a dashboard template 10.
+
+**Dashboard (republish to get it)**
+- **Resume tailor** per job, only when you press it. The page asks Claude (no chat prompt), reorders and rewords your own resume text for that posting, and a guard rejects the result if it adds a skill, a years figure or a date the resume lacks. The same guard runs in `tailor.py check` and the page's own JS; both are tested on the same cases.
+- **Last run** and **Latest 24h** filter. **Schedule** button (12 h or 24 h, pause) that writes `meta/schedule`; one chat message activates it, then the dashboard controls it. Scheduled runs only search and save.
+- Match score (0-100) and missing skills on every card, sort by score, Pay not listed bucket with a range from similar jobs, follow-up reminders, Draft message / Draft follow-up / Interview prep, a Recruiters view and an Offers comparison.
+
+**Search**
+- **Google Jobs** through `memo23/google-jobs-scraper` (opt-in; confirm on a live run). **LinkedIn URL variants** with `--deep`. Run budget raised to 10 cents, 5 concurrent runs, per-call caps sized to each call's estimate. `--preset`, `--scope`, `--runs-per-day`.
+- Smarter dedupe: the same job from two vendors, or a reworded title, merges into one row (the copy with pay is kept); description fingerprints in `meta/seen`. Ghost-job flags (evergreen wording, 30+ days old).
+
+**Fewer tokens**
+- `jobrun.py begin` and `jobrun.py save` replace about 25 commands per run; the profile is validated by `profile_check.py` and never loaded into the chat. SKILL.md 13.5 KB to 8.6 KB, setup and schedule moved to references read only when needed. `python3 tools/tokens.py`: about 9,600 to 3,800 instruction tokens per Apify run (60% fewer).
+
+**Changed expectation**: the Apify call cap is no longer a flat $0.05 (new check wording in `run_evals.py`).
+
 ## 2.1.4 (2026-11-14)
 - Saryom renamed its page from "My applications" to "My job search": the upload path in `saryom.py`'s messages, `references/saryom.md` and the README now says Jobs > My job search > **Bring in from the skill**. The README links Saryom's new page about this skill, saryom.com/jobs/skill. No behaviour change.
 
