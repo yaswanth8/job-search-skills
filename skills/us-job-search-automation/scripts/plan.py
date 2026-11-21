@@ -91,6 +91,9 @@ def make_plan(a, profile=None):
         dropped = [p for p in portals if p.lower() == "google" and not any(c["name"] == "google" for c in calls)]
         if dropped and a.scope != "onsite":
             plan["apify_note"] = "Google Jobs left out: it did not fit this run's budget with the other portals."
+        if any(c["name"] == "google" for c in calls):
+            plan["apify_note"] = ("Google Jobs needs a $0.50 spend cap (the Actor refuses less); it is stopped by its row limit and bills only what it returns, "
+                                  "about 4 cents for 12 rows. Say so when asking, and leave it out of scheduled runs.")
         if a.runs_per_day:
             from schedule import cost
             plan["apify_month"] = cost(plan["apify_est_cost_usd"], max(1, round(24 / a.runs_per_day)), float(_cfg(profile).get("monthly_cap_usd") or 5))

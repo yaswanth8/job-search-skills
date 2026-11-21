@@ -1,4 +1,4 @@
-<!-- Job tracker template, version 10. Before publishing, replace {{TRACKER_NAME}} (e.g. "Priya's Job Tracker"), {{OWNER_LINE}} (e.g. "Priya S · Python backend · US citizen") and {{SEARCH_SCOPE}} (one sentence, e.g. "Remote anywhere in the US, or hybrid in Texas."). Publish with capabilities {db:{rules:[{path:"",read:"view",write:"admin"}]}, user:{}, sample:{}, downloads:true}. sample runs Resume tailor and the drafts on the viewer's own Claude; downloads saves the tailored resume. -->
+<!-- Job tracker template, version 11. Before publishing, replace {{TRACKER_NAME}} (e.g. "Priya's Job Tracker"), {{OWNER_LINE}} (e.g. "Priya S · Python backend · US citizen") and {{SEARCH_SCOPE}} (one sentence, e.g. "Remote anywhere in the US, or hybrid in Texas."). Publish with capabilities {db:{rules:[{path:"",read:"view",write:"admin"}]}, user:{}, sample:{}, downloads:true}. sample runs Resume tailor and the drafts on the viewer's own Claude; downloads saves the tailored resume. -->
 <title>{{TRACKER_NAME}}</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -783,8 +783,8 @@ td .tlink{color:var(--accent)}
       <p class="small">A scheduled run searches and saves jobs to this tracker. It never applies and never contacts anyone: you review the jobs here.</p>
       <div class="row2">${opt("0", "Off")}${opt("12", "Every 12 hours")}${opt("24", "Every 24 hours")}</div>
       <div class="row2"><label>First run at <select id="sHour">${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${(sc.startHour ?? 7) === h ? "selected" : ""}>${(h % 12 || 12) + (h < 12 ? " am" : " pm")}</option>`).join("")}</select> (${esc(tz)})</label></div>
-      <div class="row2">${["LinkedIn", "Indeed", "Dice", "Google Jobs"].map(p => `<label><input type="checkbox" name="sp" value="${p}" ${ports.includes(p) ? "checked" : ""}> ${p}</label>`).join("")}</div>
-      <p class="small">Cost on Apify's free $5 a month: about 9 cents a run with all four, so every 24 hours is about $2.70 a month and every 12 hours about $5.40. Without Google Jobs it is about 6 cents (24h $1.80, 12h $3.60).</p>
+      <div class="row2">${["LinkedIn", "Indeed", "Dice"].map(p => `<label><input type="checkbox" name="sp" value="${p}" ${ports.includes(p) ? "checked" : ""}> ${p}</label>`).join("")}</div>
+      <p class="small">Cost on Apify's free $5 a month: about 6 cents a run, so every 24 hours is about $1.80 a month and every 12 hours about $3.60. Google Jobs is left out of schedules (its Actor needs a 50-cent spend cap); ask for it in a chat run.</p>
       <div class="row2"><button class="btn primary" type="button" data-m="saveSched" ${canWrite ? "" : "disabled"}>Save schedule</button><span class="small" id="schedMsg"></span></div>`);
   }
   async function saveSched() {
