@@ -1,4 +1,4 @@
-<!-- Job tracker template, version 11. Before publishing, replace {{TRACKER_NAME}} (e.g. "Priya's Job Tracker"), {{OWNER_LINE}} (e.g. "Priya S · Python backend · US citizen") and {{SEARCH_SCOPE}} (one sentence, e.g. "Remote anywhere in the US, or hybrid in Texas."). Publish with capabilities {db:{rules:[{path:"",read:"view",write:"admin"}]}, user:{}, sample:{}, downloads:true}. sample runs Resume tailor and the drafts on the viewer's own Claude; downloads saves the tailored resume. -->
+<!-- Job tracker template, version 12. Before publishing, replace {{TRACKER_NAME}} (e.g. "Priya's Job Tracker"), {{OWNER_LINE}} (e.g. "Priya S · Python backend · US citizen") and {{SEARCH_SCOPE}} (one sentence, e.g. "Remote anywhere in the US, or hybrid in Texas."). Publish with capabilities {db:{rules:[{path:"",read:"view",write:"admin"}]}, user:{}, sample:{}, downloads:true}. sample runs Resume tailor and the drafts on the viewer's own Claude; downloads saves the tailored resume. -->
 <title>{{TRACKER_NAME}}</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -874,7 +874,7 @@ td .tlink{color:var(--accent)}
       loaded = true; render();
     }, err => { clearTimeout(timer); loaded = true; online = false; setLive(false, err && err.code === "revoked" ? "Access to the tracker ended." : "The tracker stopped updating. Reload to reconnect."); render(); });
     db.collection("meta").onSnapshot(snap => { const d = snap.docs.find(x => x.id === "criteria"), sc = snap.docs.find(x => x.id === "schedule"); CRIT = d ? d.data() : null; SCHED = sc ? sc.data() : null; render(); }, () => {});
-    db.collection("runs").orderBy("date", "desc").limit(6).onSnapshot(snap => { RUNS = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)); render(); }, () => {});
+    db.collection("runs").orderBy("date", "desc").limit(5).onSnapshot(snap => { RUNS = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)); render(); }, () => {});
   })();
 })();
 </script>
