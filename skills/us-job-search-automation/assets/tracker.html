@@ -721,9 +721,12 @@ td .tlink{color:var(--accent)}
         <td class="small">${[r.email, r.phone].filter(Boolean).map(x => `<span class="cc" data-copy="${esc(x)}" title="Click to copy">${esc(x)}</span>`).join("<br>")}</td><td class="small">${r.roles.slice(0, 4).map(esc).join("<br>")}${r.n > 4 ? `<br>+${r.n - 4} more` : ""}</td><td class="mono">${esc(r.contacted || "not yet")}</td></tr>`).join("")}</tbody></table></div>` : emptyBox("No recruiter contacts yet. They come from LinkedIn posts and postings that name a contact.")}`;
   }
   const OFFERS = [{ kind: "C2C", rate: 60, hours: 40, weeks: 48, overhead: 12, benefits: 0 }, { kind: "W2", rate: 55, hours: 40, weeks: 50, benefits: 0 }, { kind: "FT", salary: 120000, benefits: 12000 }];
+  // Offers only matter for a job you applied to and that reached the Offer stage.
+  const offerJobs = () => JOBS.filter(j => j.status === "Applied" && j.stage === "Offer");
   function offersView() {
+    const oj = offerJobs();
     const field = (i, k, label, step) => `<label>${label}<input type="number" step="${step || 1}" data-offer="${i}" data-k="${k}" value="${esc(OFFERS[i][k] ?? "")}"></label>`;
-    return `<div class="sec-head"><h2>Compare offers</h2><p>Puts C2C, W2 and full-time on one yearly figure. A rough guide, not tax advice: C2C overhead covers self-employment tax, insurance and bench time; benefits is what the employer pays that you would otherwise buy.</p></div>
+    return `<div class="sec-head"><h2>Compare offers</h2><p>${oj.length ? `Offers on: ${oj.map(j => esc(j.company + " (" + j.role + ")")).join("; ")}. ` : "This tab fills in when a job you applied to reaches the Offer stage. "}Puts C2C, W2 and full-time on one yearly figure. A rough guide, not tax advice: C2C overhead covers self-employment tax, insurance and bench time; benefits is what the employer pays that you would otherwise buy.</p></div>
       <div class="offers">${OFFERS.map((o, i) => `<div class="offer"><label>Type<select data-offer="${i}" data-k="kind">${["C2C", "W2", "FT"].map(k => `<option ${o.kind === k ? "selected" : ""}>${k}</option>`).join("")}</select></label>
         ${o.kind === "FT" ? field(i, "salary", "Salary $/yr", 1000) : field(i, "rate", "Rate $/hr", 1) + field(i, "hours", "Hours a week") + field(i, "weeks", "Paid weeks a year") + (o.kind === "C2C" ? field(i, "overhead", "Overhead %") : "")}
         ${field(i, "benefits", "Benefits $/yr", 500)}<div class="big" id="ov${i}">$${L.offerValue(o).toLocaleString()}</div><span class="small">a year, comparable</span></div>`).join("")}</div>`;
@@ -812,7 +815,7 @@ td .tlink{color:var(--accent)}
 
   function render() {
     const nd = needs().filter(j => j.status === "Review").length, counts = { "needs-you": nd, applied: appliedList().length, all: base().length };
-    $("tabs").innerHTML = VIEWS.map(([v, l]) => `<button class="tab" type="button" data-view="${v}" ${S.view === v ? 'aria-current="page"' : ""}>${l}${v in counts && loaded ? `<span class="n ${v === "needs-you" && nd ? "attn" : ""}">${counts[v]}</span>` : ""}</button>`).join("");
+    $("tabs").innerHTML = VIEWS.filter(([v]) => v !== "offers" || offerJobs().length || S.view === "offers").map(([v, l]) => `<button class="tab" type="button" data-view="${v}" ${S.view === v ? 'aria-current="page"' : ""}>${l}${v in counts && loaded ? `<span class="n ${v === "needs-you" && nd ? "attn" : ""}">${counts[v]}</span>` : ""}</button>`).join("");
     const keep = document.activeElement && document.activeElement.id === "q";
     $("view").innerHTML = { overview, "needs-you": needsView, applied: appliedView, all: allView, recruiters: recruitersView, offers: offersView, "what-if": whatIfView }[S.view]();
     if (S.view === "what-if") whatIf();
