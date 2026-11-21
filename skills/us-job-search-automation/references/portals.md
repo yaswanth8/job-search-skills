@@ -83,3 +83,6 @@ The job snippets (`linkedin_batch.js`, `linkedin_job.js`, `dice_job.js`, `dice_f
 - LinkedIn's new search cards have no job-id link: click the card, read the id from the page URL, then read the job. Past page 1 the id can belong to another job: confirm the job page's title matches the card before saving.
 - A 403 Forbidden or a sign-in wall on any portal: don't work around it. Stop that portal, mark it skipped with the reason, and give the user its search links; they sign in before the next run.
 - An Easy Apply question the resume can't answer truthfully (a skill with no years): leave the job as Review, never guess.
+
+## LinkedIn URL variants (`plan.py --deep`, 3.0)
+Extra searches, bucketed "Deep ·" and always run in the browser: `f_JT=C` (contract), `f_JT=F` (full-time), `f_E=3,4` (associate and mid-senior), `f_SB2=<n>` when a pay floor is set (n = annual floor // 20,000 - 1, clamped 1-9; a $100K floor gives 4), and `jobs/collections/recommended`. All add `sortBy=DD` so the newest come first. They cost extra page loads, so use them on a manual run, not a schedule. The `f_WT` workplace filter is left out on purpose: the keyword "remote" and the location do the work. Not yet confirmed on a live page.

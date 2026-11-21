@@ -19,6 +19,7 @@ import datetime as dt
 import http.server
 import io
 import json
+import re
 import os
 import sys
 import tempfile
@@ -518,7 +519,7 @@ def apify_checks():
             check("run fetches every call with a good token", probs, f"{len(files)} files")
             q = [p_ for p_ in _Apify.paths if "valig~linkedin-jobs-scraper" in p_]
             check("every API run carries a hard item and dollar cap",
-                  [] if q and "maxItems=25" in q[0] and "maxTotalChargeUsd=0.05" in q[0] else [str(_Apify.paths[:1])[-100:]])
+                  [] if q and re.search(r"maxItems=\d+", q[0]) and re.search(r"maxTotalChargeUsd=0\.(0\d+|1)\b", q[0]) else [str(_Apify.paths[:1])[-100:]])  # since 3.0 the cap is the call's own estimate + margin (was a flat 0.05)
             n = len(_Apify.paths)
             (d / "bad-plan.json").write_text(json.dumps({"apify_calls": [dict(calls[0], actor="someone/rental-linkedin-scraper")]}))
             code, text = run(apify_jobs.cmd_run, token_file=str(d / "good"), **dict(kw, plan=str(d / "bad-plan.json")))
@@ -701,7 +702,9 @@ def main():
         probs += [f"missing '{x}'" for x in e["linkedin_url_contains"] if x not in urls] + [f"24h plan missing '{x}'" for x in e["hours_24_contains"] if x not in urls24]
         results.append({"suite": "plan", "id": "search-plan", "passed": not probs, "got": f"{plan['total_page_loads']} page loads", "why": "", "problems": probs, "note": ""})
 
-    results += progress_checks() + saryom_checks() + apify_checks() + token_checks() + [
+    from evals_v3 import v3_checks  # noqa: E402
+
+    results += progress_checks() + saryom_checks() + apify_checks() + token_checks() + v3_checks() + [
         {"suite": "employers", "id": i, "passed": not pr, "got": "", "why": w, "problems": pr, "note": ""} for i, w, pr in employer_feed_checks()] + [
         {"suite": "backtest", "id": i, "passed": not pr, "got": "", "why": w, "problems": pr, "note": ""} for i, w, pr in backtest_checks()]
 

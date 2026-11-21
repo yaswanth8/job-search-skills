@@ -41,7 +41,9 @@ from jobkit_core import STATES, build_search_plan, load_profile  # noqa: E402
 DEFAULT_URL = "https://api.apify.com"
 DEFAULT_MAX = 25            # rows per portal per run
 HARD_CAP = 100              # no call ever asks for more, whatever the profile says
-DEFAULT_MAX_CHARGE = 0.05   # dollars per call, sent as maxTotalChargeUsd: Apify stops the run there
+DEFAULT_BUDGET = 0.10       # dollars per run across every call (3.0): calls shrink to fit it, Google Jobs drops out first
+GOOGLE_ROWS = 12            # Google Jobs rows per run: a start fee of half a cent plus about a third of a cent a row
+MAX_CONCURRENT = 5          # the free plan's limit since Sept 2026 (it was 25); one call per portal stays under it
 SPOOL_MIN = 20              # spool/job-board-api's smallest result count
 
 # One Actor per portal, each checked on live runs (Nov 13 2026). All are pay-per-event, so they run on Apify's
@@ -51,18 +53,21 @@ ACTORS = {
     "linkedin": "valig/linkedin-jobs-scraper",    # full description, Easy Apply flag, recruiter, "4 hours ago"
     "indeed": "spool/job-board-api",              # full description, employer's own apply link, pay
     "dice": "solidcode/dice-scraper",             # full description, workplace, pay, Easy Apply, expired flag
+    "google": "memo23/google-jobs-scraper",       # Google's job feed (LinkedIn, Indeed, ZipRecruiter, career sites), pay-per-event
 }
 FREE_PLAN_ACTORS = sorted(set(ACTORS.values()))
 PRICE = {   # (dollars per row, dollars per start) on the free plan
     "valig/linkedin-jobs-scraper": (0.0004, 0.001),
     "spool/job-board-api": (0.0005, 0.002),
     "solidcode/dice-scraper": (0.00096, 0.00005),
+    "memo23/google-jobs-scraper": (0.003, 0.005),   # listed $0.0025 a job plus $0.001 for extra data on some rows
 }
 # The fields convert needs. Asking only for these keeps HTML copies and logos out of the chat.
 FIELDS = {
     "valig/linkedin-jobs-scraper": "id,url,title,companyName,location,postedDate,postedTimeAgo,contractType,salary,applyType,applyUrl,recruiterName,recruiterUrl,description",
     "spool/job-board-api": "recordType,title,company,location,country,isRemote,locationType,employmentType,jobType,datePosted,postedDaysAgo,site,jobUrl,jobUrlDirect,applyUrl,salaryMin,salaryMax,salaryCurrency,salaryInterval,emails,jobPosterName,jobPosterTitle,description",
     "solidcode/dice-scraper": "jobId,jobUrl,title,company,location,postedDate,salary,salaryMin,salaryMax,salaryCurrency,salaryPeriod,employmentTypes,workplaceTypes,isRemote,easyApply,isExpired,description",
+    "memo23/google-jobs-scraper": "jobId,googleDomain,jobUrl,title,companyName,location,postedDate,postedRaw,salaryRaw,contractType,employmentTypes,remote,applyUrl,externalApplyUrl,via,source,country,description,descriptionText",
 }
 TYPES = {"fulltime": "Full-Time", "full-time": "Full-Time", "full time": "Full-Time", "contract": "Contract",
          "contractor": "Contract", "temporary": "Contract", "parttime": "Part-Time", "part-time": "Part-Time",
@@ -77,12 +82,14 @@ def _cfg(profile):
 
 def rows_asked(call: dict) -> int:
     i = call["input"]
+    if "maxItems" in i:
+        return int(i["maxItems"])
     if "maxResultsPerQuery" in i:
         return i["maxResultsPerQuery"] * max(1, len(i.get("searchQueries") or []))
     return int(i.get("limit") or i.get("results") or 0)
 
 
-def build_calls(profile: dict, hours: int | None, portals, seen=None, max_per_portal: int | None = None) -> list:
+def build_calls(profile: dict, hours: int | None, portals, seen=None, max_per_portal: int | None = None, scope: str = "all", budget: float | None = None) -> list:
     """The Actor calls for one run: the remote (or US-wide) search on each chosen portal, plus one Indeed call for
     the profile's on-site states. LinkedIn and Dice per-state searches stay with the browser (mark_covered)."""
     cfg = _cfg(profile)
@@ -95,7 +102,8 @@ def build_calls(profile: dict, hours: int | None, portals, seen=None, max_per_po
     states = [names[s] for s in profile.get("locations", {}).get("onsite_states", []) if s in names]
     nationwide = len(states) >= 40
     n = max(5, min(int(max_per_portal or cfg.get("max_per_portal") or DEFAULT_MAX), HARD_CAP))
-    charge = float(cfg.get("max_charge_usd_per_call") or DEFAULT_MAX_CHARGE)
+    budget = float(budget or cfg.get("budget_usd") or DEFAULT_BUDGET)
+    charge = float(cfg.get("max_charge_usd_per_call") or 0)   # 0: derived from each call's own estimate (below)
     allowed = set(FREE_PLAN_ACTORS) | set(cfg.get("allowed_actors") or [])
     ex = profile.get("title_exclude", {})
     exclude = (ex.get("seniority", []) + ex.get("role", []))[:40]
@@ -110,14 +118,15 @@ def build_calls(profile: dict, hours: int | None, portals, seen=None, max_per_po
         if actor not in allowed:
             raise SystemExit(f"apify: {actor} is not on the free-plan Actor list ({', '.join(sorted(allowed))}). "
                              "Check its Pricing tab is pay-per-result, then add it to search.apify.allowed_actors.")
-        c = {"name": name, "portal": {"linkedin": "LinkedIn", "indeed": "Indeed", "dice": "Dice"}[portal], "actor": actor, "input": inp,
+        c = {"name": name, "portal": {"linkedin": "LinkedIn", "indeed": "Indeed", "dice": "Dice", "google": "Google Jobs"}[portal], "actor": actor, "input": inp,
              "call_options": {"maxTotalChargeUsd": charge, "timeout": 240, **(extra_options or {})}, "fields": FIELDS.get(actor, "")}
         row, start = PRICE.get(actor, (0.001, 0.005))
         c["limit"] = rows_asked(c)
         c["est_cost_usd"] = round(c["limit"] * row + start, 4)
         calls.append(c)
 
-    if "linkedin" in want:
+    remote_ok, onsite_ok = scope in ("all", "remote"), scope in ("all", "onsite")
+    if "linkedin" in want and remote_ok:
         # LinkedIn's own remote filter mislabels too much to trust (live run): "remote" goes in the keywords, as in the browser.
         ids = sorted({m.group(1) or m.group(2) for s in (seen or []) for m in [re.search(r"linkedin\.com/jobs/view/(?:[^/?]*-)?(\d{6,})|^li-(\d{6,})$", s)] if m})[-300:]
         inp = {"keywords": "(" + " OR ".join(quote(t) for t in titles[:5]) + ")" + ("" if nationwide else " remote"),
@@ -130,10 +139,11 @@ def build_calls(profile: dict, hours: int | None, portals, seen=None, max_per_po
         base = {"searchTerms": titles[:5], "country": "usa", "postedWithinHours": hours, "boards": ["indeed"],
                 "searchEmployerBoards": 0, "excludeTitleKeywords": exclude_safe}
         # "Remote" as the location searched worldwide (live run: 15 of 20 rows abroad): search the US with the remote filter.
-        add("indeed", "indeed", dict(base, location="United States", results=max(SPOOL_MIN, n), **({} if nationwide else {"remoteOnly": True})), {"memory": 1024})
-        if states and not nationwide:
+        if remote_ok or nationwide:
+            add("indeed", "indeed", dict(base, location="United States", results=max(SPOOL_MIN, n), **({} if nationwide else {"remoteOnly": True})), {"memory": 1024})
+        if states and not nationwide and onsite_ok:
             add("indeed-onsite", "indeed", dict(base, location="\n".join(states), results=max(SPOOL_MIN, n // 2)), {"memory": 1024})
-    if "dice" in want:
+    if "dice" in want and remote_ok:
         plain = [q for q in profile.get("search_queries") or [] if not re.search(r"\b(OR|AND|NOT)\b|[()]", q)][:2]
         queries = (titles[:2] + [q for q in plain if q not in titles[:2]])[:max(1, n // 5)]
         inp = {"searchQueries": queries, "maxResultsPerQuery": max(5, n // len(queries)),
@@ -141,6 +151,56 @@ def build_calls(profile: dict, hours: int | None, portals, seen=None, max_per_po
         if not nationwide:
             inp["remoteOnly"] = True
         add("dice", "dice", inp)
+    if "google" in want and remote_ok:
+        g = max(8, int(cfg.get("google_rows") or GOOGLE_ROWS))
+        inp = {"keywords": titles[:3], "locations": ["United States"], "country": "us", "maxItems": g, "numResults": g, "maxPagesPerQuery": 2,
+               "datePosted": "today" if hours <= 24 else "3days" if hours <= 72 else "week", "postedWithinHours": hours,
+               "onlyNewJobs": True,   # the Actor remembers what it returned for 45 days: a daily run pays only for new jobs
+               **({} if nationwide else {"workFromHome": True})}
+        add("google", "google", inp, {"memory": 1024})
+    if len(calls) > MAX_CONCURRENT:
+        raise SystemExit(f"apify: {len(calls)} calls would exceed the free plan's {MAX_CONCURRENT} concurrent runs")
+    return fit_budget(calls, budget, charge)
+
+
+FLOORS = {"linkedin": 10, "indeed": SPOOL_MIN, "indeed-onsite": SPOOL_MIN, "dice": 5, "google": 8}
+
+
+def _est(c: dict) -> float:
+    row, start = PRICE.get(c["actor"], (0.001, 0.005))
+    return round(rows_asked(c) * row + start, 4)
+
+
+def _set_rows(c: dict, n: int) -> None:
+    i = c["input"]
+    if "maxItems" in i:
+        i["maxItems"] = i["numResults"] = n
+    elif "limit" in i:
+        i["limit"] = n
+    elif "results" in i:
+        i["results"] = max(SPOOL_MIN, n)
+    elif "maxResultsPerQuery" in i:
+        i["maxResultsPerQuery"] = max(1, n // max(1, len(i.get("searchQueries") or [1])))
+    c["limit"] = rows_asked(c)
+    c["est_cost_usd"] = _est(c)
+
+
+def fit_budget(calls: list, budget: float, charge: float = 0) -> list:
+    """Make one run cost at most `budget` dollars: shrink every call's row count in proportion (never below its floor),
+    and if that is still too much drop Google Jobs, then report over_budget. Each call's hard stop
+    (maxTotalChargeUsd) is its own estimate plus 60%, so one runaway call cannot spend the month."""
+    total = lambda: round(sum(c["est_cost_usd"] for c in calls), 4)  # noqa: E731
+    if total() > budget and calls:
+        fixed = sum(PRICE.get(c["actor"], (0, 0.005))[1] for c in calls)
+        per_row = sum(rows_asked(c) * PRICE.get(c["actor"], (0.001, 0))[0] for c in calls)
+        f = max(0.0, (budget - fixed) / per_row) if per_row else 1
+        for c in calls:
+            _set_rows(c, max(FLOORS.get(c["name"], 5), int(rows_asked(c) * f)))
+    if total() > budget:
+        calls[:] = [c for c in calls if c["name"] != "google"]
+    for c in calls:
+        c["call_options"]["maxTotalChargeUsd"] = charge or round(min(budget, max(c["est_cost_usd"] * 1.6, c["est_cost_usd"] + 0.01)), 3)
+        c["over_budget"] = total() > budget
     return calls
 
 
@@ -188,7 +248,7 @@ def _pay(item) -> str | None:
     lo, hi = _get(item, "salaryMin", "salary_min", "min_amount"), _get(item, "salaryMax", "salary_max", "max_amount")
     cur = (_get(item, "salaryCurrency", "salary_currency", "currency") or "USD").upper()
     if lo is None and hi is None:
-        s = item.get("salary")
+        s = item.get("salary") if isinstance(item.get("salary"), str) else item.get("salaryRaw")
         return s.strip() if isinstance(s, str) and re.search(r"\d", s) else None
     if cur != "USD":
         return None
@@ -203,7 +263,7 @@ def _pay(item) -> str | None:
 
 
 def _age(item, now: dt.datetime) -> float | None:
-    ago = str(item.get("postedTimeAgo") or "").lower()
+    ago = str(item.get("postedTimeAgo") or item.get("postedRaw") or "").lower()
     m = re.search(r"(\d+)\s*(minute|hour|day|week|month)", ago)
     if m:
         return round(int(m.group(1)) * {"minute": 1 / 60, "hour": 1, "day": 24, "week": 168, "month": 720}[m.group(2)], 1)
@@ -232,7 +292,7 @@ def _work_type(item) -> str | None:
     for key, val in (("hybrid", "Hybrid"), ("remote", "Remote"), ("onsite", "On-site"), ("on-site", "On-site"), ("office", "On-site")):
         if key in lt:
             return val
-    r = item.get("isRemote", item.get("is_remote"))
+    r = item.get("isRemote", item.get("is_remote", item.get("remote")))
     return "Remote" if r is True or str(item.get("location") or "").strip().lower() == "remote" else None
 
 
@@ -256,6 +316,10 @@ def convert_items(items: list, now: dt.datetime | None = None) -> tuple[list, di
         title = _get(it, "title", "job_title", "positionName")
         company = _get(it, "company", "companyName", "company_name")
         url = _get(it, "jobUrl", "job_url", "url", "link", "detailsPageUrl")
+        google = bool(it.get("jobId") and (it.get("googleDomain") or re.search(r"google\.", str(it.get("jobUrl") or ""))))
+        if google:   # Google's own link is a search page: the apply link is the job (a LinkedIn or Indeed link keeps that portal's id)
+            links = [x.get("url") for x in it.get("applyLinks") or [] if isinstance(x, dict) and x.get("url")]
+            url = next((u for u in [it.get("externalApplyUrl"), it.get("applyUrl")] + links if u and not re.search(r"google\.", str(u))), None) or url
         if not title or not url:
             dropped += 1
             continue
@@ -266,7 +330,7 @@ def convert_items(items: list, now: dt.datetime | None = None) -> tuple[list, di
         if ctry and ctry not in ("US", "USA", "UNITED STATES"):
             not_us += 1
             continue
-        id_, link, source = _ids(url, _get(it, "site", "platform", "source") or "")
+        id_, link, source = _ids(url, "Google Jobs" if google else _get(it, "site", "platform", "source") or "")
         key = (re.sub(r"\W+", " ", str(title).lower()).strip(), re.sub(r"\W+", " ", str(company or "").lower()).strip())
         if id_ in seen_ids or key in seen_jobs:
             dupes += 1
@@ -286,8 +350,10 @@ def convert_items(items: list, now: dt.datetime | None = None) -> tuple[list, di
         if age is not None:
             p["posted_at"] = (now - dt.timedelta(hours=age)).strftime("%Y-%m-%dT%H:%MZ")
         how = str(it.get("applyType") or "").upper()
-        direct = _get(it, "applyUrl", "jobUrlDirect", "job_url_direct")
+        direct = _get(it, "externalApplyUrl", "applyUrl", "jobUrlDirect", "job_url_direct") if google else _get(it, "applyUrl", "jobUrlDirect", "job_url_direct")
         outside = direct and not re.search(r"linkedin\.com|indeed\.com|dice\.com", str(direct))
+        if google and source == "Google Jobs":
+            outside = True   # not LinkedIn, Indeed or Dice: the employer's own page
         if how == "EASY_APPLY":
             p["apply_type"], p["easy_apply"] = "easy_apply", True
         elif source == "Dice" and isinstance(it.get("easyApply"), bool):
@@ -338,7 +404,7 @@ def _token(token_file):
 def _fetch(call: dict, tok: str, base: str):
     """(exit code, message, rows). Codes as in the module docstring."""
     q = {"timeout": 280, "clean": "true", "maxItems": rows_asked(call) or DEFAULT_MAX,
-         "maxTotalChargeUsd": f"{call.get('call_options', {}).get('maxTotalChargeUsd', DEFAULT_MAX_CHARGE):g}"}
+         "maxTotalChargeUsd": f"{call.get('call_options', {}).get('maxTotalChargeUsd', 0.05):g}"}
     if call.get("fields"):
         q["fields"] = call["fields"]
     url = f"{base.rstrip('/')}/v2/acts/{call['actor'].replace('/', '~')}/run-sync-get-dataset-items?" + urllib.parse.urlencode(q)

@@ -1,4 +1,4 @@
-<!-- Job tracker template, version 9. Before publishing, replace {{TRACKER_NAME}} (e.g. "Priya's Job Tracker"), {{OWNER_LINE}} (e.g. "Priya S · Python backend · US citizen") and {{SEARCH_SCOPE}} (one sentence, e.g. "Remote anywhere in the US, or hybrid in Texas."). Publish with capabilities {db:{rules:[{path:"",read:"view",write:"admin"}]}, user:{}}. -->
+<!-- Job tracker template, version 10. Before publishing, replace {{TRACKER_NAME}} (e.g. "Priya's Job Tracker"), {{OWNER_LINE}} (e.g. "Priya S · Python backend · US citizen") and {{SEARCH_SCOPE}} (one sentence, e.g. "Remote anywhere in the US, or hybrid in Texas."). Publish with capabilities {db:{rules:[{path:"",read:"view",write:"admin"}]}, user:{}, sample:{}, downloads:true}. sample runs Resume tailor and the drafts on the viewer's own Claude; downloads saves the tailored resume. -->
 <title>{{TRACKER_NAME}}</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -212,6 +212,29 @@ td .tlink{color:var(--accent)}
 .cc{font-family:var(--font-data);cursor:copy}.cc:hover{color:var(--accent)}
 .foot{color:var(--muted);font-size:12.5px;max-width:95ch;margin:0}
 @media (max-width:560px){.run{grid-template-columns:1fr}.run .gap{grid-column:1}h1{font-size:24px}.tools{justify-content:stretch}input[type=search]{max-width:none}}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{font:inherit;font-size:13px;font-weight:500;background:none;border:0;border-right:1px solid var(--line);padding:6px 12px;color:var(--muted);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.seg .n{font-family:var(--font-data);font-size:11.5px;opacity:.8}
+.score{font-family:var(--font-data);font-size:12px;border-radius:999px;padding:1px 8px;background:var(--idle-soft);color:var(--idle);white-space:nowrap}
+.score.hi{background:var(--good-soft);color:var(--good)}.score.mid{background:var(--warn-soft);color:var(--warn)}
+.tagline{color:var(--muted);font-size:12.5px;margin:0}
+.modal{position:fixed;inset:0;z-index:40;background:rgba(10,14,20,.55);display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow:auto}
+.modal[hidden]{display:none}
+.mbox{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:12px;width:min(860px,100%);padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.mhead{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.mbox textarea{font:inherit;font-family:var(--font-data);font-size:12.5px;width:100%;min-height:300px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;resize:vertical}
+.mbox textarea.short{min-height:90px}
+.banner{border-radius:8px;padding:8px 12px;font-size:13px}.banner.ok{background:var(--good-soft);color:var(--good)}.banner.bad{background:var(--bad-soft);color:var(--bad)}.banner.info{background:var(--accent-soft);color:var(--accent)}
+.row2{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.mbox label{font-size:13px;display:inline-flex;gap:6px;align-items:center}
+.offers{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.offer{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);display:flex;flex-direction:column;gap:8px}
+.offer label{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;font-size:13px}
+.offer input,.offer select{width:100%}
+.offer .big{font-family:var(--font-display);font-size:24px;font-weight:600}
 </style>
 
 <div class="wrap">
@@ -229,6 +252,7 @@ td .tlink{color:var(--accent)}
     <div class="tools">
       <select id="time" aria-label="Time range"><option value="0">All time</option><option value="1">Today</option><option value="3">Last 3 days</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select>
       <select id="etype" aria-label="Employment type"><option value="">All types</option><option value="ft">Full-time</option><option value="w2">W2</option><option value="c2c">C2C / Contract</option></select>
+      <button class="btn" id="bResume" type="button" title="Paste your resume once; Resume tailor uses it">Resume</button><button class="btn" id="bSched" type="button" title="Search and save automatically every 12 or 24 hours">Schedule</button>
       <input id="q" type="search" placeholder="Search company, role, contact" aria-label="Search jobs">
     </div>
   </nav>
@@ -238,6 +262,7 @@ td .tlink{color:var(--accent)}
   <p class="foot">Sponsorship: <b>Verified</b> means the posting says it can sponsor; <b>Needs Confirmation</b> means it says nothing; <b>Excluded</b> means it rules sponsorship out. Pay shows "Not listed" where the posting gives no figure. Applied means Claude saw a confirmation screen, or you pressed a button here. <b>Ready to apply</b> jobs passed every check in a search-and-save run: nothing was submitted. <b>Reach out</b> jobs come from recruiter posts: Claude collects the contact details but never emails, calls or messages anyone for you. The type filter (Full-time, W2, C2C) reads each job's employment type; a job posted as "C2C/W2" shows under both, and any contract role counts as C2C / Contract. <b>Stretch</b> fit means the posting asks more years than you have, within your ceiling. The job title opens the posting, and <b>About this job</b> shows its text and how it takes applications (Easy Apply or the company's site). The Contact column shows who to reach, or NA and why. The time range filters by the day a job was found (the day applied, in the Applied view).</p>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
+<div class="modal" id="modal" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mtitle"><div class="mhead"><h2 id="mtitle"></h2><button class="btn quiet" type="button" data-m="close">Close</button></div><div id="mbody"></div></div></div>
 
 <script>
 (() => {
@@ -247,15 +272,86 @@ td .tlink{color:var(--accent)}
   const iso = d => d.toISOString().slice(0, 10);
   const today = () => iso(new Date());
   const daysSince = d => d ? Math.floor((Date.now() - new Date(d + "T12:00:00").getTime()) / 864e5) : null;
+
+  /*logic:start*/
+  const L = (() => {
+    const TECH = ["java", "spring", "spring boot", "spring cloud", "spring security", "hibernate", "jpa", "microservices", "restful", "graphql", "kafka", "rabbitmq", "activemq", "react", "redux", "angular", "vue", "typescript", "javascript", "node.js", "html", "css", "sql", "pl/sql", "postgresql", "mysql", "oracle", "mongodb", "dynamodb", "redis", "elasticsearch", "aws", "azure", "gcp", "lambda", "ec2", "s3", "kubernetes", "docker", "openshift", "terraform", "ansible", "jenkins", "gitlab", "github actions", "ci/cd", "maven", "gradle", "junit", "mockito", "selenium", "playwright", "cypress", "python", "django", "flask", "fastapi", "golang", "kotlin", "scala", "c#", ".net", "c++", "ruby", "php", "splunk", "datadog", "grafana", "prometheus", "snowflake", "databricks", "apache spark", "pyspark", "hadoop", "airflow", "tableau", "power bi", "salesforce", "servicenow", "mulesoft", "camunda", "oauth", "jwt", "sso", "keycloak", "agile", "scrum", "jira", "tdd", "bdd", "soap", "xml", "json", "linux", "bash", "openai", "llm", "langchain", "machine learning"];
+    const RULES = "Rewrite the resume for this one job. You may reorder sections and bullets, cut bullets that do not help, and reword a bullet to use the posting's own terms where the resume already shows that work. You may not add a skill, tool, employer, title, date, years figure or achievement the resume does not state. Keep every employer, title and date exactly as written. Keep it to the resume's length or shorter. Return the resume text, then a line '---', then up to five lines: what you moved or cut, and which posting requirements the resume does not cover (say so plainly; do not cover them).";
+    const esc1 = t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const hasTerm = (t, text) => new RegExp("(?<![\\w+#.])" + esc1(t) + "(?![\\w+#]|\\.\\w)", "i").test(text);
+    const yearsIn = t => new Set([...String(t).matchAll(/\b(\d{1,2})\s*\+?\s*(?:years?|yrs?)\b/gi)].map(m => +m[1]));
+    const datesIn = t => new Set(String(t).match(/\b(?:19|20)\d{2}\b/g) || []);
+    // What a tailored resume claims that the resume does not: new skills, years figures and dates. (tailor.py guard, same rules.)
+    const guard = (resume, tailored, verified) => {
+      const okY = new Set([...yearsIn(resume), ...Object.values(verified || {}).filter(v => typeof v === "number")]);
+      const newSkills = TECH.filter(t => hasTerm(t, tailored) && !hasTerm(t, resume));
+      const newYears = [...yearsIn(tailored)].filter(y => !okY.has(y)).sort((a, b) => a - b);
+      const rd = datesIn(resume), newDates = [...datesIn(tailored)].filter(d => !rd.has(d)).sort();
+      return { ok: !(newSkills.length || newYears.length || newDates.length), newSkills, newYears, newDates };
+    };
+    const tailorPrompt = (resume, j) => RULES + "\n\nJOB: " + (j.role || "") + " at " + (j.company || "") + "\n" + (j.desc || "") + "\n\nRESUME:\n" + resume;
+    const hoursOld = (j, now) => { const t = new Date(j.postedAt || "").getTime(); return isNaN(t) ? null : (now - t) / 36e5; };
+    const latestRun = runs => (runs || []).slice().sort((a, b) => String(b.startedAt || b.date || "").localeCompare(String(a.startedAt || a.date || "")))[0] || null;
+    // Last run: rows written by that run (rows from before 3.0 carry no runId: use the day). Latest: posted, or found, in the last 24 hours.
+    const inScope = (j, scope, run, now) => {
+      if (scope === "run") return !!run && (j.runId ? j.runId === run.id : j.foundAt === run.date);
+      if (scope === "latest") { const h = hoursOld(j, now); return h !== null ? h <= 24 : !!j.foundAt && now - new Date(j.foundAt + "T23:59:59").getTime() <= 864e5; }
+      return true;
+    };
+    const money = t => [...String(t || "").replace(/,/g, "").matchAll(/\$\s*(\d+(?:\.\d+)?)\s*(k)?/gi)].map(m => +m[1] * (m[2] ? 1000 : 1));
+    const unitOf = v => v < 400 ? "hr" : "yr";
+    // A pay range for a job that lists none, from the middle half of listed pay on similar jobs (same unit, same kind of job). Needs 3.
+    const payEstimate = (jobs, j) => {
+      const ft = /full[\s-]?time|permanent|\bfte\b/i.test(j.type || "");
+      const vals = jobs.filter(x => x.id !== j.id && /full[\s-]?time|permanent|\bfte\b/i.test(x.type || "") === ft).map(x => money(x.pay)).filter(a => a.length).map(a => Math.max(...a));
+      const byUnit = u => vals.filter(v => unitOf(v) === u).sort((a, b) => a - b);
+      const u = ft ? "yr" : "hr", v = byUnit(u);
+      if (v.length < 3) return "";
+      const q = p => v[Math.min(v.length - 1, Math.floor(p * (v.length - 1) + .5))];
+      const f = n => u === "hr" ? "$" + Math.round(n) : "$" + Math.round(n / 1000) + "K";
+      return "about " + f(q(.25)) + "-" + f(q(.75)) + (u === "hr" ? "/hr" : "/yr") + " (" + v.length + " similar jobs)";
+    };
+    const followDue = (j, today, days) => j.status === "Applied" && !j.stage && !!j.appliedAt && (new Date(today) - new Date(j.appliedAt.slice(0, 10))) / 864e5 >= (days || 7);
+    // One row per recruiter: the roles they posted, and when you last reached out.
+    const recruiters = jobs => {
+      const by = new Map();
+      for (const j of jobs) {
+        if (!(j.contactEmail || j.contactName)) continue;
+        const key = (String(j.contactEmail || "").split(",")[0].trim().toLowerCase()) || (String(j.contactName).toLowerCase() + "|" + String(j.company || "").toLowerCase());
+        const r = by.get(key) || { key, name: j.contactName || "", email: String(j.contactEmail || "").split(",")[0].trim(), phone: String(j.contactPhone || "").split(",")[0].trim(), url: j.contactUrl || "", roles: [], contacted: "", n: 0 };
+        r.n++; r.roles.push(j.role + (j.company ? " (" + j.company + ")" : ""));
+        if (j.status === "Applied" && j.appliedVia === "outreach" && (j.appliedAt || "") > r.contacted) r.contacted = j.appliedAt;
+        by.set(key, r);
+      }
+      return [...by.values()].sort((a, b) => (a.contacted ? 1 : 0) - (b.contacted ? 1 : 0) || b.n - a.n);
+    };
+    // A yearly figure for comparing offers (an estimate, not tax advice): pay for the weeks worked, less C2C overhead, plus benefits.
+    const offerValue = o => {
+      const hrs = +o.hours || 40, wks = +o.weeks || 50, ben = +o.benefits || 0;
+      if (o.kind === "FT") return Math.round((+o.salary || 0) + ben);
+      const gross = (+o.rate || 0) * hrs * wks;
+      return Math.round(o.kind === "C2C" ? gross * (1 - (+o.overhead || 0) / 100) + ben : gross + ben);
+    };
+    const scheduleStatus = (sc, runs) => {
+      if (!sc || !sc.enabled) return "Off. Pick 12 or 24 hours and press Save.";
+      const last = latestRun((runs || []).filter(r => r.status === "done"));
+      const when = last ? " Last run: " + (last.startedAt || last.date) + "." : "";
+      if (!sc.taskId) return "Saved, waiting to be switched on. Open Claude and say \"activate my job-search schedule\" once." + when;
+      if (sc.pending) return "Change saved. It takes effect at the next scheduled run." + when;
+      return "On: every " + sc.everyHours + " hours, saving jobs for you to review. Nothing is applied automatically." + when;
+    };
+    return { TECH, RULES, guard, tailorPrompt, hasTerm, inScope, latestRun, payEstimate, followDue, recruiters, offerValue, scheduleStatus };
+  })();
+  /*logic:end*/
   const STAGES = ["", "Screening", "Interview", "Offer", "Rejected", "Withdrawn", "No response"];
   const RESPONDED = ["Screening", "Interview", "Offer", "Rejected"], LIVE = ["Screening", "Interview", "Offer"], CLOSED = ["Rejected", "Withdrawn", "No response"];
-  const VIEWS = [["overview", "Overview"], ["needs-you", "Needs you"], ["applied", "Applied"], ["all", "All jobs"], ["what-if", "What if"]];
+  const VIEWS = [["overview", "Overview"], ["needs-you", "Needs you"], ["applied", "Applied"], ["all", "All jobs"], ["recruiters", "Recruiters"], ["offers", "Offers"], ["what-if", "What if"]];
   const KIND = { ready: "Ready to apply", contact: "Reach out", "company-site": "Company site", "needs-call": "Your call" };
 
-  let JOBS = [], RUNS = [], db = null, canWrite = true, loaded = false, online = false;
+  let JOBS = [], RUNS = [], SCHED = null, RESUME = "", SAMPLE = null, DL = null, UID = null, db = null, canWrite = true, loaded = false, online = false;
   const S = { view: "overview", days: 0, q: "", kind: "", applied: "", status: "", fit: "", work: "", source: "", category: "", sortKey: "updatedAt", sortDir: -1, open: "", etype: "",
-    spons: "", via: "", posted: "", easy: "", nsort: "fit" };
-  const FKEYS = ["fit", "work", "source", "spons", "via", "posted", "easy", "nsort"];  // filters kept between visits
+    spons: "", via: "", posted: "", easy: "", nsort: "fit", scope: "", payu: "" };
+  const FKEYS = ["fit", "work", "source", "spons", "via", "posted", "easy", "nsort", "scope", "payu"];  // filters kept between visits
   const pending = new Set();
   try { S.days = +(localStorage.getItem("jt-days") || 0); S.etype = localStorage.getItem("jt-etype") || "";
     Object.assign(S, JSON.parse(localStorage.getItem("jt-f") || "{}")); } catch {}
@@ -275,24 +371,26 @@ td .tlink{color:var(--accent)}
     if (/contract|cth|temp|1099/.test(t) && !/no c2c/.test(t)) k.add("c2c");  // a contract role is treated as C2C
     return k; };
   const matchT = j => !S.etype || etypes(j).has(S.etype);
-  const base = () => JOBS.filter(j => matchQ(j) && matchT(j) && inRange(j.foundAt || j.updatedAt));
+  const inScope = j => L.inScope(j, S.scope, L.latestRun(RUNS), Date.now());
+  const base = () => JOBS.filter(j => matchQ(j) && matchT(j) && inRange(j.foundAt || j.updatedAt) && inScope(j));
   const needs = () => base().filter(j => j.status === "Review" || j.status === "Queued");
   const appliedList = () => JOBS.filter(j => j.status === "Applied" && matchQ(j) && matchT(j) && inRange(j.appliedAt || j.updatedAt));
   const isReady = j => j.status === "Review" && j.reviewReason === "ready";
-  const followDue = j => j.status === "Applied" && !j.stage && daysSince(j.appliedAt) >= 7;
+  const followDue = j => L.followDue(j, today(), 7);
   // The filter bar shared by Needs you and All jobs (fit, workplace, source, sponsorship, route, posting age, Easy Apply).
   const hoursOld = j => { const t = new Date(j.postedAt || "").getTime(); return isNaN(t) ? null : (Date.now() - t) / 36e5; };
   const matchF = j => (!S.fit || j.fit === S.fit) && (!S.work || j.workType === S.work) && (!S.source || srcName(j) === S.source)
     && (!S.spons || (j.spons || "Needs Confirmation") === S.spons) && (!S.via || (j.via || "browser") === S.via)
-    && (!S.posted || (hoursOld(j) !== null && hoursOld(j) <= +S.posted)) && (!S.easy || j.easyApply === true);
+    && (!S.posted || (hoursOld(j) !== null && hoursOld(j) <= +S.posted)) && (!S.easy || j.easyApply === true) && (!S.payu || !/\d/.test(j.pay || ""));
   // Pay as a yearly figure for sorting: hourly x 2080, "$120K" = 120000; unlisted pay sorts last.
   const payYear = j => { const t = String(j.pay || "").replace(/,/g, ""), n = [...t.matchAll(/\$\s*(\d+(?:\.\d+)?)\s*(k)?/gi)].map(m => +m[1] * (m[2] ? 1000 : 1));
     if (!n.length) return -1; const v = Math.max(...n); return v < 400 ? v * 2080 : v; };
   const FIT_RANK = { High: 0, Medium: 1, Stretch: 2, Low: 3 };
   const NSORT = { fit: (a, b) => (FIT_RANK[a.fit] ?? 4) - (FIT_RANK[b.fit] ?? 4) || (b.foundAt || "").localeCompare(a.foundAt || ""),
     posted: (a, b) => (hoursOld(a) ?? 1e9) - (hoursOld(b) ?? 1e9), pay: (a, b) => payYear(b) - payYear(a),
-    found: (a, b) => (b.foundAt || "").localeCompare(a.foundAt || "") };
-  const activeF = () => ["fit", "work", "source", "spons", "via", "posted", "easy"].filter(k => S[k]).length;
+    found: (a, b) => (b.foundAt || "").localeCompare(a.foundAt || ""),
+    score: (a, b) => (b.score ?? -1) - (a.score ?? -1) || (b.foundAt || "").localeCompare(a.foundAt || "") };
+  const activeF = () => ["fit", "work", "source", "spons", "via", "posted", "easy", "payu"].filter(k => S[k]).length;
 
   // ---------------------------------------------------------------- writes
   async function save(id, patch, okMsg) {
@@ -314,6 +412,7 @@ td .tlink{color:var(--accent)}
     decline: j => save(j.id, { status: "Declined" }, "Dismissed. It won't come back."),
     revive: j => save(j.id, { status: "Review", reviewReason: j.reviewReason || "needs-call" }, "Moved to Needs you."),
     stage: (j, v) => save(j.id, { stage: v }, v ? "Stage set to " + v + "." : "Stage cleared."),
+    tailor: j => tailorFlow(j), draftFollow: j => draftFlow("follow", j), draftRecruiter: j => draftFlow("recruiter", j), prep: j => draftFlow("prep", j),
   };
 
   // ---------------------------------------------------------------- pieces
@@ -360,6 +459,14 @@ td .tlink{color:var(--accent)}
     if (j.status === "New") return b("applied", "I applied") + b("decline", "Not interested", "quiet");
     return "";
   }
+  const scoreBadge = j => j.score == null ? "" : `<span class="score ${j.score >= 75 ? "hi" : j.score >= 55 ? "mid" : ""}" title="Match score: skills, stack, pay, workplace and years">${j.score}</span>`;
+  const extraLines = j => [j.gaps ? `Missing: ${esc(j.gaps)}` : "", j.alsoBy ? `Also posted by ${esc(j.alsoBy)}` : "",
+      !/\d/.test(j.pay || "") && L.payEstimate(JOBS, j) ? `Pay not listed; similar jobs pay ${esc(L.payEstimate(JOBS, j))}` : "", j.tailoredAt ? `Resume tailored ${esc(j.tailoredAt)}` : ""]
+    .filter(Boolean).map(t => `<p class="tagline">${t}</p>`).join("");
+  // Buttons that ask Claude (on this page, only when you press them): Resume tailor, recruiter message, interview prep.
+  const aiBtn = (a, label, j, cls = "") => `<button class="btn ${cls}" type="button" data-a="${a}" data-id="${esc(j.id)}">${label}</button>`;
+  const aiButtons = j => !SAMPLE ? "" : j.status === "Review" && j.reviewReason === "contact" ? aiBtn("draftRecruiter", "Draft message", j)
+    : ["Review", "New", "Queued"].includes(j.status) ? aiBtn("tailor", "Resume tailor", j) : "";
   function card(j) {
     const r = j.status === "Queued" ? `<span class="reason queued">→ Queued: Claude applies on the next run</span>`
       : j.reviewReason === "ready" ? `<span class="reason ready">✓ Ready to apply: passed every check</span>`
@@ -367,9 +474,9 @@ td .tlink{color:var(--accent)}
       : j.reviewReason === "needs-call" ? `<span class="reason call">! Your call</span>`
       : `<span class="reason site">↗ Company site${j.ats && j.ats !== "Unknown" ? " · " + esc(j.ats) : ""}${j.claudeCanApply === false ? " · needs your account" : ""}</span>`;
     return `<article class="card ${j.status === "Queued" ? "queued" : ""}">
-      <div class="top"><div><h3>${titleLink(j)}</h3><div class="co">${esc(j.company)}</div></div>${j.fit ? `<span class="f-${esc(j.fit)}" style="font-size:12px;white-space:nowrap">${esc(j.fit)} fit</span>` : ""}</div>
+      <div class="top"><div><h3>${titleLink(j)}</h3><div class="co">${esc(j.company)}</div></div><div style="display:flex;gap:6px;align-items:center">${scoreBadge(j)}${j.fit ? `<span class="f-${esc(j.fit)}" style="font-size:12px;white-space:nowrap">${esc(j.fit)} fit</span>` : ""}</div></div>
       <div class="meta">${[j.where, j.pay, j.type, srcName(j), applyHow(j), postedAgo(j) || j.foundAt].filter(Boolean).map(x => `<span class="mt">${esc(x)}</span>`).join("")}</div>
-      ${r}${contactBox(j)}<p class="why">${esc(j.notes)}</p>${about(j)}<div class="actions">${j.status === "Review" && j.reviewReason !== "contact" ? openBtn(j, !canWrite) : ""}${actions(j)}</div></article>`;
+      ${r}${extraLines(j)}${contactBox(j)}<p class="why">${esc(j.notes)}</p>${about(j)}<div class="actions">${j.status === "Review" && j.reviewReason !== "contact" ? openBtn(j, !canWrite) : ""}${actions(j)}${aiButtons(j)}</div></article>`;
   }
   function bars(rows, total, attr) {
     const max = Math.max(1, ...rows.map(r => r[1]));
@@ -439,19 +546,23 @@ td .tlink{color:var(--accent)}
     return `<option value="${esc(v)}" ${String(S[key]) === String(v) ? "selected" : ""}>${esc(l)}</option>`; }).join("")}</select>`;
   function filterBar(withSort) {
     const srcs = [...new Set(JOBS.map(srcName))].sort();
-    return `<div class="chips fbar">${sel("fit", "Any fit", ["High", "Medium", "Stretch", "Low"])}${sel("work", "Remote, hybrid, on-site", ["Remote", "Hybrid", "On-site"])}${sel("source", "All sources", srcs)}
+    const sc = (v, label, n) => `<button type="button" data-set="scope" data-val="${v}" aria-pressed="${S.scope === v}">${label}<span class="n">${n}</span></button>`;
+    const run = L.latestRun(RUNS), cnt = v => JOBS.filter(j => L.inScope(j, v, run, Date.now())).length;
+    return `<div class="chips"><span class="seg" role="group" aria-label="Which jobs">${sc("", "All", JOBS.length)}${sc("run", "Last run", run ? cnt("run") : 0)}${sc("latest", "Latest 24h", cnt("latest"))}</span></div>
+    <div class="chips fbar">${sel("fit", "Any fit", ["High", "Medium", "Stretch", "Low"])}${sel("work", "Remote, hybrid, on-site", ["Remote", "Hybrid", "On-site"])}${sel("source", "All sources", srcs)}
       ${sel("spons", "Any sponsorship", [["Verified", "Sponsorship verified"], ["Needs Confirmation", "Sponsorship unknown"], ["Excluded", "No sponsorship"]])}
       ${sel("via", "Found by any route", [["apify", "Found through Apify"], ["browser", "Found in the browser"]])}
       ${sel("posted", "Posted any time", [["24", "Posted in the last 24h"], ["72", "Posted in the last 3 days"], ["168", "Posted in the last week"]])}
       <button class="chip" type="button" data-set="easy" data-val="${S.easy ? "" : "1"}" aria-pressed="${!!S.easy}">Easy Apply only</button>
-      ${withSort ? sel("nsort", "Sort: best fit", [["posted", "Sort: newest posting"], ["pay", "Sort: highest pay"], ["found", "Sort: newest found"]]) : ""}
+      <button class="chip" type="button" data-set="payu" data-val="${S.payu ? "" : "1"}" aria-pressed="${!!S.payu}">Pay not listed</button>
+      ${withSort ? sel("nsort", "Sort: best fit", [["score", "Sort: match score"], ["posted", "Sort: newest posting"], ["pay", "Sort: highest pay"], ["found", "Sort: newest found"]]) : ""}
       ${activeF() ? `<button class="linkbtn" type="button" data-a="clearF">Clear filters (${activeF()})</button>` : ""}</div>`;
   }
 
   function needsView() {
     const nd = needs().filter(matchF), c = k => nd.filter(j => k === "Queued" ? j.status === "Queued" : j.status === "Review" && j.reviewReason === k).length;
     const list = nd.filter(j => !S.kind || (S.kind === "Queued" ? j.status === "Queued" : j.status === "Review" && j.reviewReason === S.kind))
-      .sort((a, b) => (a.status === "Queued") - (b.status === "Queued") || (NSORT[S.nsort] || NSORT.fit)(a, b));
+      .sort((a, b) => (a.status === "Queued") - (b.status === "Queued") || (S.scope === "latest" ? NSORT.posted : NSORT[S.nsort] || NSORT.fit)(a, b));
     const rd = c("ready");
     return `<div class="sec-head"><h2>Needs you</h2><p>Open <b>About this job</b> to read the posting here, then <b>Open to apply</b> and press <b>I applied</b>, or <b>Let Claude apply</b> to queue it for the next apply run (that needs Claude's browser). <b>Reach out</b> jobs are recruiter posts: copy the contact and email or call them yourself, then press <b>I reached out</b>.</p></div>
       ${filterBar(true)}
@@ -465,10 +576,10 @@ td .tlink{color:var(--accent)}
     const list = ap.filter(f[S.applied] || f[""]).sort((a, b) => (b.appliedAt || "").localeCompare(a.appliedAt || ""));
     return `<div class="sec-head"><h2>Applied</h2><p>Set a stage when you hear back. Jobs with no reply after 7 days show under Follow-up due.</p></div>
       ${chips("applied", [["", "All", ap.length], ["awaiting", "Awaiting reply", ap.filter(f.awaiting).length], ["due", "Follow-up due", ap.filter(f.due).length], ["live", "In process", ap.filter(f.live).length], ["closed", "Closed", ap.filter(f.closed).length]])}
-      ${!loaded ? emptyBox("Loading…") : list.length ? `<div class="tablebox"><table><thead><tr><th>Company</th><th>Role</th><th>Applied</th><th>Days</th><th>By</th><th>Stage</th><th>Contact</th></tr></thead><tbody>${list.map(j => `
+      ${!loaded ? emptyBox("Loading…") : list.length ? `<div class="tablebox"><table><thead><tr><th>Company</th><th>Role</th><th>Applied</th><th>Days</th><th>By</th><th>Stage</th><th>Contact</th><th></th></tr></thead><tbody>${list.map(j => `
         <tr class="row" data-open="${esc(j.id)}" tabindex="0"><td class="c"><b>${esc(j.company)}</b><small>${esc(j.where)}</small></td><td>${titleLink(j)}<br><small>${esc(srcName(j))} · ${esc(j.pay)}</small></td>
         <td class="mono">${esc(j.appliedAt || "")}</td><td class="mono">${daysSince(j.appliedAt) ?? ""}${followDue(j) ? ` <span class="pill s-Review" style="margin-left:4px">follow up</span>` : ""}</td>
-        <td>${j.appliedBy === "you" ? (j.appliedVia === "outreach" ? "You (outreach)" : "You") : "Claude"}</td><td>${stageSelect(j)}</td><td class="small">${esc(j.contactName || "")}${j.contactEmail ? `<br>${esc(j.contactEmail.split(",")[0])}` : ""}</td></tr>${S.open === j.id ? detail(j, 7) : ""}`).join("")}</tbody></table></div>` : emptyBox(ap.length ? "No applications in this group." : "No applications in this time range yet.")}`;
+        <td>${j.appliedBy === "you" ? (j.appliedVia === "outreach" ? "You (outreach)" : "You") : "Claude"}</td><td>${stageSelect(j)}</td><td class="small">${esc(j.contactName || "")}${j.contactEmail ? `<br>${esc(j.contactEmail.split(",")[0])}` : ""}</td><td>${!SAMPLE ? "" : followDue(j) ? aiBtn("draftFollow", "Draft follow-up", j) : ["Screening", "Interview"].includes(j.stage) ? aiBtn("prep", "Interview prep", j) : ""}</td></tr>${S.open === j.id ? detail(j, 8) : ""}`).join("")}</tbody></table></div>` : emptyBox(ap.length ? "No applications in this group." : "No applications in this time range yet.")}`;
   }
 
   function detail(j, span) {
@@ -602,11 +713,108 @@ td .tlink{color:var(--accent)}
       <div class="levers" id="levers"></div></div>`;
   }
 
+  // ---------------------------------------------------------------- recruiters and offers
+  function recruitersView() {
+    const rs = L.recruiters(JOBS), fresh = rs.filter(r => !r.contacted).length;
+    return `<div class="sec-head"><h2>Recruiters</h2><p>Everyone who posted a role with a contact, once each. Contacting them is always your move: Claude only collects the details. ${fresh} not contacted yet.</p></div>
+      ${!loaded ? emptyBox("Loading…") : rs.length ? `<div class="tablebox"><table><thead><tr><th>Recruiter</th><th>Email / phone</th><th>Roles</th><th>Last reached out</th></tr></thead><tbody>${rs.map(r => `<tr><td><b>${esc(r.name || "—")}</b>${safeUrl(r.url) ? `<br><a class="small" href="${esc(safeUrl(r.url))}" target="_blank" rel="noopener">LinkedIn</a>` : ""}</td>
+        <td class="small">${[r.email, r.phone].filter(Boolean).map(x => `<span class="cc" data-copy="${esc(x)}" title="Click to copy">${esc(x)}</span>`).join("<br>")}</td><td class="small">${r.roles.slice(0, 4).map(esc).join("<br>")}${r.n > 4 ? `<br>+${r.n - 4} more` : ""}</td><td class="mono">${esc(r.contacted || "not yet")}</td></tr>`).join("")}</tbody></table></div>` : emptyBox("No recruiter contacts yet. They come from LinkedIn posts and postings that name a contact.")}`;
+  }
+  const OFFERS = [{ kind: "C2C", rate: 60, hours: 40, weeks: 48, overhead: 12, benefits: 0 }, { kind: "W2", rate: 55, hours: 40, weeks: 50, benefits: 0 }, { kind: "FT", salary: 120000, benefits: 12000 }];
+  function offersView() {
+    const field = (i, k, label, step) => `<label>${label}<input type="number" step="${step || 1}" data-offer="${i}" data-k="${k}" value="${esc(OFFERS[i][k] ?? "")}"></label>`;
+    return `<div class="sec-head"><h2>Compare offers</h2><p>Puts C2C, W2 and full-time on one yearly figure. A rough guide, not tax advice: C2C overhead covers self-employment tax, insurance and bench time; benefits is what the employer pays that you would otherwise buy.</p></div>
+      <div class="offers">${OFFERS.map((o, i) => `<div class="offer"><label>Type<select data-offer="${i}" data-k="kind">${["C2C", "W2", "FT"].map(k => `<option ${o.kind === k ? "selected" : ""}>${k}</option>`).join("")}</select></label>
+        ${o.kind === "FT" ? field(i, "salary", "Salary $/yr", 1000) : field(i, "rate", "Rate $/hr", 1) + field(i, "hours", "Hours a week") + field(i, "weeks", "Paid weeks a year") + (o.kind === "C2C" ? field(i, "overhead", "Overhead %") : "")}
+        ${field(i, "benefits", "Benefits $/yr", 500)}<div class="big" id="ov${i}">$${L.offerValue(o).toLocaleString()}</div><span class="small">a year, comparable</span></div>`).join("")}</div>`;
+  }
+
+  // ---------------------------------------------------------------- Claude on this page: Resume tailor, drafts, Schedule
+  const modalEl = () => $("modal");
+  function openModal(title, html) { $("mtitle").textContent = title; $("mbody").innerHTML = html; modalEl().hidden = false; }
+  function closeModal() { modalEl().hidden = true; $("mbody").innerHTML = ""; }
+  const claudeErr = e => e && e.code === "not_granted" ? "Claude on this page wasn't allowed. Allow it when asked, then press the button again." : e && e.code === "rate_limited" ? "Too many requests just now. Wait a minute and try again." : "That didn't work just now. Try again in a moment.";
+  function resumeSetup(note) {
+    openModal("Your resume", `${note ? `<p class="banner info">${esc(note)}</p>` : ""}<p class="small">Paste the resume text once. It stays in your own space on this tracker (not visible to anyone you share the page with) and is used only when you press Resume tailor.</p>
+      <textarea id="resumeText" aria-label="Resume text">${esc(RESUME)}</textarea><div class="row2"><button class="btn primary" type="button" data-m="saveResume">Save resume</button><span class="small" id="resumeMsg"></span></div>`);
+  }
+  async function saveResume() {
+    const t = $("resumeText").value.trim(); if (!t) { $("resumeMsg").textContent = "Paste your resume first."; return; }
+    RESUME = t;
+    try { if (db && UID) { await db.collection("data/users/" + UID).doc("resume").set({ text: t, updatedAt: today() }); closeModal(); toast("Resume saved."); return; } } catch {}
+    closeModal(); toast("Kept for this visit only: couldn't save it to your space.");
+  }
+  const split = text => { const i = text.search(/\n-{3,}\s*\n/); return i < 0 ? [text.trim(), ""] : [text.slice(0, i).trim(), text.slice(i).replace(/^\n-{3,}\s*\n/, "").trim()]; };
+  const result = (title, body, notes, verdict, name) => {
+    openModal(title, `${verdict || ""}<textarea id="outText" aria-label="Result">${esc(body)}</textarea>${notes ? `<p class="small">${esc(notes)}</p>` : ""}
+      <div class="row2"><button class="btn primary" type="button" data-m="copyOut">Copy</button>${DL ? `<button class="btn" type="button" data-m="dlOut" data-name="${esc(name || "result")}">Download .txt</button>` : ""}<span class="small">You can edit the text before you copy it.</span></div>`);
+  };
+  async function ask(prompt) { const r = await SAMPLE(prompt, { modelTier: "default", cache: false }); return String(r && r.text || "").trim(); }
+  async function tailorFlow(j) {
+    if (!SAMPLE) return toast("Resume tailor needs this page open on claude.ai.");
+    if (!RESUME) return resumeSetup("Paste your resume first, then press Resume tailor again.");
+    openModal("Tailoring for " + j.company, `<p class="banner info">Claude is rewriting your resume for ${esc(j.role)}. It only reorders and rewords what is already there.</p>`);
+    try {
+      const [body, notes] = split(await ask(L.tailorPrompt(RESUME, j)));
+      const g = L.guard(RESUME, body, CRIT && CRIT.verifiedYears), claims = [...g.newSkills, ...g.newYears.map(y => y + " years"), ...g.newDates];
+      const verdict = g.ok ? `<p class="banner ok">Checked: nothing was added that your resume doesn't already say.</p>` : `<p class="banner bad">Check before you use it: this text mentions ${esc(claims.join(", "))}, which your resume doesn't. Remove those or don't send it.</p>`;
+      result("Tailored for " + j.company + " · " + j.role, body, notes, verdict, "resume-" + j.company.replace(/\W+/g, "-").toLowerCase());
+      if (g.ok && canWrite) save(j.id, { tailoredAt: today() }, "Resume tailored.");
+    } catch (e) { openModal("Resume tailor", `<p class="banner bad">${esc(claudeErr(e))}</p>`); }
+  }
+  const DRAFTS = {
+    follow: j => `Write a short, polite follow-up email (under 90 words) from a job candidate who applied to ${j.role} at ${j.company} on ${j.appliedAt} and has not heard back. Ask about the status and restate interest in one sentence. Use only these facts; add no claims about the candidate. Return the email only.\n\nJOB:\n${j.desc || ""}`,
+    recruiter: j => `Write a short message (under 80 words) from a job candidate to a recruiter${j.contactName ? " named " + j.contactName : ""} who posted ${j.role}${j.company ? " at " + j.company : ""}. Say the candidate is interested, ask for the next step, and offer to send a resume. Use only what the posting says; add no claims about the candidate. Return the message only.\n\nPOST:\n${j.desc || j.notes || ""}`,
+    prep: j => `Prepare a one-page interview prep for ${j.role} at ${j.company}: the six questions most likely to be asked from this posting, and for each one a line on what to show from the candidate's own experience. Use only the posting and the resume below; mark anything the resume does not cover as a gap to prepare, and do not invent experience.\n\nPOSTING:\n${j.desc || ""}\n\nRESUME:\n${RESUME || "(not saved yet)"}`,
+  };
+  async function draftFlow(kind, j) {
+    if (!SAMPLE) return toast("Drafts need this page open on claude.ai.");
+    openModal("Drafting…", `<p class="banner info">Claude is drafting. Nothing is sent: you copy it and send it yourself.</p>`);
+    try { result({ follow: "Follow-up", recruiter: "Message to recruiter", prep: "Interview prep" }[kind] + " · " + j.company, await ask(DRAFTS[kind](j)), "", "", kind + "-" + j.company.replace(/\W+/g, "-").toLowerCase()); }
+    catch (e) { openModal("Draft", `<p class="banner bad">${esc(claudeErr(e))}</p>`); }
+  }
+  function scheduleModal() {
+    const sc = SCHED || {}, every = sc.enabled ? String(sc.everyHours || 24) : "0", tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC", ports = sc.portals || ["LinkedIn", "Indeed", "Dice"];
+    const opt = (v, l) => `<label><input type="radio" name="every" value="${v}" ${every === v ? "checked" : ""}> ${l}</label>`;
+    openModal("Schedule search and save", `<p class="banner info" id="schedStatus">${esc(L.scheduleStatus(SCHED, RUNS))}</p>
+      <p class="small">A scheduled run searches and saves jobs to this tracker. It never applies and never contacts anyone: you review the jobs here.</p>
+      <div class="row2">${opt("0", "Off")}${opt("12", "Every 12 hours")}${opt("24", "Every 24 hours")}</div>
+      <div class="row2"><label>First run at <select id="sHour">${Array.from({ length: 24 }, (_, h) => `<option value="${h}" ${(sc.startHour ?? 7) === h ? "selected" : ""}>${(h % 12 || 12) + (h < 12 ? " am" : " pm")}</option>`).join("")}</select> (${esc(tz)})</label></div>
+      <div class="row2">${["LinkedIn", "Indeed", "Dice", "Google Jobs"].map(p => `<label><input type="checkbox" name="sp" value="${p}" ${ports.includes(p) ? "checked" : ""}> ${p}</label>`).join("")}</div>
+      <p class="small">Cost on Apify's free $5 a month: about 9 cents a run with all four, so every 24 hours is about $2.70 a month and every 12 hours about $5.40. Without Google Jobs it is about 6 cents (24h $1.80, 12h $3.60).</p>
+      <div class="row2"><button class="btn primary" type="button" data-m="saveSched" ${canWrite ? "" : "disabled"}>Save schedule</button><span class="small" id="schedMsg"></span></div>`);
+  }
+  async function saveSched() {
+    const every = +(document.querySelector('input[name="every"]:checked') || {}).value || 0, ports = [...document.querySelectorAll('input[name="sp"]:checked')].map(x => x.value);
+    const data = { enabled: every > 0, everyHours: every || (SCHED && SCHED.everyHours) || 24, startHour: +$("sHour").value, tz: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", portals: ports.length ? ports : ["LinkedIn", "Indeed", "Dice"], pending: true, requestedAt: new Date().toISOString() };
+    try { const ref = db.doc("meta/schedule"); SCHED ? await ref.update(data) : await ref.set(data); $("schedMsg").textContent = "Saved."; $("schedStatus").textContent = L.scheduleStatus(Object.assign({}, SCHED, data), RUNS); }
+    catch { $("schedMsg").textContent = "Couldn't save. Only the tracker's owner can change the schedule."; }
+  }
+  document.addEventListener("click", e => {
+    const m = e.target.closest("[data-m]"); if (!m) return;
+    const k = m.dataset.m;
+    if (k === "close") closeModal();
+    else if (k === "saveResume") saveResume();
+    else if (k === "saveSched") saveSched();
+    else if (k === "copyOut") { const t = $("outText"); navigator.clipboard.writeText(t.value).then(() => toast("Copied."), () => { t.select(); toast("Press Ctrl+C to copy."); }); }
+    else if (k === "dlOut" && DL) DL.save({ filename: (m.dataset.name || "result") + ".txt", data: new Blob([$("outText").value], { type: "text/plain" }) }).catch(() => toast("Not saved."));
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !modalEl().hidden) closeModal(); });
+  $("bResume").addEventListener("click", () => resumeSetup(""));
+  $("bSched").addEventListener("click", scheduleModal);
+  document.addEventListener("input", e => {
+    const t = e.target; if (!t.dataset || t.dataset.offer === undefined) return;
+    const o = OFFERS[+t.dataset.offer]; o[t.dataset.k] = t.type === "number" ? t.value : t.value;
+    if (t.dataset.k === "kind") return render();
+    $("ov" + t.dataset.offer).textContent = "$" + L.offerValue(o).toLocaleString();
+  });
+  document.addEventListener("change", e => { const t = e.target; if (t.dataset && t.dataset.offer !== undefined && t.dataset.k === "kind") { OFFERS[+t.dataset.offer].kind = t.value; render(); } });
+
   function render() {
     const nd = needs().filter(j => j.status === "Review").length, counts = { "needs-you": nd, applied: appliedList().length, all: base().length };
     $("tabs").innerHTML = VIEWS.map(([v, l]) => `<button class="tab" type="button" data-view="${v}" ${S.view === v ? 'aria-current="page"' : ""}>${l}${v in counts && loaded ? `<span class="n ${v === "needs-you" && nd ? "attn" : ""}">${counts[v]}</span>` : ""}</button>`).join("");
     const keep = document.activeElement && document.activeElement.id === "q";
-    $("view").innerHTML = { overview, "needs-you": needsView, applied: appliedView, all: allView, "what-if": whatIfView }[S.view]();
+    $("view").innerHTML = { overview, "needs-you": needsView, applied: appliedView, all: allView, recruiters: recruitersView, offers: offersView, "what-if": whatIfView }[S.view]();
     if (S.view === "what-if") whatIf();
     if (online) { const r = liveRun(), at = r && !stale(r) && r.steps.find(s => s.state === "doing"); setLive(true, `Live · ${JOBS.length} jobs` + (r && !stale(r) ? ` · run in progress${at ? ": " + at.label : ""}` : "")); }
     $("time").value = String(S.days);
@@ -627,7 +835,7 @@ td .tlink{color:var(--accent)}
     const cp = t.closest("[data-copy]");
     if (cp) { e.stopPropagation(); try { await navigator.clipboard.writeText(cp.dataset.copy); toast("Copied " + cp.dataset.copy); } catch { const c = cp.previousElementSibling, r = document.createRange(); r.selectNodeContents(c); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Selected. Press copy."); } return; }
     const a = t.closest("button[data-a]");
-    if (a) { if (!a.disabled) { if (a.dataset.a === "queueAll") return act.queueAll(); if (a.dataset.a === "clearF") return go({ fit: "", work: "", source: "", spons: "", via: "", posted: "", easy: "" }); const j = JOBS.find(x => x.id === a.dataset.id); if (j) act[a.dataset.a](j); } return; }
+    if (a) { if (!a.disabled) { if (a.dataset.a === "queueAll") return act.queueAll(); if (a.dataset.a === "clearF") return go({ fit: "", work: "", source: "", spons: "", via: "", posted: "", easy: "", payu: "" }); const j = JOBS.find(x => x.id === a.dataset.id); if (j) act[a.dataset.a](j); } return; }
     const tab = t.closest("[data-view]"); if (tab) return go({ view: tab.dataset.view });
     const g = t.closest("[data-go]"); if (g) return go(JSON.parse(g.dataset.go));
     const set = t.closest("[data-set]"); if (set) return go({ [set.dataset.set]: set.dataset.val });
@@ -653,14 +861,16 @@ td .tlink{color:var(--accent)}
     if (!window.claude || !window.claude.use) { setLive(false, "Open this page on claude.ai to load the tracker."); loaded = true; render(); return; }
     db = await window.claude.use("db");
     if (!db) { setLive(false, "Sign in to claude.ai to see the tracker."); loaded = true; render(); return; }
-    window.claude.use("user").then(async u => { if (!u) return; try { if ((await u.can("data.write")) === false || (await u.canEdit()) === false) { canWrite = false; render(); } } catch {} });
+    window.claude.use("sample").then(x => { SAMPLE = x; render(); }, () => {});
+    window.claude.use("downloads").then(x => { DL = x; }, () => {});
+    window.claude.use("user").then(async u => { if (!u) return; try { UID = await u.id(); const r = await db.collection("data/users/" + UID).doc("resume").get(); if (r && r.exists !== false && r.data && r.data()) RESUME = (r.data() || {}).text || ""; } catch {} try { if ((await u.can("data.write")) === false || (await u.canEdit()) === false) { canWrite = false; render(); } } catch {} });
     const timer = setTimeout(() => setLive(false, "Can't reach the tracker yet. Showing what has loaded."), 10000);
     db.collection("jobs").onSnapshot(snap => {
       JOBS = snap.docs.map(d => Object.assign({ id: d.id }, d.data()));
       if (!snap.metadata.fromCache) { clearTimeout(timer); online = true; }
       loaded = true; render();
     }, err => { clearTimeout(timer); loaded = true; online = false; setLive(false, err && err.code === "revoked" ? "Access to the tracker ended." : "The tracker stopped updating. Reload to reconnect."); render(); });
-    db.collection("meta").onSnapshot(snap => { const d = snap.docs.find(x => x.id === "criteria"); CRIT = d ? d.data() : null; render(); }, () => {});
+    db.collection("meta").onSnapshot(snap => { const d = snap.docs.find(x => x.id === "criteria"), sc = snap.docs.find(x => x.id === "schedule"); CRIT = d ? d.data() : null; SCHED = sc ? sc.data() : null; render(); }, () => {});
     db.collection("runs").orderBy("date", "desc").limit(6).onSnapshot(snap => { RUNS = snap.docs.map(d => Object.assign({ id: d.id }, d.data())).sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)); render(); }, () => {});
   })();
 })();
