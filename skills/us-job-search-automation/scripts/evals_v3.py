@@ -122,8 +122,10 @@ def v3_checks():
           [] if t2 <= 0.0501 and "google" not in [c["name"] for c in tight] and all(c["limit"] >= apify_jobs.FLOORS[c["name"]] for c in tight) else [f"{t2} {[(c['name'], c['limit']) for c in tight]}"],
           f"${t2:.3f}")
     probs = [f"{c['name']} cap {c['call_options']['maxTotalChargeUsd']} vs est {c['est_cost_usd']}" for c in calls
-             if not (c["est_cost_usd"] <= c["call_options"]["maxTotalChargeUsd"] <= max(0.10, c["est_cost_usd"] * 2))]
-    check("every call's hard stop is its own estimate plus margin, never the whole budget twice over", probs)
+             if c["name"] != "google" and not (c["est_cost_usd"] <= c["call_options"]["maxTotalChargeUsd"] <= max(0.10, c["est_cost_usd"] * 2))]
+    gcap = next(c for c in calls if c["name"] == "google")["call_options"]["maxTotalChargeUsd"]
+    probs += [] if gcap == apify_jobs.GOOGLE_MIN_CAP == 0.5 else [f"google cap {gcap}: the Actor refuses less than $0.50 (live run 2026-11-21)"]
+    check("every call's hard stop is its own estimate plus margin; Google Jobs gets the $0.50 minimum its Actor requires", probs)
     g = next(c for c in calls if c["name"] == "google")
     probs = [] if g["actor"] == "memo23/google-jobs-scraper" and g["input"].get("onlyNewJobs") and g["input"].get("workFromHome") and g["input"]["maxItems"] <= 12 else [str(g["input"])]
     probs += [] if g["actor"] in apify_jobs.FREE_PLAN_ACTORS and "descriptionText" in g["fields"] and "googleDomain" in g["fields"] else ["fields or allow-list"]
@@ -229,10 +231,10 @@ def v3_checks():
     # ------------------------------------------------------------ the dashboard: template, logic in node
     html = DASH.read_text()
     probs = []
-    if "template, version 10" not in html:
-        probs.append("template comment is not version 10")
-    if (ROOT / "assets" / "tracker.version").read_text().strip() != "10":
-        probs.append("tracker.version is not 10")
+    if "template, version 11" not in html:
+        probs.append("template comment is not version 11")
+    if (ROOT / "assets" / "tracker.version").read_text().strip() != "11":
+        probs.append("tracker.version is not 11")
     for needle in ("Resume tailor", "Last run", "Latest 24h", "Schedule", "claude.use(\"sample\")", "claude.use(\"downloads\")", "data/users/", "meta/schedule", "Pay not listed",
                    "Sort: match score", 'id="bSched"', 'id="bResume"', "Draft follow-up", "Interview prep", "Draft message", "Recruiters", "Compare offers"):
         if needle not in html:

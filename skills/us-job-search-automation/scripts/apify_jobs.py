@@ -42,6 +42,7 @@ DEFAULT_URL = "https://api.apify.com"
 DEFAULT_MAX = 25            # rows per portal per run
 HARD_CAP = 100              # no call ever asks for more, whatever the profile says
 DEFAULT_BUDGET = 0.10       # dollars per run across every call (3.0): calls shrink to fit it, Google Jobs drops out first
+GOOGLE_MIN_CAP = 0.50   # the Google Jobs Actor refuses any spend cap below $0.50 (seen live 2026-11-21); real cost is its estimate, about 4 cents
 GOOGLE_ROWS = 12            # Google Jobs rows per run: a start fee of half a cent plus about a third of a cent a row
 MAX_CONCURRENT = 5          # the free plan's limit since Sept 2026 (it was 25); one call per portal stays under it
 SPOOL_MIN = 20              # spool/job-board-api's smallest result count
@@ -200,6 +201,8 @@ def fit_budget(calls: list, budget: float, charge: float = 0) -> list:
         calls[:] = [c for c in calls if c["name"] != "google"]
     for c in calls:
         c["call_options"]["maxTotalChargeUsd"] = charge or round(min(budget, max(c["est_cost_usd"] * 1.6, c["est_cost_usd"] + 0.01)), 3)
+        if c["name"] == "google":   # a minimum the Actor enforces: a lower cap makes the call fail
+            c["call_options"]["maxTotalChargeUsd"] = max(GOOGLE_MIN_CAP, c["call_options"]["maxTotalChargeUsd"])
         c["over_budget"] = total() > budget
     return calls
 
