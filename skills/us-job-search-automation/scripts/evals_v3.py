@@ -231,10 +231,10 @@ def v3_checks():
     # ------------------------------------------------------------ the dashboard: template, logic in node
     html = DASH.read_text()
     probs = []
-    if "template, version 11" not in html:
-        probs.append("template comment is not version 11")
-    if (ROOT / "assets" / "tracker.version").read_text().strip() != "11":
-        probs.append("tracker.version is not 11")
+    if "template, version 12" not in html:
+        probs.append("template comment is not version 12")
+    if (ROOT / "assets" / "tracker.version").read_text().strip() != "12":
+        probs.append("tracker.version is not 12")
     for needle in ("Resume tailor", "Last run", "Latest 24h", "Schedule", "claude.use(\"sample\")", "claude.use(\"downloads\")", "data/users/", "meta/schedule", "Pay not listed",
                    "Sort: match score", 'id="bSched"', 'id="bResume"', "Draft follow-up", "Interview prep", "Draft message", "Recruiters", "Compare offers"):
         if needle not in html:

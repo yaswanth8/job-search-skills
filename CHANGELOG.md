@@ -2,6 +2,9 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 3.0.2 (2026-11-21)
+- Dashboard template 12: the Runs section at the bottom shows the last 5 runs (it showed 6). Republish to get it; the next run offers the refresh.
+
 ## 3.0.1 (2026-11-21)
 Found by running 3.0 live on a real profile (LinkedIn 24 rows, Dice 15, Indeed 5 + 5; all converted, vetted and de-duplicated correctly).
 - **Google Jobs call failed**: its Actor refuses any spend cap under $0.50, and 3.0 sent a 6-cent cap. The cap is now 50 cents (the call still stops at its 12-row limit and bills about 4 cents), the plan says so, Google Jobs is opt-in for chat runs only, and the dashboard's Schedule no longer offers it. 1 check changed, 1 added (live-run reference).
