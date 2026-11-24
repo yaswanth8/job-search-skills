@@ -44,6 +44,15 @@ for u in $VURLS; do
 done
 INSTALLED=""
 [ -f "$HERE/scripts/vet.py" ] && [ -f "$HERE/VERSION" ] && INSTALLED=$(tr -d '[:space:]' < "$HERE/VERSION")
+# A copy whose SKILL.md was replaced on its own (pasted or edited instructions instead of the zip) keeps its old VERSION
+# and scripts. Say so plainly, because the generic UPDATE line below would read as if the zip itself were stale.
+if [ -n "$INSTALLED" ] && [ -f "$HERE/SKILL.md" ]; then
+  SKILLV=$(sed -n 's/^Version:[[:space:]]*\([0-9][0-9.]*\).*/\1/p' "$HERE/SKILL.md" | head -1)
+  if [ -n "$SKILLV" ] && [ "$SKILLV" != "$INSTALLED" ]; then
+    echo "UPDATE: the installed skill is mixed: its instructions (SKILL.md) say $SKILLV but its scripts and VERSION file are $INSTALLED, so only SKILL.md was replaced. Upload the full zip once to fix it: https://github.com/$REPO/raw/main/dist/us-job-search-automation.zip (Customize > Skills, replace the old one)."
+    MIXED=1
+  fi
+fi
 newer() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -1)" = "$1" ]; }   # is $1 newer than $2
 if [ -n "$LATEST" ]; then
   if [ -n "$INSTALLED" ] && ! newer "$LATEST" "$INSTALLED"; then
@@ -97,7 +106,8 @@ fi
 if [ -n "$SRC" ]; then
   rm -rf "$DEST"; mv "$TMP" "$DEST"; TOOLS="$DEST/$SUB"
   GOT=$(tr -d '[:space:]' < "$TOOLS/VERSION")
-  if [ -n "$INSTALLED" ] && newer "$GOT" "$INSTALLED"; then
+  if [ -n "${MIXED:-}" ]; then :   # already explained above
+  elif [ -n "$INSTALLED" ] && newer "$GOT" "$INSTALLED"; then
     echo "UPDATE: the installed skill is $INSTALLED and the latest is $GOT; this run uses $GOT. To get it without downloading each run (and when offline), download https://github.com/$REPO/raw/main/dist/us-job-search-automation.zip and upload it in Customize > Skills, replacing the old one."
   elif [ -z "$INSTALLED" ]; then
     echo "UPDATE: this installed skill has no scripts, so every run downloads them and a run stops when GitHub is unreachable. Install the full zip instead: https://github.com/$REPO/raw/main/dist/us-job-search-automation.zip (Customize > Skills, replace the old one)."

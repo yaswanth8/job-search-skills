@@ -5,7 +5,7 @@ description: "Runs a US job search end to end: finds fresh postings on LinkedIn,
 
 # US Job Search Automation
 
-Version: 3.0.2 · Source and updates: https://github.com/yaswanth8/job-search-skills
+Version: 3.0.3 · Source and updates: https://github.com/yaswanth8/job-search-skills
 
 Loop: **tools, ask once, search, vet, save or apply, report**. An application speaks in the candidate's name, so the profile and resume are the only sources of facts: anything they don't cover is asked once or skipped, never guessed.
 

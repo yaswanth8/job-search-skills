@@ -602,6 +602,18 @@ def token_checks():
         last = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr[-200:]
         check("installed copy already the latest: bootstrap.sh downloads nothing and uses it",
               [] if r.returncode == 0 and "SOURCE=installed" in last and not (d / "boot2" / "jss").exists() else [last], last[-40:])
+        # 2026-11-24, a real install: SKILL.md said 3.0.2 but VERSION and scripts were 2.1.3 (only the instructions had
+        # been replaced), so every run downloaded and showed the generic UPDATE line. It must name the cause instead.
+        import shutil
+        mixed = d / "mixed"
+        shutil.copytree(HERE.parent, mixed, ignore=shutil.ignore_patterns("evals", "__pycache__"))
+        (mixed / "VERSION").write_text("2.1.3\n")
+        r = subprocess.run(["bash", str(mixed / "bootstrap.sh"), str(d / "boot3")], capture_output=True, text=True, env=env, timeout=600)
+        lines = r.stdout.strip().splitlines()
+        upd = [x for x in lines if x.startswith("UPDATE:")]
+        check("SKILL.md replaced on its own: bootstrap.sh says the install is mixed, once, and still runs",
+              [] if r.returncode == 0 and len(upd) == 1 and "mixed" in upd[0] and "2.1.3" in upd[0] and "SOURCE=bundled" in lines[-1]
+              else [r.stdout[-300:]], (upd or ["no UPDATE"])[0][:60])
     return out
 
 
