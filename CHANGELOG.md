@@ -2,6 +2,10 @@
 
 Newest first. Mark a release **Requires new instructions** when its scripts depend on the new SKILL.md.
 
+## 3.0.3 (2026-11-24)
+- **Mixed installs are named, not just flagged as old.** Found on a real account: the installed skill's SKILL.md said 3.0.2 but its `VERSION` file and scripts were still 2.1.3, because only the instructions had been replaced, not the whole zip. `bootstrap.sh` compares `VERSION`, so every run downloaded the tools and showed the generic UPDATE line. It now spots a SKILL.md `Version:` line that differs from `VERSION` and prints one UPDATE line saying the install is mixed and to upload the full zip once. The run still goes on with the newest tools. 1 new check.
+- `tools/build.py --check` (and so CI) now fails when `dist/*.zip` doesn't match `skills/` file for file, including the zip's `VERSION`, so a release can't ship with a stale zip.
+
 ## 3.0.2 (2026-11-21)
 - Dashboard template 12: the Runs section at the bottom shows the last 5 runs (it showed 6). Republish to get it; the next run offers the refresh.
 

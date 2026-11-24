@@ -143,6 +143,8 @@ What it never does, in any mode: type passwords, create accounts, solve CAPTCHAs
 
 You don't have to: every run uses the newest version whenever GitHub is reachable. When your installed copy is behind, the run says so once (`UPDATE: the installed skill is X and the latest is Y`). To catch up, download [`dist/us-job-search-automation.zip`](dist/us-job-search-automation.zip) again and upload it in Customize > Skills, replacing the old one; later runs then start without a download and also work when GitHub is blocked. Your profile skill is never replaced, so your details stay.
 
+Always upload the **whole zip**. Pasting or editing only the instructions (SKILL.md) leaves the old scripts and `VERSION` file behind, and every run then says `UPDATE: the installed skill is mixed` until the full zip is uploaded.
+
 **Installed an earlier short "stub" version** (its Version line says "stub")? Replace it with the zip above once: the stub has no scripts, so it must download every run and stops when GitHub is unreachable.
 
 Never share an Apify account or token with a friend: each person signs up for their own, so each gets their own free $5.
@@ -233,7 +235,7 @@ The automation skill fetches this repo at the start of every run (`bootstrap.sh`
 1. Edit files under `skills/`.
 2. Bump `skills/us-job-search-automation/VERSION` and the `Version:` line in its SKILL.md to the same value.
 3. Add an entry to `CHANGELOG.md`. Write **Requires new instructions** when the new scripts need the new SKILL.md.
-4. Run `python3 tools/build.py`. It runs the self-test, checks the versions match, and rebuilds the zips in `dist/`.
+4. Run `python3 tools/build.py`. It runs the self-test, checks the versions match, rebuilds the zips in `dist/` and checks they match `skills/`. Commit `dist/` with the change: CI fails on a stale zip.
 5. Commit and push. The GitHub Actions check repeats the self-test.
 
 ## Layout
